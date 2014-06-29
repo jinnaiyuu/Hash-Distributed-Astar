@@ -1,0 +1,38 @@
+#TWO THREADS
+pnum = 1
+7 15 8 2 13 6 3 12 11 0 4 10 9 5 1 14 
+tiles: 7 15 8 2 13 6 3 12 11 0 4 10 9 5 1 14 
+#start data file format 4
+#pair  "wall start date"	"Sun Jun 29 11:34:39 2014"
+#pair  "wall start time"	"1.40401e+09"
+#pair  "machine id"	"ubuntu-Linux-3.11.0-24-generic-x86_64"
+#pair  "initial heuristic"	"41"
+#pair  "total wall time"	"1.08633"
+#pair  "total cpu time"	"1"
+#pair  "total nodes expanded"	"827204"
+#pair  "total nodes generated"	"1594247"
+#pair  "solution length"	"54"
+#pair  "wall finish time"	"1.40401e+09"
+#pair  "wall finish date"	"Sun Jun 29 11:34:40 2014"
+#pair  "max virtual kilobytes"	"375908"
+#end data file format 4
+
+
+# SINGLE THREAD
+pnum = 1
+7 15 8 2 13 6 3 12 11 0 4 10 9 5 1 14
+tiles: 7 15 8 2 13 6 3 12 11 0 4 10 9 5 1 14 
+#start data file format 4
+#pair  "wall start date"	"Sun Jun 29 11:35:56 2014"
+#pair  "wall start time"	"1.40401e+09"
+#pair  "machine id"	"ubuntu-Linux-3.11.0-24-generic-x86_64"
+#pair  "initial heuristic"	"41"
+#pair  "total wall time"	"1.07684"
+#pair  "total cpu time"	"1"
+#pair  "total nodes expanded"	"827204"
+#pair  "total nodes generated"	"1594247"
+#pair  "solution length"	"54"
+#pair  "wall finish time"	"1.40401e+09"
+#pair  "wall finish date"	"Sun Jun 29 11:35:57 2014"
+#pair  "max virtual kilobytes"	"375908"
+#end data file format 4

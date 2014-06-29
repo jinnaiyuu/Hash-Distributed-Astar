@@ -1,0 +1,36 @@
+pnum = 1
+12 11 15 3 8 0 4 2 6 13 9 5 14 1 10 7 
+tiles: 12 11 15 3 8 0 4 2 6 13 9 5 14 1 10 7 
+#start data file format 4
+#pair  "wall start date"	"Sat Jun 28 15:48:56 2014"
+#pair  "wall start time"	"1.40394e+09"
+#pair  "machine id"	"ubuntu-Linux-3.11.0-24-generic-x86_64"
+#pair  "initial heuristic"	"32"
+#pair  "total wall time"	"4.76757"
+#pair  "total cpu time"	"4"
+#pair  "total nodes expanded"	"2668277"
+#pair  "total nodes generated"	"5361400"
+#pair  "solution length"	"51"
+#pair  "wall finish time"	"1.40394e+09"
+#pair  "wall finish date"	"Sat Jun 28 15:49:01 2014"
+#pair  "max virtual kilobytes"	"506980"
+#end data file format 4
+
+pnum = 1
+12 11 15 3 8 0 4 2 6 13 9 5 14 1 10 7 
+tiles: 12 11 15 3 8 0 4 2 6 13 9 5 14 1 10 7 
+#start data file format 4
+#pair  "wall start date"	"Sat Jun 28 15:50:19 2014"
+#pair  "wall start time"	"1.40394e+09"
+#pair  "machine id"	"ubuntu-Linux-3.11.0-24-generic-x86_64"
+#pair  "initial heuristic"	"32"
+#pair  "total wall time"	"2.89243"
+#pair  "total cpu time"	"2"
+#pair  "total nodes expanded"	"2618503"
+#pair  "total nodes generated"	"5260197"
+#pair  "solution length"	"51"
+#pair  "wall finish time"	"1.40394e+09"
+#pair  "wall finish date"	"Sat Jun 28 15:50:23 2014"
+#pair  "max virtual kilobytes"	"1814164"
+#end data file format 4
+

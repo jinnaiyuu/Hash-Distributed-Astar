@@ -1,0 +1,4 @@
+#!/bin/sh
+
+./tiles idastar $arg1 < instances
+i=`expr $i + 1`

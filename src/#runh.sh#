@@ -1,0 +1,4 @@
+#!/bin/sh
+
+cd /home/jinnai/workspace/15PuzzleOpt/src
+./

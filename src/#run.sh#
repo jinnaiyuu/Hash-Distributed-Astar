@@ -1,0 +1,5 @@
+#!/bin/sh
+
+cd $PBS_O_WORKDIR
+./tiles astar $arg1 < instances
+
