@@ -26,7 +26,7 @@ static void tryprocstatus(FILE*);
 
 void dfpair(FILE *f, const char *key, const char *fmt, ...) {
 	char buf[Bufsz];
-	int n = snprintf(buf, Bufsz, "#pair  \"%s\"\t\"", key);
+	int n = snprintf(buf, Bufsz, "#pair  %s\t", key);
 	if (n > Bufsz)
 		throw Fatal("dfrowhdr: buffer is too small\n");
 
@@ -42,14 +42,14 @@ void dfpair(FILE *f, const char *key, const char *fmt, ...) {
 		return;
 	}
 
-	fprintf(f, "%s\"\n", buf);
+	fprintf(f, "%s\n", buf);
 	fflush(f);
 }
 
 static void dfpair_sz(FILE *f, unsigned int sz, const char *key, const char *fmt, va_list ap) {
 	char *buf = new char[sz];
 
-	unsigned int n = snprintf(buf, sz, "#pair  \"%s\"\t\"", key);
+	unsigned int n = snprintf(buf, sz, "#pair  %s\t", key);
 	assert (n <= sz);
 	vsnprintf(buf+n, sz-n, fmt, ap);
 
@@ -59,7 +59,7 @@ static void dfpair_sz(FILE *f, unsigned int sz, const char *key, const char *fmt
 
 void dfrowhdr(FILE *f, const char *name, unsigned int ncols, ...) {
 	char buf[Bufsz];
-	int n = snprintf(buf, Bufsz, "#altcols  \"%s\"", name);
+	int n = snprintf(buf, Bufsz, "#altcols  %s", name);
 	if (n > Bufsz)
 		throw Fatal("dfrowhdr: buffer is too small\n");
 
@@ -79,7 +79,7 @@ void dfrowhdr(FILE *f, const char *name, unsigned int ncols, ...) {
 
 void dfrow(FILE *f, const char *name, const char *colfmt, ...) {
 	char buf[Bufsz];
-	int n = snprintf(buf, Bufsz, "#altrow  \"%s\"", name);
+	int n = snprintf(buf, Bufsz, "#altrow  %s", name);
 	if (n > Bufsz)
 		throw Fatal("dfrowhdr: buffer is too small\n");
 

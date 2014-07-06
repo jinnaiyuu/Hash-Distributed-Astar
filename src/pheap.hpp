@@ -19,8 +19,10 @@
 
 //#include <boost/lockfree/queue.hpp>
 #include "pqueue.h"
+//#define DEBUG
 #ifdef DEBUG
-#define printl() printf("%d:\n", __LINE__)
+#define printl()
+//#define printl() printf("%d:\n", __LINE__)
 #else
 #define printl()
 #endif
@@ -37,7 +39,6 @@ template<class HeapElm> class PHeap {
 		// p corresponds to g value for Astar.
 		void push(HeapElm *n, int p) {
 			assert(p >= 0);
-//			printf("push: g = %d\n", p);
 //			printf("bins.size() = %u\n", bins.size());
 			if (bins.size() <= (unsigned int) p) {
 				bins.resize(p + 1);
@@ -135,7 +136,9 @@ public:
 
 	HeapElm *pop(void) {
 		while(isempty()) {
+#ifdef DEBUG
 			printf("empty\n");
+#endif
 		}
 		for (; (unsigned int) min < qs.size() && qs[min].empty(); min++)
 			;

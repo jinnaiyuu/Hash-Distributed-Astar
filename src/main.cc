@@ -17,7 +17,7 @@ int main(int argc, const char *argv[]) {
 			pnum *= 10;
 			pnum += argv[2][i] - '0';
 		}
-		printf("pnum = %d\n", pnum);
+//		printf("pnum = %d\n", pnum);
 		Tiles tiles(stdin, pnum);
 
 		SearchAlg<Tiles> *search = NULL;
@@ -32,13 +32,16 @@ int main(int argc, const char *argv[]) {
 	
 		Tiles::State init = tiles.initial();
 
-		printf("tiles: ");
-		for(int i = 0; i < 16; i++) {
-		  printf("%d ", init.tiles[i]);
+
+		dfheader(stdout);
+		printf("#tiles	");
+		for (int i = 0; i < 16; i++) {
+			printf("%d ", init.tiles[i]);
 		}
 		printf("\n");
 
-		dfheader(stdout);
+		dfpair(stdout, "problem number", "%02d", pnum);
+//		printf("#pair problem number %02d \n", pnum);
 		dfpair(stdout, "initial heuristic", "%d", tiles.h(init));
 		double wall0 = walltime(), cpu0 = cputime();
 	

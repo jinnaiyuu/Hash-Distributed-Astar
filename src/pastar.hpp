@@ -51,7 +51,7 @@ public:
 	// original 512,927,357
 	// now      200,000,000 200MB
 	Pastar(D &d) :
-			SearchAlg<D>(d), closed(200000000), open(100), searching(true) {
+			SearchAlg<D>(d), closed(20000000), open(100), searching(true) {
 		pthread_mutex_init(&m, NULL);
 	}
 
@@ -61,17 +61,20 @@ public:
 	// 565,994,203 Nodes : 14 7 8 2 13 11 10 4 9 12 5 0 3 6 1 15
 
 	std::vector<typename D::State> search(typename D::State &init) {
+		printf("Search\n");
 		open.push(wrap(init, 0, 0, -1));
+		printf("pushed\n");
 		std::thread t1(&Pastar::astar, this);
-		std::thread t2(&Pastar::astar, this);
+//		std::thread t2(&Pastar::astar, this);
 //		std::thread t3(&Pastar::astar, this);
+//		astar();
 		t1.join();
-		t2.join();
+//		t2.join();
 //		t3.join();
 //		pthread_t t1;
 //		pthread_t t2;
 //		pthread_t t3;
-//		pthread_create(&t1, NULL, (void*(*)(void *))astar, NULL);
+//		pthread_create(&t1, NULL, &astar, this);
 //		pthread_create(&t2, NULL, (void*(*)(void*))Pastar::astar, NULL);
 //		pthread_create(&t3, NULL, (void*(*)(void*))this->astar, NULL);
 //		pthread_join(t1, NULL);
@@ -81,10 +84,10 @@ public:
 	}
 
 	void astar() {
-		printf("T %ld\n", std::this_thread::get_id());
+//		printf("astar\n");
+//		printf("T %ld\n", std::this_thread::get_id());
 		while (!open.isempty() && path.size() == 0 && searching) {
-#ifdef DEBUG
-#endif
+
 			// TODO: open.pop() should be thread safe and n should not duplicate.
 //			printf("pastar%d:\n", __LINE__);
 			Node *n = static_cast<Node*>(open.pop());
@@ -104,7 +107,7 @@ public:
 			// Also, we dont need two goal states.
 			if (this->dom.isgoal(state)) {
 				searching = false;
-				printf("GOOOOOOOOOOOOOOOOOOOOAL\n");
+//				printf("GOOOOOOOOOOOOOOOOOOOOAL\n");
 				open.clear();
 				for (Node *p = n; p; p = p->parent) {
 					typename D::State s;

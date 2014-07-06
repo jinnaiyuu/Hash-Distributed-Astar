@@ -1,5 +1,5 @@
 CXX=g++
-CXXFLAGS=-Wall -static -lboost_system -pthread -std=c++11 -O3
+CXXFLAGS=-Wall -static -pthread -std=c++11 -O3
 
 all: tiles
 
