@@ -43,7 +43,8 @@ template<class D> class Pastar: public SearchAlg<D> {
 	Pool<Node> nodes;
 
 	bool searching;
-	pthread_mutex_t m;
+	pthread_mutex_t om, cm;
+	int tnum;
 
 public:
 
@@ -52,7 +53,16 @@ public:
 	// now      200,000,000 200MB
 	Pastar(D &d) :
 			SearchAlg<D>(d), closed(20000000), open(100), searching(true) {
-		pthread_mutex_init(&m, NULL);
+		pthread_mutex_init(&om, NULL);
+		pthread_mutex_init(&cm, NULL);
+		tnum = 1;
+	}
+
+	Pastar(D &d, int thread_number) :
+			SearchAlg<D>(d), closed(20000000), open(100), searching(true) {
+		pthread_mutex_init(&om, NULL);
+		pthread_mutex_init(&cm, NULL);
+		this->tnum = thread_number;
 	}
 
 	// 546,344 Nodes     : 14 1 9 6 4 8 12 5 7 2 3 0 10 11 13 15
@@ -63,42 +73,40 @@ public:
 	std::vector<typename D::State> search(typename D::State &init) {
 		printf("Search\n");
 		open.push(wrap(init, 0, 0, -1));
-		printf("pushed\n");
-		std::thread t1(&Pastar::astar, this);
-//		std::thread t2(&Pastar::astar, this);
-//		std::thread t3(&Pastar::astar, this);
-//		astar();
-		t1.join();
-//		t2.join();
-//		t3.join();
-//		pthread_t t1;
-//		pthread_t t2;
-//		pthread_t t3;
-//		pthread_create(&t1, NULL, &astar, this);
-//		pthread_create(&t2, NULL, (void*(*)(void*))Pastar::astar, NULL);
-//		pthread_create(&t3, NULL, (void*(*)(void*))this->astar, NULL);
-//		pthread_join(t1, NULL);
-//		pthread_join(t2, NULL);
-//		pthread_join(t3, NULL);
+		pthread_t t[tnum];
+		for (int i = 0; i < tnum; ++i) {
+			pthread_create(&t[tnum], NULL,
+					(void*(*)(void*))&Pastar::astar_helper, this);
+		}
+		for (int i = 0; i < tnum; ++i) {
+			pthread_join(t[tnum], NULL);
+		}
+
 		return path;
 	}
 
-	void astar() {
-//		printf("astar\n");
-//		printf("T %ld\n", std::this_thread::get_id());
-		while (!open.isempty() && path.size() == 0 && searching) {
-
+	void* astar() {
+		printf("T %ld\n", pthread_self());
+		while (path.size() == 0 && searching) {
+		// You can rather lock here.
+			while (open.isempty()) {
+//				printf("empty");
+				;
+			}
 			// TODO: open.pop() should be thread safe and n should not duplicate.
-//			printf("pastar%d:\n", __LINE__);
+			pthread_mutex_lock(&om);
+//			printf("%d", open.isempty());
 			Node *n = static_cast<Node*>(open.pop());
+			pthread_mutex_unlock(&om);
 
 			// TODO: make sure this is thread safe (which is likely to be true)
+			pthread_mutex_lock(&cm);
 			if (closed.find(n->packed)) {
-				pthread_mutex_lock(&m);
 				nodes.destruct(n);
-				pthread_mutex_unlock(&m);
+				pthread_mutex_unlock(&cm);
 				continue;
 			}
+			pthread_mutex_unlock(&cm);
 
 			typename D::State state;
 			this->dom.unpack(state, n->packed);
@@ -106,39 +114,50 @@ public:
 			// TODO: should wait for other threads if better solution might be possible.
 			// Also, we dont need two goal states.
 			if (this->dom.isgoal(state)) {
+				printf("GOOOOOOOOOOOOOOOOOOOOAL\n");
+				pthread_mutex_lock(&om);
+				pthread_mutex_lock(&cm);
+				if (!searching) {
+					break;
+				}
 				searching = false;
-//				printf("GOOOOOOOOOOOOOOOOOOOOAL\n");
-				open.clear();
+				printf("GOOOOOOOOOOOOOOOOOOOOAL\n");
 				for (Node *p = n; p; p = p->parent) {
 					typename D::State s;
 					this->dom.unpack(s, p->packed);
 					path.push_back(s);
 				}
+//				open.clear();
+				pthread_mutex_unlock(&cm);
+				pthread_mutex_unlock(&om);
 				break;
 			}
 
 			// TODO: adding a new pair to hash table should avoid collision.
 			// Need to check
+			pthread_mutex_lock(&cm);
 			closed.add(n);
+			pthread_mutex_unlock(&cm);
 
 			this->expd++;
+//			printf("expd = %lu\n", this->expd);
 
 			for (int i = 0; i < this->dom.nops(state); i++) {
-//				printf("pastar%d:\n", __LINE__);
 				int op = this->dom.nthop(state, i);
 				if (op == n->pop)
 					continue;
 				this->gend++;
+//				printf("gend = %lu\n", this->gend);
 				Edge<D> e = this->dom.apply(state, op);
 
 				// TODO: make it thread safe.
-				pthread_mutex_lock(&m);
+				pthread_mutex_lock(&cm);
 				open.push(wrap(state, n, e.cost, e.pop));
-				pthread_mutex_unlock(&m);
+				pthread_mutex_unlock(&cm);
 				this->dom.undo(state, e);
 			}
 		}
-
+		return 0;
 	}
 
 	Node *wrap(typename D::State &s, Node *p, int c, int pop) {
@@ -152,4 +171,9 @@ public:
 		this->dom.pack(n->packed, s);
 		return n;
 	}
+
+	static void* astar_helper(void* arg) {
+		return ((Pastar *) arg)->astar();
+	}
+
 };

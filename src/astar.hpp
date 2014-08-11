@@ -55,6 +55,13 @@ public:
 			typename D::State state;
 			this->dom.unpack(state, n->packed);
 
+//			printf("expd = %lu\n", this->expd);
+//			printf("f,g = %d, %d, ", n->f, n->g);
+//			for (int i = 0; i < 16; ++i) {
+//				printf("%d ", state.tiles[i]);
+//			}
+//			printf("\n");
+
 			if (this->dom.isgoal(state)) {
 				for (Node *p = n; p; p = p->parent) {
 					typename D::State s;
