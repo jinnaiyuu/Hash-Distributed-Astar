@@ -10,30 +10,34 @@
 
 class Zobrist {
 public:
+        // Should delete compatibility for performance.
 	Zobrist(int size = 16) {
 		initZobrist();
 	}
 
-	char hash(int* board) {
-		int h = 0;
+        // The method to return zobrist value for the very first node.
+	char hash(const char* const board) {
+		unsigned char h = '\0';
 		for (int i = 0; i < 16; ++i) {
-			h = (h ^ table[i + 16 * board[i]]);
+			h = (h ^ zbr[i][board[i]]);
 		}
 		return h;
 	}
 
-	char incremental_hash(char* board, int op) {
-
+	// There might be more organized way to do.
+	inline char hashinc(const char& num, const char& from, const char& to) {
+		return zbr[from][num] ^ zbr[to][num];
 	}
 
 private:
 	void initZobrist() {
 		for (int i = 0; i < 16; ++i) {
 			for (int j = 0; j < 16; ++j) {
-				zbr[i + 16 * j] = rand();
-				printf("table[%d][%d] = %d\n", i, j, zbr[i + 16 * j]);
+				zbr[i][j] = rand();
+//				printf("table[%d][%d] = %d\n", i, j, zbr[i][j]);
 			}
 		}
+		/*
 		for (int i = 0; i < 16; ++i) {
 			for (int j = 0; j < 16; ++j) {
 				for (int k = 0; k < 16; ++k) {
@@ -41,9 +45,15 @@ private:
 				}
 			}
 		}
+		*/
+
 	}
+
+	unsigned char zbr[16][16];
 	// TODO: Ad hoc ...or optimization
-	char zbr[16][16];
-	int zbrincr[16][16][16];
+
+        // the value to XOR to the zbr value. 
+        // Slide 
+  //	int zbrincr[16][16];
 };
 #endif /* ZOBRIST_H_ */

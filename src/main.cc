@@ -73,7 +73,7 @@ int main(int argc, const char *argv[]) {
 
 		dfpair(stdout, "problem number", "%02d", pnum);
 		if (argv[3] == "") {
-		dfpair(stdout, "thread number", "%02d", std::stoi(argv[3]));
+			dfpair(stdout, "thread number", "%02d", std::stoi(argv[3]));
 		}
 		dfpair(stdout, "initial heuristic", "%d", tiles.h(init));
 		double wall0 = walltime(), cpu0 = cputime();

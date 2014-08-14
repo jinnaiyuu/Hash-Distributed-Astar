@@ -18,7 +18,7 @@
 #include <cassert>
 
 //#include <boost/lockfree/queue.hpp>
-#include "pqueue.h"
+#include "pqueue.hpp"
 //#define DEBUG
 #ifdef DEBUG
 #define printl()

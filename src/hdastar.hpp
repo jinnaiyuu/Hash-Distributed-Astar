@@ -18,12 +18,13 @@
 #include "pool.hpp"
 #include "buffer.hpp"
 
-#include "node.hpp"
+#include "zobrist.hpp"
 
 template<class D> class HDAstar: public SearchAlg<D> {
 
 	struct Node {
 		char f, g, pop;
+	        char zbr; // zobrist value. stored here for now. Also the size is char for now.
 		int openind;
 		Node *parent;
 		typename D::PackedState packed;
@@ -35,6 +36,7 @@ template<class D> class HDAstar: public SearchAlg<D> {
 			return f < o->f;
 		}
 
+	        // Unused function and value.
 		void setindex(int i) {
 		}
 
@@ -47,10 +49,13 @@ template<class D> class HDAstar: public SearchAlg<D> {
 		}
 	};
 
-	buffer<Node> income_buffer;
+	buffer<Node>* income_buffer;
 	std::vector<typename D::State> path;
 
-	int tnum = 1;
+  // Here for now. 
+  Zobrist z;
+
+	int tnum;
 
 	typename D::State init;
 
@@ -60,17 +65,16 @@ public:
 	// original 512927357
 	// now      200000000
 	HDAstar(D &d) :
-			SearchAlg<D>(d) {	//:
+			SearchAlg<D>(d), tnum(1) {	//:
 //			SearchAlg<D>(d), closed(200000000), open(100) {
 //		tnum = 1;
-//		income_buffer = new buffer<Node>[1];
+		income_buffer = new buffer<Node>[1];
 	}
 
 	HDAstar(D &d, int thread_number) :
-			SearchAlg<D>(d) {	//:
+			SearchAlg<D>(d),tnum(thread_number) {	//:
 //			SearchAlg<D>(d), closed(200000000), open(100) {
-		tnum = thread_number;
-//		income_buffer = new buffer<Node>[tnum];
+		income_buffer = new buffer<Node>[tnum];
 	}
 
 	// expanded 32334,
@@ -81,10 +85,11 @@ public:
 
 	void* thread_search(void * arg) {
 
+		int thrd = 0;
 //		buffer<Node> outgo_buffer[tnum];
 
 		// TODO: Must optimize these numbers
-		HashTable<typename D::PackedState, Node> closed(200000000);
+		HashTable<typename D::PackedState, Node> closed(200000000/tnum);
 		Heap<Node> open(100);
 		Pool<Node> nodes(2048);
 		uint expd_here = 0;
@@ -93,22 +98,22 @@ public:
 
 		// TODO: Must put initial state here.
 		open.push(wrap(init, 0, 0, -1, nodes));
-		std::vector<Node*> t;
+		std::vector<Node*> tmp;
 
-		while (path.size() == 0 && (!open.isempty() || !income_buffer.isempty())) {
+		while (path.size() == 0 && !(open.isempty() && income_buffer[thrd].isempty())) {
 //			printf("expd = %d\n", expd_here);
 //			printf("buf size = %d\n", income_buffer.size());
 			// TODO: Get nodes from income buffer and put it into open list.
-			if (!income_buffer.isempty()) {
-				t = income_buffer.pull_all();
+			if (!income_buffer[thrd].isempty()) {
+				tmp = income_buffer[thrd].pull_all();
 			}
-			uint size = t.size();
-//			printf("t.size = %d : i = ", size);
+			uint size = tmp.size();
+			printf("size = %d\n", size);
 			for (int i = 0; i < size; ++i) {
 //				printf("%d, ",i);
-				open.push(t.back());
-				t.pop_back();
+				open.push(tmp[i]);
 			}
+			tmp.clear();
 //			printf("\n");
 
 			Node *n = static_cast<Node*>(open.pop());
@@ -128,6 +133,7 @@ public:
 //			printf("\n");
 
 			if (this->dom.isgoal(state)) {
+				printf("GOAL!\n");
 				for (Node *p = n; p; p = p->parent) {
 					typename D::State s;
 					this->dom.unpack(s, p->packed);
@@ -154,7 +160,8 @@ public:
 				// 		 If the buffer is locked, push the node to local outgo_buffer for now.
 //				income_buffer.push(wrap(state, n, e.cost, e.pop, nodes));
 				Node* next = wrap(state, n, e.cost, e.pop, nodes);
-				income_buffer.push(next);
+//				printf("zbr = %d\n", z.hash(state.tiles) % tnum);
+				income_buffer[thrd].push(next);
 //				printf("Created with %d , f = %d, g = %d\n", i, next->f, next->g);
 //				for (int j = 0; j < 16; ++j) {
 //					printf("%d ", state.tiles[j]);
@@ -167,13 +174,30 @@ public:
 		this->expd += expd_here;
 		this->gend += gend_here;
 		printf("END\n");
+		return 0;
 	}
+
+	struct targ{
+		HDAstar* th;
+		int thread_id;
+	};
 
 	std::vector<typename D::State> search(typename D::State &init) {
 		//AD HOC
 //		lds[0]->open.push(lds[0]->wrap(init, 0, 0, -1));
 		pthread_t t[tnum];
 		this->init = init;
+
+//		Node* n;
+//		{
+//		n->g = 0;
+//		n->f = this->dom.h(init);
+//		n->pop = -1;
+//		n->parent = 0;
+//		this->dom.pack(n->packed, init);
+//		}
+//		income_buffer.push(n);
+
 
 		for (int i = 0; i < tnum; ++i) {
 			pthread_create(&t[tnum], NULL,
