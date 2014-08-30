@@ -29,6 +29,15 @@ public:
 		pthread_mutex_unlock(&m);
 	};
 
+	bool try_push(T* x) {
+		if (pthread_mutex_trylock(&m)) { // trylock return 0 when locked.
+			return false;
+		}
+		buf.push_back(x);
+		pthread_mutex_unlock(&m);
+		return true;
+	}
+
 	T* pull() {
 		T* ret;
 		pthread_mutex_lock(&m);

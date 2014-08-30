@@ -29,9 +29,12 @@ template <class HeapElm> class Heap {
 
 		HeapElm *pop(void) {
 			for ( ; bins[max].empty(); max--) {
-				if (max == 0)
+				if (max == 0) {
+					printf("max==0\n");
 					break;
+				}
 			}
+			dbgprintf("g = %d\n", max);
 			HeapElm *n = bins[max].back();
 			bins[max].pop_back();
 			n->openind = -1;
@@ -86,6 +89,7 @@ public:
 		for ( ; (unsigned int) min < qs.size() && qs[min].empty() ; min++)
 			;
 		fill--;
+		dbgprintf("f = %d\n", min);
 		return qs[min].pop();		
 	}
 

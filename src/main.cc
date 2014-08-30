@@ -1,11 +1,6 @@
 // Copyright 2012 Ethan Burns. All rights reserved.
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
-#include "tiles.hpp"
-#include "idastar.hpp"
-#include "astar.hpp"
-#include "pastar.hpp"
-#include "hdastar.hpp"
 #include <cstring>
 
 #include <stdio.h>
@@ -13,6 +8,19 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <unistd.h>
+
+#define DEBUG
+#ifndef DEBUG
+#define dbgprintf   1 ? (void) 0 : (void)
+#else // #ifdef NDEBUG
+#define dbgprintf   printf
+#endif // #ifdef NDEBUG
+
+#include "tiles.hpp"
+#include "idastar.hpp"
+#include "astar.hpp"
+#include "pastar.hpp"
+#include "hdastar.hpp"
 
 void handler(int sig) {
 	void *array[10];
@@ -72,7 +80,7 @@ int main(int argc, const char *argv[]) {
 		printf("\n");
 
 		dfpair(stdout, "problem number", "%02d", pnum);
-		if (argv[3] == "") {
+		if (strcmp(argv[3], "")) {
 			dfpair(stdout, "thread number", "%02d", std::stoi(argv[3]));
 		}
 		dfpair(stdout, "initial heuristic", "%d", tiles.h(init));
@@ -81,12 +89,14 @@ int main(int argc, const char *argv[]) {
 		std::vector<Tiles::State> path = search->search(init);
 
 		double wtime = walltime() - wall0, ctime = cputime() - cpu0;
+		sleep(2);
 		dfpair(stdout, "total wall time", "%g", wtime);
 		dfpair(stdout, "total cpu time", "%g", ctime);
 		dfpair(stdout, "total nodes expanded", "%lu", search->expd);
 		dfpair(stdout, "total nodes generated", "%lu", search->gend);
 		dfpair(stdout, "solution length", "%u", (unsigned int) path.size());
 
+		assert(path.begin() != path.end());
 		for (auto iter = path.end() - 1; iter != path.begin() - 1; --iter) {
 			for (int i = 0; i < 16; ++i) {
 				printf("%2d ", iter->tiles[i]);
