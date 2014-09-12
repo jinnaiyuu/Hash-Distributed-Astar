@@ -110,6 +110,8 @@ public:
 
 	bool mem(HeapElm *n) { return n->openind >= 0; }
 
+	int minf(int f) {return min;}
+
 	void clear(void) {
 		qs.clear();
 		min = 0;

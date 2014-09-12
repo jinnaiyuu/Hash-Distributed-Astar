@@ -9,12 +9,12 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#define DEBUG
+//#define DEBUG
 #ifndef DEBUG
 #define dbgprintf   1 ? (void) 0 : (void)
-#else // #ifdef NDEBUG
+#else // #ifdef DEBUG
 #define dbgprintf   printf
-#endif // #ifdef NDEBUG
+#endif // #ifdef DEBUG
 
 #include "tiles.hpp"
 #include "idastar.hpp"

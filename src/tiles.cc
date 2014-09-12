@@ -52,7 +52,7 @@ Tiles::Tiles(FILE *in, int line) {
 			int r = fscanf(in, " %u", &p);
 			if (r != 1)
 				throw Fatal("Failed to read the starting positions: r=%d", r);
-			// TODO: THIS IS THE PROBLEM
+			// Solved: THIS IS THE PROBLEM
 			init[t] = p;
 //			init[p] = t;
 		}

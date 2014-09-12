@@ -29,6 +29,9 @@
 #include "buffer.hpp"
 #include "zobrist.hpp"
 
+//#define INCOME_ANALYZE
+//#define OUTGO_ANALYZE
+
 template<class D> class HDAstar: public SearchAlg<D> {
 
 	struct Node {
@@ -65,20 +68,28 @@ template<class D> class HDAstar: public SearchAlg<D> {
 	std::atomic<int> thread_id; // set thread id for zobrist hashing.
 	Zobrist<16> z; // Members for Zobrist hashing.
 
+	std::atomic<int> incumbent; // The best solution so far.
+
+	int max_income;
+	int max_outgo; // For analyzing the size of outgo_buffer;
+//	int outgo_threshould = 10000;
+
 public:
 
 	// closed might be waaaay too big for my memory....
 	// original 512927357
 	// now      200000000
 	HDAstar(D &d) :
-			SearchAlg<D>(d), tnum(1), thread_id(0), z(1) {	//:
+			SearchAlg<D>(d), tnum(1), thread_id(0), z(1), max_income(0), max_outgo(
+					0) {	//:
 //			SearchAlg<D>(d), closed(200000000), open(100) {
 //		tnum = 1;
 		income_buffer = new buffer<Node> [1];
 	}
 
 	HDAstar(D &d, int tnum_) :
-			SearchAlg<D>(d), tnum(tnum_), thread_id(0), z(tnum) {	//:
+			SearchAlg<D>(d), tnum(tnum_), thread_id(0), z(tnum), max_income(0), max_outgo(
+					0) {	//:
 //			SearchAlg<D>(d), closed(200000000), open(100) {
 		income_buffer = new buffer<Node> [tnum];
 	}
@@ -101,21 +112,25 @@ public:
 		HashTable<typename D::PackedState, Node> closed(200000000 / tnum);
 		Heap<Node> open(100);
 		Pool<Node> nodes(2048);
+
+		// If the buffer is locked when the thread pushes a node,
+		// stores it locally and pushes it afterward.
+		std::vector<Node*> outgo_buffer[tnum];
+
+		// TODO: temporal buffer to store nodes from income buffer.
+		std::vector<Node*> tmp;
+
 		uint expd_here = 0;
 		uint gend_here = 0;
-//		std::vector<typename D::State> path;
-
-//		open.push(wrap(init, 0, 0, -1, nodes));
-
-		// TODO: Must put initial state here.
-		std::vector<Node*> tmp;
+		int max_outgo_buffer_size = 0;
+		int max_income_buffer_size = 0;
 
 		while (path.size() == 0) {
 //			&&  !(open.isempty() && income_buffer[thrd].isempty())
-			dbgprintf("id: %d\n"
-					"expd = %d\n"
-					"bufsize = %d\n", thrd, expd_here,
-					income_buffer[thrd].size());
+//			dbgprintf("id: %d\n"
+//					"expd = %d\n"
+//					"bufsize = %d\n", thrd, expd_here,
+//					income_buffer[thrd].size());
 //			sleep(1);
 //			printf("expd = %d\n", expd_here);
 //			printf("buf size = %d\n", income_buffer[thrd].size());
@@ -124,15 +139,20 @@ public:
 				tmp = income_buffer[thrd].pull_all();
 			}
 			uint size = tmp.size();
+#ifdef INCOME_ANALYZE
+			if (max_income_buffer_size < size) {
+				max_income_buffer_size = size;
+			}
 			dbgprintf("size = %d\n", size);
+#endif // INCOME_ANALYZE
 			for (int i = 0; i < size; ++i) {
 				dbgprintf("pushing %d, ", i);
-				open.push(tmp[i]);
+				open.push(tmp[i]); // Not sure optimal or not.
 			}
 			tmp.clear();
 //			printf("\n");
 
-			// seg fault for second thread
+			// TODO: minf(int f):
 			if (open.isempty()) {
 				dbgprintf("open is empty.\n");
 				continue; // ad hoc
@@ -154,13 +174,23 @@ public:
 //			}
 //			printf("\n");
 
+			// TODO: incumbent solution.
 			if (this->dom.isgoal(state)) {
 				dbgprintf("GOAL!\n");
+				std::vector<typename D::State> newpath;
+
 				for (Node *p = n; p; p = p->parent) {
 					typename D::State s;
 					this->dom.unpack(s, p->packed);
-					path.push_back(s); // This triggers the main loop to terminate.
+					newpath.push_back(s); // This triggers the main loop to terminate.
 				}
+				path = newpath;
+//				length = newpath.size();
+//
+//				// TODO: need it to be atomic.
+//				if (incumbent > length) {
+//					incumbent = length;
+//				}
 
 				break;
 			}
@@ -182,17 +212,54 @@ public:
 				// 		 If the buffer is locked, push the node to local outgo_buffer for now.
 //				income_buffer.push(wrap(state, n, e.cost, e.pop, nodes));
 				Node* next = wrap(state, n, e.cost, e.pop, nodes);
+//				int zbr = n->zbr ^ z.hashinc(state.tiles, state.blank, op);
 				int zbr = z.hash_tnum(state.tiles);
 				dbgprintf("zbr = %d\n", zbr);
 
 				// TODO: trylock
 				// Need to store to local buffer and go to next node.
 //				income_buffer[zbr].push(next);
-				if (!income_buffer[zbr].try_push(next)) { //try_push return false when fail to lock.
-					// faild to acquire the lock.
-					printf("Try_push failed.\n");
-					income_buffer[zbr].push(next);
+
+				//try_push return false when fail to lock.
+				if (income_buffer[zbr].try_lock()) {
+					// if able to acquire the lock, then push all nodes in local buffer.
+					income_buffer[zbr].push_with_lock(next);
+					income_buffer[zbr].push_all_with_lock(outgo_buffer[zbr]);
+					outgo_buffer[zbr].clear();
+					income_buffer[zbr].release_lock();
+				} else {
+					// Stacking over threshould would not happen so often.
+					// Therefore, first try to acquire the lock & then check whether the size
+					// exceeds the threshould.
+					// For more bigger system, this might change.
+//					if (outgo_buffer[zbr].size() > outgo_threshould) {
+//						income_buffer[zbr].lock();
+//						income_buffer[zbr].push_with_lock(next);
+//						income_buffer[zbr].push_all_with_lock(
+//								outgo_buffer[zbr]);
+//						outgo_buffer[zbr].clear();
+//						income_buffer[zbr].release_lock();
+//					} else {
+						// if the buffer is locked, store the node locally.
+						outgo_buffer[zbr].push_back(next);
+						// printf("%d: size = %d\n",zbr, outgo_buffer[zbr].size());
+#ifdef OUTGO_ANALYZE
+						int size = outgo_buffer[zbr].size();
+						if (size > max_outgo_buffer_size) {
+							max_outgo_buffer_size = size;
+						}
+#endif //OUTGO_ANALYZE
+//					}
 				}
+
+//				if (!income_buffer[zbr].try_push(next)) { //try_push return false when fail to lock.
+//					// failed to acquire the lock.
+//					printf("Try_push failed.\n");
+//					outgo_buffer[zbr].push_back(next);
+////					income_buffer[zbr].push(next);
+//				} else { // when succeeds to
+//
+//				}
 //				}
 
 //				printf("Created with %d , f = %d, g = %d\n", i, next->f, next->g);
@@ -207,6 +274,9 @@ public:
 		dbgprintf("pathsize = %lu\n", path.size());
 		this->expd += expd_here;
 		this->gend += gend_here;
+
+		this->max_outgo += max_outgo_buffer_size;
+		this->max_income += max_income_buffer_size;
 		printf("END\n");
 		return 0;
 	}
@@ -222,8 +292,8 @@ public:
 		pthread_t t[tnum];
 		this->init = init;
 
-		Node* n = new Node;
 		// wrap a new node.
+		Node* n = new Node;
 		{
 			n->g = 0;
 			n->f = this->dom.h(init);
@@ -242,6 +312,9 @@ public:
 		for (int i = 0; i < tnum; ++i) {
 			pthread_join(t[tnum], NULL);
 		}
+
+		printf("average of max_income_buffer_size = %d\n", max_income / tnum);
+		printf("average of max_outgo_buffer_size = %d\n", max_outgo / tnum);
 
 		return path;
 	}

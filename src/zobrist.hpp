@@ -47,8 +47,9 @@ public:
 	}
 
 	// There might be more organized way to do.
-	inline char hashinc(const char& num, const char& from, const char& to) {
-		return zbr[num][from] ^ zbr[num][to];
+	inline char hashinc(const char* const board, const int blank, const int op) {
+		// TODO
+//		return zbr[num][from] ^ zbr[num][to];
 	}
 
 private:
@@ -76,7 +77,6 @@ private:
 	int tnum;
 	unsigned char zbr[size][size];
 	unsigned char inc_zbr[size][size][size];
-	// TODO: Ad hoc ...or optimization
 
 	// the value to XOR to the zbr value.
 	// Slide

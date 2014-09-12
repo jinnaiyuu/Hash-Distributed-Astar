@@ -22,6 +22,16 @@ public:
 		pthread_mutex_init(&m, NULL);
 	}
 
+	// Push without sync
+	void push_with_lock(T* x) {
+		buf.push_back(x);
+	}
+
+	// Push without sync
+	void push_all_with_lock(std::vector<T*> buffer) {
+		buf.insert(buf.end(), buffer.begin(), buffer.end());
+	}
+
 	void push(T* x) {
 		pthread_mutex_lock(&m);
 		buf.push_back(x);
@@ -30,12 +40,26 @@ public:
 	};
 
 	bool try_push(T* x) {
-		if (pthread_mutex_trylock(&m)) { // trylock return 0 when locked.
+		// trylock return 0 if it acquires the lock.
+		if (pthread_mutex_trylock(&m)) {
 			return false;
 		}
 		buf.push_back(x);
 		pthread_mutex_unlock(&m);
 		return true;
+	}
+
+	bool try_lock() {
+		// trylock returns 0 if it acquires lock.
+		return !pthread_mutex_trylock(&m);
+	}
+
+	void lock() {
+		pthread_mutex_lock(&m);
+	}
+
+	void release_lock() {
+		pthread_mutex_unlock(&m);
 	}
 
 	T* pull() {
@@ -66,7 +90,7 @@ public:
 	};
 
 	bool isempty(){
-		return !buf.size();
+		return buf.empty();
 	}
 
 	int size() {
