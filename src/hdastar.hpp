@@ -5,13 +5,6 @@
  *      Author: yuu
  */
 
-/**
- * TODO:
- * 	1. Incremental Zobrist hashing
- * 	2. Implement try_lock
- *
- */
-
 #ifndef HDASTAR_HPP_
 #define HDASTAR_HPP_
 
@@ -29,8 +22,9 @@
 #include "buffer.hpp"
 #include "zobrist.hpp"
 
-//#define INCOME_ANALYZE
-//#define OUTGO_ANALYZE
+//#define ANALYZE_INCOME
+//#define ANALYZE_OUTGO
+#define ANALYZE_DUPLICATE
 
 template<class D> class HDAstar: public SearchAlg<D> {
 
@@ -70,28 +64,26 @@ template<class D> class HDAstar: public SearchAlg<D> {
 
 	std::atomic<int> incumbent; // The best solution so far.
 
+	bool* terminate;
+
 	int max_income;
 	int max_outgo; // For analyzing the size of outgo_buffer;
-//	int outgo_threshould = 10000;
+	int duplicate;
 
 public:
 
 	// closed might be waaaay too big for my memory....
 	// original 512927357
 	// now      200000000
-	HDAstar(D &d) :
-			SearchAlg<D>(d), tnum(1), thread_id(0), z(1), max_income(0), max_outgo(
-					0) {	//:
-//			SearchAlg<D>(d), closed(200000000), open(100) {
-//		tnum = 1;
-		income_buffer = new buffer<Node> [1];
-	}
 
-	HDAstar(D &d, int tnum_) :
-			SearchAlg<D>(d), tnum(tnum_), thread_id(0), z(tnum), max_income(0), max_outgo(
-					0) {	//:
-//			SearchAlg<D>(d), closed(200000000), open(100) {
+	HDAstar(D &d, int tnum_ = 0) :
+			SearchAlg<D>(d), tnum(tnum_), thread_id(0), z(tnum), incumbent(100), max_income(
+					0), max_outgo(0) {	//:
+		//			SearchAlg<D>(d), closed(200000000), open(100) {
 		income_buffer = new buffer<Node> [tnum];
+		terminate = new bool[tnum];
+		//		terminate_code = (2 << (tnum+1)) - 1;
+		//		printf("terminate code = %d", terminate_code);
 	}
 
 	// expanded 32334,
@@ -106,7 +98,7 @@ public:
 
 		int thrd = thread_id.fetch_add(1);
 		dbgprintf("thrd = %d\n", thrd);
-//		buffer<Node> outgo_buffer[tnum];
+		//		buffer<Node> outgo_buffer[tnum];
 
 		// TODO: Must optimize these numbers
 		HashTable<typename D::PackedState, Node> closed(200000000 / tnum);
@@ -124,59 +116,91 @@ public:
 		uint gend_here = 0;
 		int max_outgo_buffer_size = 0;
 		int max_income_buffer_size = 0;
+		int duplicate_here = 0;
 
-		while (path.size() == 0) {
-//			&&  !(open.isempty() && income_buffer[thrd].isempty())
-//			dbgprintf("id: %d\n"
-//					"expd = %d\n"
-//					"bufsize = %d\n", thrd, expd_here,
-//					income_buffer[thrd].size());
-//			sleep(1);
-//			printf("expd = %d\n", expd_here);
-//			printf("buf size = %d\n", income_buffer[thrd].size());
+		//		while (path.size() == 0) {
+		while (true) {
+			//			&&  !(open.isempty() && income_buffer[thrd].isempty())
+			//			dbgprintf("id: %d\n"
+			//					"expd = %d\n"
+			//					"bufsize = %d\n", thrd, expd_here,
+			//					income_buffer[thrd].size());
+			//			sleep(1);
+			//			printf("expd = %d\n", expd_here);
+			//			printf("buf size = %d\n", income_buffer[thrd].size());
 			// TODO: Get nodes from income buffer and put it into open list.
 			if (!income_buffer[thrd].isempty()) {
-				tmp = income_buffer[thrd].pull_all();
+				terminate[thrd] = false;
+				if (income_buffer[thrd].try_lock()) {
+					tmp = income_buffer[thrd].pull_all_with_lock();
+					income_buffer[thrd].release_lock();
+
+					uint size = tmp.size();
+#ifdef ANALYZE_INCOME
+					if (max_income_buffer_size < size) {
+						max_income_buffer_size = size;
+					}
+					dbgprintf("size = %d\n", size);
+#endif // ANALYZE_INCOME
+					for (int i = 0; i < size; ++i) {
+						dbgprintf("pushing %d, ", i);
+						open.push(tmp[i]); // Not sure optimal or not.
+					}
+					tmp.clear();
+				}
 			}
-			uint size = tmp.size();
-#ifdef INCOME_ANALYZE
-			if (max_income_buffer_size < size) {
-				max_income_buffer_size = size;
-			}
-			dbgprintf("size = %d\n", size);
-#endif // INCOME_ANALYZE
-			for (int i = 0; i < size; ++i) {
-				dbgprintf("pushing %d, ", i);
-				open.push(tmp[i]); // Not sure optimal or not.
-			}
-			tmp.clear();
-//			printf("\n");
+			//			printf("\n");
 
 			// TODO: minf(int f):
-			if (open.isempty()) {
+			//			printf("incumbent = %d \n", incumbent.load());
+			//			bool em = open.isemptyunder(incumbent.load());
+			//			printf("inc = %d, isemptyunber = %d\n", incumbent.load(), em);
+			if (open.isemptyunder(incumbent.load())) {
 				dbgprintf("open is empty.\n");
+				terminate[thrd] = true;
+				if (hasterminated()) {
+					break;
+				}
 				continue; // ad hoc
 			}
+			dbgprintf("incumbent = %d, open.min = %d\n", incumbent.load(),
+					open.minf());
+
 			Node *n = static_cast<Node*>(open.pop());
 
-			if (closed.find(n->packed)) {
-				nodes.destruct(n);
-				continue;
+			// If the new node n is duplicated and
+			// the f value is higher than or equal to the duplicate, discard it.
+			Node *duplicate = closed.find(n->packed);
+			if (duplicate) {
+				if (duplicate->f <= n->f) {
+					dbgprintf("Discarded\n");
+					nodes.destruct(n);
+					continue;
+				}
+				// Node access here is unnecessary duplicates.
+				dbgprintf("Duplicated\n");
+#ifdef ANALYZE_DUPLICATE
+				duplicate_here++;
+#endif // ANALYZE_DUPLICATE
 			}
 
 			typename D::State state;
 			this->dom.unpack(state, n->packed);
 
-//			printf("\n\nExpand:");
-//			printf("f,g = %d, %d \n", n->f, n->g);
-//			for (int i = 0; i < 16; ++i) {
-//				printf("%d ", state.tiles[i]);
-//			}
-//			printf("\n");
+			//			printf("\n\nExpand:");
+			//			printf("f,g = %d, %d \n", n->f, n->g);
+			//			for (int i = 0; i < 16; ++i) {
+			//				printf("%d ", state.tiles[i]);
+			//			}
+			//			printf("\n");
 
 			// TODO: incumbent solution.
 			if (this->dom.isgoal(state)) {
-				dbgprintf("GOAL!\n");
+				if (state.tiles[1] == 0) {
+					printf("ERRORRRR\n");
+					return 0;
+				}
+				printf("GOAL!\n");
 				std::vector<typename D::State> newpath;
 
 				for (Node *p = n; p; p = p->parent) {
@@ -184,15 +208,22 @@ public:
 					this->dom.unpack(s, p->packed);
 					newpath.push_back(s); // This triggers the main loop to terminate.
 				}
-				path = newpath;
-//				length = newpath.size();
-//
-//				// TODO: need it to be atomic.
-//				if (incumbent > length) {
-//					incumbent = length;
+//				for (auto iter = newpath.end() - 1; iter != newpath.begin() - 1; --iter) {
+//					for (int i = 0; i < 16; ++i) {
+//						printf("%2d ", iter->tiles[i]);
+//					}
+//					printf("\n");
 //				}
+				//				path = newpath;
+				int length = newpath.size();
+				dbgprintf("length = %d\n", length);
+				//				TODO: need it to be atomic.
+				if (incumbent > length) {
+					incumbent = length;
+					path = newpath;
+				}
 
-				break;
+				continue;
 			}
 
 			closed.add(n);
@@ -201,7 +232,7 @@ public:
 			for (int i = 0; i < this->dom.nops(state); i++) {
 				int op = this->dom.nthop(state, i);
 				if (op == n->pop) {
-//					printf("erase %d \n", i);
+					//					printf("erase %d \n", i);
 					continue;
 				}
 
@@ -210,15 +241,15 @@ public:
 
 				// TODO: Push items to thread safe income buffer.
 				// 		 If the buffer is locked, push the node to local outgo_buffer for now.
-//				income_buffer.push(wrap(state, n, e.cost, e.pop, nodes));
+				//				income_buffer.push(wrap(state, n, e.cost, e.pop, nodes));
 				Node* next = wrap(state, n, e.cost, e.pop, nodes);
-//				int zbr = n->zbr ^ z.hashinc(state.tiles, state.blank, op);
+				//				int zbr = n->zbr ^ z.hashinc(state.tiles, state.blank, op);
 				int zbr = z.hash_tnum(state.tiles);
 				dbgprintf("zbr = %d\n", zbr);
 
 				// TODO: trylock
 				// Need to store to local buffer and go to next node.
-//				income_buffer[zbr].push(next);
+				//				income_buffer[zbr].push(next);
 
 				//try_push return false when fail to lock.
 				if (income_buffer[zbr].try_lock()) {
@@ -232,63 +263,65 @@ public:
 					// Therefore, first try to acquire the lock & then check whether the size
 					// exceeds the threshould.
 					// For more bigger system, this might change.
-//					if (outgo_buffer[zbr].size() > outgo_threshould) {
-//						income_buffer[zbr].lock();
-//						income_buffer[zbr].push_with_lock(next);
-//						income_buffer[zbr].push_all_with_lock(
-//								outgo_buffer[zbr]);
-//						outgo_buffer[zbr].clear();
-//						income_buffer[zbr].release_lock();
-//					} else {
-						// if the buffer is locked, store the node locally.
-						outgo_buffer[zbr].push_back(next);
-						// printf("%d: size = %d\n",zbr, outgo_buffer[zbr].size());
-#ifdef OUTGO_ANALYZE
-						int size = outgo_buffer[zbr].size();
-						if (size > max_outgo_buffer_size) {
-							max_outgo_buffer_size = size;
-						}
-#endif //OUTGO_ANALYZE
-//					}
+					//					if (outgo_buffer[zbr].size() > outgo_threshould) {
+					//						income_buffer[zbr].lock();
+					//						income_buffer[zbr].push_with_lock(next);
+					//						income_buffer[zbr].push_all_with_lock(
+					//								outgo_buffer[zbr]);
+					//						outgo_buffer[zbr].clear();
+					//						income_buffer[zbr].release_lock();
+					//					} else {
+					// if the buffer is locked, store the node locally.
+					outgo_buffer[zbr].push_back(next);
+					// printf("%d: size = %d\n",zbr, outgo_buffer[zbr].size());
+#ifdef ANALYZE_OUTGO
+					int size = outgo_buffer[zbr].size();
+					if (size > max_outgo_buffer_size) {
+						max_outgo_buffer_size = size;
+					}
+#endif // ANALYZE_OUTGO
+					//					}
 				}
 
-//				if (!income_buffer[zbr].try_push(next)) { //try_push return false when fail to lock.
-//					// failed to acquire the lock.
-//					printf("Try_push failed.\n");
-//					outgo_buffer[zbr].push_back(next);
-////					income_buffer[zbr].push(next);
-//				} else { // when succeeds to
-//
-//				}
-//				}
+				//				if (!income_buffer[zbr].try_push(next)) { //try_push return false when fail to lock.
+				//					// failed to acquire the lock.
+				//					printf("Try_push failed.\n");
+				//					outgo_buffer[zbr].push_back(next);
+				////					income_buffer[zbr].push(next);
+				//				} else { // when succeeds to
+				//
+				//				}
+				//				}
 
-//				printf("Created with %d , f = %d, g = %d\n", i, next->f, next->g);
-//				for (int j = 0; j < 16; ++j) {
-//					printf("%d ", state.tiles[j]);
-//				}
-//				printf("\n");
+				//				printf("Created with %d , f = %d, g = %d\n", i, next->f, next->g);
+				//				for (int j = 0; j < 16; ++j) {
+				//					printf("%d ", state.tiles[j]);
+				//				}
+				//				printf("\n");
 
 				this->dom.undo(state, e);
 			}
 		}
+		//		path =
 		dbgprintf("pathsize = %lu\n", path.size());
 		this->expd += expd_here;
 		this->gend += gend_here;
 
 		this->max_outgo += max_outgo_buffer_size;
 		this->max_income += max_income_buffer_size;
-		printf("END\n");
+		this->duplicate += duplicate_here;
+		dbgprintf("END\n");
 		return 0;
 	}
 
-//	struct targ{
-//		HDAstar* th;
-//		int thread_id;
-//	};
+	//	struct targ{
+	//		HDAstar* th;
+	//		int thread_id;
+	//	};
 
 	std::vector<typename D::State> search(typename D::State &init) {
 		//AD HOC
-//		lds[0]->open.push(lds[0]->wrap(init, 0, 0, -1));
+		//		lds[0]->open.push(lds[0]->wrap(init, 0, 0, -1));
 		pthread_t t[tnum];
 		this->init = init;
 
@@ -315,7 +348,7 @@ public:
 
 		printf("average of max_income_buffer_size = %d\n", max_income / tnum);
 		printf("average of max_outgo_buffer_size = %d\n", max_outgo / tnum);
-
+		printf("duplicated nodes = %d\n", duplicate);
 		return path;
 	}
 
@@ -336,6 +369,15 @@ public:
 		n->parent = p;
 		this->dom.pack(n->packed, s);
 		return n;
+	}
+
+	inline bool hasterminated() {
+		for (int i = 0; i < tnum; ++i) {
+			if (terminate[i] == false) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 };

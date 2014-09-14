@@ -108,9 +108,15 @@ public:
 
 	bool isempty(void) { return fill == 0; }
 
+	// If the min value is equal or bigger than the incumbent,
+	// return false. This will be used for termination detection.
+	// Why minus 1? Because the total length contains the initial state.
+	// Path contains n nodes and n+1 edge.
+	bool isemptyunder(int incumbent) { return (((incumbent - 1) <= min) || fill == 0);}
+
 	bool mem(HeapElm *n) { return n->openind >= 0; }
 
-	int minf(int f) {return min;}
+	int minf() {return min;}
 
 	void clear(void) {
 		qs.clear();

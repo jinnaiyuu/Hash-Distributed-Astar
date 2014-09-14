@@ -49,8 +49,9 @@ public:
 		return true;
 	}
 
+	// Returns true if it acquires the lock.
 	bool try_lock() {
-		// trylock returns 0 if it acquires lock.
+		// mutex trylock returns 0 if it acquires lock.
 		return !pthread_mutex_trylock(&m);
 	}
 
@@ -86,6 +87,12 @@ public:
 		std::vector<T*> ret(buf);
 		buf.clear();
 		pthread_mutex_unlock(&m);
+		return ret;
+	};
+
+	std::vector<T*> pull_all_with_lock() {
+		std::vector<T*> ret(buf);
+		buf.clear();
 		return ret;
 	};
 

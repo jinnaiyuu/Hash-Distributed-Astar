@@ -4,7 +4,6 @@ cd /home/jinnai/workspace/ethan
 
 i=1
 max=`expr $2 - 1`
-rm $1*.o*
 
 
 t=`expr $3`
@@ -20,5 +19,8 @@ t=`expr $3`
 #qsub -l nodes=1:ppn=8,walltime=00:25:00 -N $NAME -j oe -v arg1=$1,arg2=$2,arg3=$t  ./run.sh
 
 # Array job
-JOB_ARRAY_ID=`qsub -t 1-$2 -l nodes=1:ppn=8,walltime=00:25:00 -N $1 -j oe -v arg1=$1,arg2=$t  ./run.sh`
-qsub -W depend:afteranyarray:$JOB_ARRAY_ID[] ./mail.sh
+JOB_ARRAY_ID=`qsub -t 1-$2 -l nodes=1:ppn=8,walltime=00:25:00 -M ddyuudd@gmail.com -m ae -N $1 -j oe -v arg1=$1,arg2=$t  ./run.sh`
+
+# Not working. Not sure how to fix it.
+#qsub -W depend:afteranyarray:$JOB_ARRAY_ID[] ./mail.sh
+

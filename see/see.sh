@@ -9,13 +9,11 @@ then
     echo "Pull and visualize the data from Torque server."
 fi
 
-rm $1*.o*
-rm $1.dat
 
 
 # Pull data from server
 # Also put the data to archive in the server.
-./pull.sh $1
+./pull.sh $1 $2
 
 
 # Parse data into astar.dat

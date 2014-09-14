@@ -6,6 +6,8 @@ datnum=`wc -l $1.dat | awk '{print $1}'`
 
 datastar=`wc -l astar.dat | awk '{print $1}'`
 
+time=
+
 gnuplot <<EOF
    set xlabel "$datnum instances solved"
    set ylabel "Wall Time"   
