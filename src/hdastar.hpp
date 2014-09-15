@@ -12,6 +12,7 @@
 #include <pthread.h>
 #include <atomic>
 #include <unistd.h>
+#include <math.h>
 
 #include "search.hpp"
 #include "utils.hpp"
@@ -24,7 +25,8 @@
 
 //#define ANALYZE_INCOME
 //#define ANALYZE_OUTGO
-#define ANALYZE_DUPLICATE
+//#define ANALYZE_DUPLICATE
+//#define ANALYZE_DISTRIBUTION
 
 template<class D> class HDAstar: public SearchAlg<D> {
 
@@ -70,6 +72,8 @@ template<class D> class HDAstar: public SearchAlg<D> {
 	int max_outgo; // For analyzing the size of outgo_buffer;
 	int duplicate;
 
+	int* expd_distribution;
+
 public:
 
 	// closed might be waaaay too big for my memory....
@@ -78,10 +82,11 @@ public:
 
 	HDAstar(D &d, int tnum_ = 0) :
 			SearchAlg<D>(d), tnum(tnum_), thread_id(0), z(tnum), incumbent(100), max_income(
-					0), max_outgo(0) {	//:
+					0), max_outgo(0), duplicate(0) {	//:
 		//			SearchAlg<D>(d), closed(200000000), open(100) {
 		income_buffer = new buffer<Node> [tnum];
 		terminate = new bool[tnum];
+		expd_distribution = new int[tnum];
 		//		terminate_code = (2 << (tnum+1)) - 1;
 		//		printf("terminate code = %d", terminate_code);
 	}
@@ -230,6 +235,7 @@ public:
 
 			expd_here++;
 			for (int i = 0; i < this->dom.nops(state); i++) {
+				// op is the next blank position.
 				int op = this->dom.nthop(state, i);
 				if (op == n->pop) {
 					//					printf("erase %d \n", i);
@@ -237,31 +243,46 @@ public:
 				}
 
 				gend_here++;
+				int moving_tile = state.tiles[op];
+				int blank = state.blank;
+//				printf("\n\nTile to move = %d, ", moving_tile);
+//				printf("op = %d\n", op);
+//				printf("Before:\n");
+//				print_state(state);
+
 				Edge<D> e = this->dom.apply(state, op);
+//				printf("After:\n");
+//				print_state(state);
 
 				// TODO: Push items to thread safe income buffer.
 				// 		 If the buffer is locked, push the node to local outgo_buffer for now.
 				//				income_buffer.push(wrap(state, n, e.cost, e.pop, nodes));
 				Node* next = wrap(state, n, e.cost, e.pop, nodes);
-				//				int zbr = n->zbr ^ z.hashinc(state.tiles, state.blank, op);
-				int zbr = z.hash_tnum(state.tiles);
+
+
+				dbgprintf("mv blank op = %d %d %d \n", moving_tile, blank, op);
+				int zbr = (n->zbr ^ z.inc_hash_tnum(moving_tile, blank, op));
+				dbgprintf("inc_zbr_tnum = %d, ", z.inc_hash_tnum(moving_tile, blank, op));
+//				int zbr = z.hash_tnum(state.tiles);
 				dbgprintf("zbr = %d\n", zbr);
 
 				// TODO: trylock
 				// Need to store to local buffer and go to next node.
 				//				income_buffer[zbr].push(next);
 
-				//try_push return false when fail to lock.
-				if (income_buffer[zbr].try_lock()) {
+				// If the node belongs to itself, just push to this open list.
+				if (zbr == thrd) {
+					open.push(next);
+				} else if (income_buffer[zbr].try_lock()) {
 					// if able to acquire the lock, then push all nodes in local buffer.
 					income_buffer[zbr].push_with_lock(next);
 					income_buffer[zbr].push_all_with_lock(outgo_buffer[zbr]);
 					outgo_buffer[zbr].clear();
 					income_buffer[zbr].release_lock();
 				} else {
-					// Stacking over threshould would not happen so often.
+					// Stacking over threshold would not happen so often.
 					// Therefore, first try to acquire the lock & then check whether the size
-					// exceeds the threshould.
+					// exceeds the threshold.
 					// For more bigger system, this might change.
 					//					if (outgo_buffer[zbr].size() > outgo_threshould) {
 					//						income_buffer[zbr].lock();
@@ -283,22 +304,6 @@ public:
 					//					}
 				}
 
-				//				if (!income_buffer[zbr].try_push(next)) { //try_push return false when fail to lock.
-				//					// failed to acquire the lock.
-				//					printf("Try_push failed.\n");
-				//					outgo_buffer[zbr].push_back(next);
-				////					income_buffer[zbr].push(next);
-				//				} else { // when succeeds to
-				//
-				//				}
-				//				}
-
-				//				printf("Created with %d , f = %d, g = %d\n", i, next->f, next->g);
-				//				for (int j = 0; j < 16; ++j) {
-				//					printf("%d ", state.tiles[j]);
-				//				}
-				//				printf("\n");
-
 				this->dom.undo(state, e);
 			}
 		}
@@ -310,18 +315,14 @@ public:
 		this->max_outgo += max_outgo_buffer_size;
 		this->max_income += max_income_buffer_size;
 		this->duplicate += duplicate_here;
+		this->expd_distribution[thrd] = expd_here;
+
 		dbgprintf("END\n");
 		return 0;
 	}
 
-	//	struct targ{
-	//		HDAstar* th;
-	//		int thread_id;
-	//	};
-
 	std::vector<typename D::State> search(typename D::State &init) {
-		//AD HOC
-		//		lds[0]->open.push(lds[0]->wrap(init, 0, 0, -1));
+
 		pthread_t t[tnum];
 		this->init = init;
 
@@ -346,17 +347,37 @@ public:
 			pthread_join(t[tnum], NULL);
 		}
 
+		// TODO: Time to printing these texts are included in the walltime.
 		printf("average of max_income_buffer_size = %d\n", max_income / tnum);
 		printf("average of max_outgo_buffer_size = %d\n", max_outgo / tnum);
 		printf("duplicated nodes = %d\n", duplicate);
+
+		// TODO: pack to a method
+#ifdef ANALYZE_DISTRIBUTION
+		int avrg = 0;
+		for (int i = 0; i < tnum; ++i) {
+			avrg += expd_distribution[i];
+		}
+		avrg /= tnum;
+
+		int var = 0;
+		for (int i = 0; i < tnum; ++i) {
+			var +=  (avrg - expd_distribution[i]) * (avrg - expd_distribution[i]);
+		}
+		var /= tnum;
+		double stddev = sqrt(var);
+		for (int i = 0; i < tnum; ++i) {
+			printf("%d ", expd_distribution[i]);
+		}
+		printf("\n");
+		printf("distribution: stddev = %f\n", stddev);
+#endif // ANALYZE_DISTRIBUTION
 		return path;
 	}
 
 	static void* thread_helper(void* arg) {
 		return static_cast<HDAstar*>(arg)->thread_search(arg);
 	}
-
-	// AD HOC for now (not sure how to factor it in...)
 
 	inline Node *wrap(typename D::State &s, Node *p, int c, int pop,
 			Pool<Node> &nodes) {
@@ -378,6 +399,13 @@ public:
 			}
 		}
 		return true;
+	}
+
+	void print_state(typename D::State state) {
+		for (int i = 0; i < 16; ++i) {
+			printf("%d ", state.tiles[i]);
+		}
+		printf("\n");
 	}
 
 };

@@ -26,6 +26,10 @@ public:
 	 * @return the value to XOR to the Zobrist value of parent.
 	 */
 	unsigned char inc_hash_tnum(const int number, const int from, const int to) {
+		return inc_zbr[number][from][to] % tnum;
+	}
+
+	unsigned char inc_hash(const int number, const int from, const int to) {
 		return inc_zbr[number][from][to];
 	}
 
@@ -46,14 +50,11 @@ public:
 		return h;
 	}
 
-	// There might be more organized way to do.
-	inline char hashinc(const char* const board, const int blank, const int op) {
-		// TODO
-//		return zbr[num][from] ^ zbr[num][to];
-	}
 
 private:
 	void initZobrist() {
+		// Not sure I should initialize it by time as it randomize the results for each run.
+		srand(time(NULL));
 		for (int j = 0; j < size; ++j) {
 			zbr[0][j] = 0;
 		}
@@ -76,6 +77,10 @@ private:
 	// Currently hard coding, set to 16.
 	int tnum;
 	unsigned char zbr[size][size];
+
+	// inc_zbr is the incremental XOR value for zobrist hash function.
+	// The value to XOR when the number moved from a to b is
+	// inc_zbr[number][a][b]  or inc_zbr[number][b][a]
 	unsigned char inc_zbr[size][size][size];
 
 	// the value to XOR to the zbr value.
