@@ -112,10 +112,16 @@ public:
 
 		// If the buffer is locked when the thread pushes a node,
 		// stores it locally and pushes it afterward.
+		// TODO: Array of dynamic sized objects.
+		// This array would be allocated in heap rather than stack.
+		// Therefore, not the best optimized way to do.
+		// Also we need to fix it to compile in Clang++.
 		std::vector<Node*> outgo_buffer[tnum];
 
 		// TODO: temporal buffer to store nodes from income buffer.
+		// Might need to optimize with reserve().
 		std::vector<Node*> tmp;
+		tmp.reserve(10);
 
 		uint expd_here = 0;
 		uint gend_here = 0;
@@ -201,11 +207,12 @@ public:
 
 			// TODO: incumbent solution.
 			if (this->dom.isgoal(state)) {
+				// TODO: For some reason, sometimes pops broken node.
 				if (state.tiles[1] == 0) {
-					printf("ERRORRRR\n");
+					printf("ERROR\n");
 					return 0;
 				}
-				printf("GOAL!\n");
+				dbgprintf("GOAL!\n");
 				std::vector<typename D::State> newpath;
 
 				for (Node *p = n; p; p = p->parent) {
@@ -354,23 +361,7 @@ public:
 
 		// TODO: pack to a method
 #ifdef ANALYZE_DISTRIBUTION
-		int avrg = 0;
-		for (int i = 0; i < tnum; ++i) {
-			avrg += expd_distribution[i];
-		}
-		avrg /= tnum;
-
-		int var = 0;
-		for (int i = 0; i < tnum; ++i) {
-			var +=  (avrg - expd_distribution[i]) * (avrg - expd_distribution[i]);
-		}
-		var /= tnum;
-		double stddev = sqrt(var);
-		for (int i = 0; i < tnum; ++i) {
-			printf("%d ", expd_distribution[i]);
-		}
-		printf("\n");
-		printf("distribution: stddev = %f\n", stddev);
+		analyze_distribution();
 #endif // ANALYZE_DISTRIBUTION
 		return path;
 	}
@@ -406,6 +397,27 @@ public:
 			printf("%d ", state.tiles[i]);
 		}
 		printf("\n");
+	}
+
+	void analyze_distribution() {
+		int avrg = 0;
+		for (int i = 0; i < tnum; ++i) {
+			avrg += expd_distribution[i];
+		}
+		avrg /= tnum;
+
+		int var = 0;
+		for (int i = 0; i < tnum; ++i) {
+			var +=  (avrg - expd_distribution[i]) * (avrg - expd_distribution[i]);
+		}
+		var /= tnum;
+		double stddev = sqrt(var);
+		printf("Expansion of each thread = ");
+		for (int i = 0; i < tnum; ++i) {
+			printf("%d ", expd_distribution[i]);
+		}
+		printf("\n");
+		printf("distribution: stddev = %f\n", stddev);
 	}
 
 };

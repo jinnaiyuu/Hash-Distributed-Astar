@@ -10,22 +10,14 @@ if [ $# -eq 3 ]
 then
     t=`expr $3`
 fi
-#echo $t
-
-#while [ $i -le $max ]
-#do
-#    NAME=$(printf %s%02d  $1 $i)
-#    qsub -l nodes=1:ppn=8,walltime=00:25:00 -N $NAME -j oe -v arg1=$1,arg2=$i,arg3=$t  ./run.sh
-#    i=`expr $i + 1`
-#done
-#NAME=$(printf %s%02d  $1 $2)
-#qsub -l nodes=1:ppn=8,walltime=00:25:00 -N $NAME -j oe -v arg1=$1,arg2=$2,arg3=$t  ./run.sh
 
 # Array job
-JOB_ARRAY_ID=`qsub -t 1-$2 -l nodes=1:ppn=8,walltime=00:25:00 -N $1$t -j oe -v arg1=$1,arg2=$t  ./run.sh`
+JOB_ARRAY_ID=`qsub -t 1-$2 -l nodes=1:ppn=8,walltime=01:30:00 -N $1$t -j oe -v arg1=$1,arg2=$t  ./run.sh`
 
-echo $JOB_ARRAY_ID >> job_list.dat
+JOB_NUMBER=`echo $JOB_ARRAY_ID | awk -F "." '{print $1}'` 
+
+echo $JOB_NUMBER $1 $t >> job_list.dat
 
 # Not working. Not sure how to fix it.
-#qsub -W depend:afteranyarray:$JOB_ARRAY_ID[] ./mail.sh
+#qsub -W depend:afterokarray:$JOB_ARRAY_ID[] -M ddyuudd@gmail.com -m ae ./mail.sh
 
