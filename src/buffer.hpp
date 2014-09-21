@@ -64,9 +64,8 @@ public:
 	}
 
 	T* pull() {
-		T* ret;
 		pthread_mutex_lock(&m);
-		ret = buf.back();
+		T* ret = buf.back();
 		buf.pop_back();
 //		printf("pulled %d\n", ret.num);
 		pthread_mutex_unlock(&m);

@@ -27,7 +27,9 @@
 //#define ANALYZE_OUTGO
 //#define ANALYZE_DUPLICATE
 //#define ANALYZE_DISTRIBUTION
-#define ANALYZE_FTRACE
+//#define ANALYZE_FTRACE
+#define OUTSOURCING
+
 
 template<class D> class HDAstar: public SearchAlg<D> {
 
@@ -69,13 +71,15 @@ template<class D> class HDAstar: public SearchAlg<D> {
 
 	bool* terminate;
 
-	int max_income;
-	int max_outgo; // For analyzing the size of outgo_buffer;
-	int duplicate;
+	// TODO: These allocations wont needed if not defineded
+	int max_income; // ANALYZE_INCOME
+	int max_outgo; // ANALYZE_OUTGO
+	int duplicate; // ANALYZE_DUPLICATE
+	int* expd_distribution; // ANALYZE_DISTRIBUTION
+	double wall0; // ANALYZE_FTRACE
+	int* fvalues; // OUTSOURCING
 
-	int* expd_distribution;
-
-	double wall0; // wall time to trace the move of f value
+	buffer<Node>* offshore_buffer;
 
 public:
 
@@ -85,13 +89,14 @@ public:
 
 	HDAstar(D &d, int tnum_ = 0) :
 			SearchAlg<D>(d), tnum(tnum_), thread_id(0), z(tnum), incumbent(100), max_income(
-					0), max_outgo(0), duplicate(0) {	//:
-		//			SearchAlg<D>(d), closed(200000000), open(100) {
+					0), max_outgo(0), duplicate(0), wall0(0) {
 		income_buffer = new buffer<Node> [tnum];
 		terminate = new bool[tnum];
 		expd_distribution = new int[tnum];
-		//		terminate_code = (2 << (tnum+1)) - 1;
-		//		printf("terminate code = %d", terminate_code);
+
+		// Fields for Out sourcing
+		fvalues = new int[tnum];
+		offshore_buffer = new buffer<Node> [tnum];
 	}
 
 	// expanded 32334,
@@ -104,8 +109,8 @@ public:
 
 	void* thread_search(void * arg) {
 
-		int thrd = thread_id.fetch_add(1);
-		dbgprintf("thrd = %d\n", thrd);
+		int id = thread_id.fetch_add(1);
+		dbgprintf("id = %d\n", id);
 		//		buffer<Node> outgo_buffer[tnum];
 
 		// TODO: Must optimize these numbers
@@ -134,22 +139,35 @@ public:
 
 		int current_f = 0;
 
+		bool isOffshorejob;
+
 		//		while (path.size() == 0) {
 		while (true) {
-			//			&&  !(open.isempty() && income_buffer[thrd].isempty())
+			Node *n;
+#ifdef OUTSOURCING
+			if (!offshore_buffer[id].isempty()) {
+				n = offshore_buffer[id].pull();
+				printf("%d: Got out sourcing offer\n", id);
+				isOffshorejob = true;
+			} else {
+				isOffshorejob = false;
+//				printf("Instate business\n");
+
+#endif
+			//			&&  !(open.isempty() && income_buffer[id].isempty())
 			//			dbgprintf("id: %d\n"
 			//					"expd = %d\n"
-			//					"bufsize = %d\n", thrd, expd_here,
-			//					income_buffer[thrd].size());
+			//					"bufsize = %d\n", id, expd_here,
+			//					income_buffer[id].size());
 			//			sleep(1);
 			//			printf("expd = %d\n", expd_here);
-			//			printf("buf size = %d\n", income_buffer[thrd].size());
+			//			printf("buf size = %d\n", income_buffer[id].size());
 			// TODO: Get nodes from income buffer and put it into open list.
-			if (!income_buffer[thrd].isempty()) {
-				terminate[thrd] = false;
-				if (income_buffer[thrd].try_lock()) {
-					tmp = income_buffer[thrd].pull_all_with_lock();
-					income_buffer[thrd].release_lock();
+			if (!income_buffer[id].isempty()) {
+				terminate[id] = false;
+				if (income_buffer[id].try_lock()) {
+					tmp = income_buffer[id].pull_all_with_lock();
+					income_buffer[id].release_lock();
 
 					uint size = tmp.size();
 #ifdef ANALYZE_INCOME
@@ -173,7 +191,7 @@ public:
 			//			printf("inc = %d, isemptyunber = %d\n", incumbent.load(), em);
 			if (open.isemptyunder(incumbent.load())) {
 				dbgprintf("open is empty.\n");
-				terminate[thrd] = true;
+				terminate[id] = true;
 				if (hasterminated()) {
 					break;
 				}
@@ -182,15 +200,18 @@ public:
 			dbgprintf("incumbent = %d, open.min = %d\n", incumbent.load(),
 					open.minf());
 
-			Node *n = static_cast<Node*>(open.pop());
+			n = static_cast<Node*>(open.pop());
+
+			// TODO: Might not be the best way.
+			if (n->f != fvalues[id]) {
+				fvalues[id] = n->f;
 
 #ifdef ANALYZE_FTRACE
-			if (n->f != current_f) {
 				current_f = n->f;
-				printf("ftrace %d %d %f\n", thrd, current_f, walltime() - wall0);
+				printf("ftrace %d %d %f\n", id, current_f, walltime() - wall0);
 			}
 #endif //ANALYZE_FTRACE
-
+			}
 			// If the new node n is duplicated and
 			// the f value is higher than or equal to the duplicate, discard it.
 			Node *duplicate = closed.find(n->packed);
@@ -207,18 +228,25 @@ public:
 #endif // ANALYZE_DUPLICATE
 			}
 
+
+			// Would be nice if it can determine whether it should be
+			// thrown or not.
+#ifdef OUTSOURCING
+		}
+		// Prohibit outsourcing outsourced job
+		// This ensures possible live lock.
+		if (!isOffshorejob && outsourcing(n, id)) {
+			// TODO: closed shouldnt added twice
+			closed.add(n);
+			printf("Out sourced a node\n");
+			continue;
+
+		}
+#endif // OUTSOURCING
+
 			typename D::State state;
 			this->dom.unpack(state, n->packed);
 
-
-			//			printf("\n\nExpand:");
-			//			printf("f,g = %d, %d \n", n->f, n->g);
-			//			for (int i = 0; i < 16; ++i) {
-			//				printf("%d ", state.tiles[i]);
-			//			}
-			//			printf("\n");
-
-			// TODO: incumbent solution.
 			if (this->dom.isgoal(state)) {
 				// TODO: For some reason, sometimes pops broken node.
 				if (state.tiles[1] == 0) {
@@ -233,16 +261,9 @@ public:
 					this->dom.unpack(s, p->packed);
 					newpath.push_back(s); // This triggers the main loop to terminate.
 				}
-//				for (auto iter = newpath.end() - 1; iter != newpath.begin() - 1; --iter) {
-//					for (int i = 0; i < 16; ++i) {
-//						printf("%2d ", iter->tiles[i]);
-//					}
-//					printf("\n");
-//				}
-				//				path = newpath;
 				int length = newpath.size();
 				dbgprintf("length = %d\n", length);
-				//				TODO: need it to be atomic.
+				// TODO: need it to be atomic.
 				if (incumbent > length) {
 					incumbent = length;
 					path = newpath;
@@ -252,6 +273,8 @@ public:
 			}
 
 			closed.add(n);
+
+
 
 			expd_here++;
 			for (int i = 0; i < this->dom.nops(state); i++) {
@@ -265,20 +288,10 @@ public:
 				gend_here++;
 				int moving_tile = state.tiles[op];
 				int blank = state.blank;
-//				printf("\n\nTile to move = %d, ", moving_tile);
-//				printf("op = %d\n", op);
-//				printf("Before:\n");
-//				print_state(state);
 
 				Edge<D> e = this->dom.apply(state, op);
-//				printf("After:\n");
-//				print_state(state);
 
-				// TODO: Push items to thread safe income buffer.
-				// 		 If the buffer is locked, push the node to local outgo_buffer for now.
-				//				income_buffer.push(wrap(state, n, e.cost, e.pop, nodes));
 				Node* next = wrap(state, n, e.cost, e.pop, nodes);
-
 
 				dbgprintf("mv blank op = %d %d %d \n", moving_tile, blank, op);
 				int zbr = (n->zbr ^ z.inc_hash_tnum(moving_tile, blank, op));
@@ -286,12 +299,8 @@ public:
 //				int zbr = z.hash_tnum(state.tiles);
 				dbgprintf("zbr = %d\n", zbr);
 
-				// TODO: trylock
-				// Need to store to local buffer and go to next node.
-				//				income_buffer[zbr].push(next);
-
 				// If the node belongs to itself, just push to this open list.
-				if (zbr == thrd) {
+				if (zbr == id) {
 					open.push(next);
 				} else if (income_buffer[zbr].try_lock()) {
 					// if able to acquire the lock, then push all nodes in local buffer.
@@ -335,7 +344,7 @@ public:
 		this->max_outgo += max_outgo_buffer_size;
 		this->max_income += max_income_buffer_size;
 		this->duplicate += duplicate_here;
-		this->expd_distribution[thrd] = expd_here;
+		this->expd_distribution[id] = expd_here;
 
 		dbgprintf("END\n");
 		return 0;
@@ -360,6 +369,10 @@ public:
 		income_buffer[z.hash_tnum(init.tiles)].push(n);
 
 		wall0 = walltime();
+		for (int i = 0; i < tnum; ++i) {
+			fvalues[i] = n->f;
+		}
+
 
 		for (int i = 0; i < tnum; ++i) {
 			pthread_create(&t[tnum], NULL,
@@ -435,6 +448,70 @@ public:
 		printf("distribution: stddev = %f\n", stddev);
 	}
 
+
+	// TODO: Parameter would differ for every problem and every environment.
+	bool isFree(int id) {
+		static int uneven = 4;
+		int myValue = fvalues[id];
+		for (int i = 0; i < tnum; ++i) {
+			if (i != id) {
+				if (myValue > fvalues[i] + uneven) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	// TODO: Parameter would differ for every problem and every environment.
+	// TODO: isBusy and outsourcing is duplicated. Should be in one method
+	//       to determine it should outsource and then push to the freest node.
+	bool isBusy(int id) {
+		static int uneven = 2;
+		int myValue = fvalues[id];
+		for (int i = 0; i < tnum; ++i) {
+			if (i != id) {
+				if (myValue < fvalues[i] - uneven) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	bool outsourcing(Node *p, int id) {
+		// TODO: should da be optimized with macro.
+		if (tnum == 1) {
+			return false;
+		}
+		static int uneven = 2;
+		int myValue = fvalues[id];
+
+		int bestf = 100;
+		int bestThread;
+
+//		printf("fvalues = ");
+//		for (int i = 0; i < tnum; ++i) {
+//			printf("%d ", fvalues[i]);
+//		}
+//		printf("\n");
+
+		for (int i = 0; i < tnum; ++i) {
+			if (i != id) {
+				int fi = fvalues[i];
+				// If its not the most busiest thread by far
+				if (myValue > fi - uneven) {
+					return false;
+				}
+				if (fi < bestf) {
+					bestf = fi;
+					bestThread = i;
+				}
+			}
+		}
+		printf("send %d to %d\n", id, bestThread);
+		offshore_buffer[bestThread].push(p);
+	}
 };
 
 #endif /* HDASTAR_HPP_ */

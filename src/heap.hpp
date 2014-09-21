@@ -78,10 +78,12 @@ public:
  
 		// TODO: Need to halt if the number growing crazy.
 		assert (p0 < qs.size());
-//		if (p0 < qs.size()) {
-//			printf("f value going crazy.\n");
-//			return;
-//		}
+		// TODO: ad hoc solution.
+		if (p0 >= qs.size()) {
+			printf("f value going crazy.\n");
+			p0 -= 50;
+			return;
+		}
 
 		if (p0 < min)
 			min = p0;
