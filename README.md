@@ -36,8 +36,8 @@ HDA*(start, goal)
       if incomebuffer[id] is not empty
         lock(incomebuffer)
         tmp = incomebuffer.retrieveAll
-	incomebuffer.clear
-	unlock()
+        incomebuffer.clear
+        unlock()
       
       if (openlist is empty) or (openlist.f < incumbent)
         terminate[id] = true
@@ -51,35 +51,35 @@ HDA*(start, goal)
       duplicate = closed.find(n)      
       if duplicate exist
         if duplicate.f <= n.f
-	  discard n as duplicate
-	  continue
+          discard n as duplicate
+          continue
       
       if n is goal state
         newPath = getPath(n)
-	if newPath.length < incumbent
+        if newPath.length < incumbent
 	  incumbent = newPath.length
-	  path = newPath
-	continue
+          path = newPath
+        continue
 
       closed.add(n)
 
       for all possible operation op for n
         if op == n.pastop
-	  continue
+          continue
         
-	nextEdge = apply(n, op)
+        nextEdge = apply(n, op)
 	
-	zobrist = nextEdge.zobrist
-	if zobrist == id
-	  open.push(next)
-	else if incomebuffer[zobrist].trylock
-	  lock(incomebuffer[zobrist])
-	  incomebuffer[zobrist].push(nextEdge)
-	  incomebuffer[zobrist].push(outgobuffer[zobrist])
-	  unlock(incomebuffer[zobrist])
-	  outgobuffer[zobrist].clear
-	else 
-	  outgobuffer[zobrist].push(nextEdge)
+        zobrist = nextEdge.zobrist
+        if zobrist == id
+          open.push(next)
+        else if incomebuffer[zobrist].trylock
+          lock(incomebuffer[zobrist])
+          incomebuffer[zobrist].push(nextEdge)
+          incomebuffer[zobrist].push(outgobuffer[zobrist])
+          unlock(incomebuffer[zobrist])
+          outgobuffer[zobrist].clear
+        else 
+          outgobuffer[zobrist].push(nextEdge)
        
   return path
 
