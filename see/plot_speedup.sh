@@ -17,7 +17,7 @@ gnuplot <<EOF
    set ylabel "Average Speedup (Compared to 1 thread hdastar)"   
    set terminal postscript
    set output "analysis/speedup_amr.ps"
-   plot "speedup_amr.dat" using 1:2 with lines
+   plot "speedup_amr.dat" using 1:2 with lp
 EOF
 
 
@@ -46,7 +46,7 @@ gnuplot <<EOF
    set ylabel "Average Speedup (Compared to 1 thread hdastar)"   
    set terminal postscript
    set output "analysis/speedup.ps"
-   plot "spd" using 1:2 with lines
+   plot "spd" using 1:2 with lp
 EOF
 
 gnuplot <<EOF
@@ -54,7 +54,7 @@ gnuplot <<EOF
    set ylabel "Average Generation Ratio (Compared to 1 thread)"   
    set terminal postscript
    set output "analysis/expansion.ps"
-   plot "expd" using 1:2 with lines
+   plot "expd" using 1:2 with lp
 EOF
 
 gnuplot <<EOF
@@ -62,7 +62,7 @@ gnuplot <<EOF
    set ylabel "Average Generation Ratio (Compared to 1 thread)"   
    set terminal postscript
    set output "analysis/generation.ps"
-   plot "gene" using 1:2 with lines
+   plot "gene" using 1:2 with lp
 EOF
 
 

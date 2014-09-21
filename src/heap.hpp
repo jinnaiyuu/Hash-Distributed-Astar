@@ -76,7 +76,12 @@ public:
 	void push(HeapElm *n) {
 		int p0 = n->f;
  
+		// TODO: Need to halt if the number growing crazy.
 		assert (p0 < qs.size());
+//		if (p0 < qs.size()) {
+//			printf("f value going crazy.\n");
+//			return;
+//		}
 
 		if (p0 < min)
 			min = p0;

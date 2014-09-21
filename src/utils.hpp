@@ -28,6 +28,10 @@ void dfrow(FILE*, const char*, const char *colfmt, ...);
 // walltime returns the current wall time in seconds.
 double walltime(void);
 
+// nanowalltime
+double nanowalltime(void);
+
+
 // cputime returns the current CPU time in seconds.
 double cputime(void);
 

@@ -27,6 +27,7 @@
 //#define ANALYZE_OUTGO
 //#define ANALYZE_DUPLICATE
 //#define ANALYZE_DISTRIBUTION
+#define ANALYZE_FTRACE
 
 template<class D> class HDAstar: public SearchAlg<D> {
 
@@ -73,6 +74,8 @@ template<class D> class HDAstar: public SearchAlg<D> {
 	int duplicate;
 
 	int* expd_distribution;
+
+	double wall0; // wall time to trace the move of f value
 
 public:
 
@@ -129,6 +132,8 @@ public:
 		int max_income_buffer_size = 0;
 		int duplicate_here = 0;
 
+		int current_f = 0;
+
 		//		while (path.size() == 0) {
 		while (true) {
 			//			&&  !(open.isempty() && income_buffer[thrd].isempty())
@@ -179,6 +184,13 @@ public:
 
 			Node *n = static_cast<Node*>(open.pop());
 
+#ifdef ANALYZE_FTRACE
+			if (n->f != current_f) {
+				current_f = n->f;
+				printf("ftrace %d %d %f\n", thrd, current_f, walltime() - wall0);
+			}
+#endif //ANALYZE_FTRACE
+
 			// If the new node n is duplicated and
 			// the f value is higher than or equal to the duplicate, discard it.
 			Node *duplicate = closed.find(n->packed);
@@ -197,6 +209,7 @@ public:
 
 			typename D::State state;
 			this->dom.unpack(state, n->packed);
+
 
 			//			printf("\n\nExpand:");
 			//			printf("f,g = %d, %d \n", n->f, n->g);
@@ -284,8 +297,8 @@ public:
 					// if able to acquire the lock, then push all nodes in local buffer.
 					income_buffer[zbr].push_with_lock(next);
 					income_buffer[zbr].push_all_with_lock(outgo_buffer[zbr]);
-					outgo_buffer[zbr].clear();
 					income_buffer[zbr].release_lock();
+					outgo_buffer[zbr].clear();
 				} else {
 					// Stacking over threshold would not happen so often.
 					// Therefore, first try to acquire the lock & then check whether the size
@@ -345,6 +358,8 @@ public:
 		dbgprintf("zobrist of init = %d", z.hash_tnum(init.tiles));
 
 		income_buffer[z.hash_tnum(init.tiles)].push(n);
+
+		wall0 = walltime();
 
 		for (int i = 0; i < tnum; ++i) {
 			pthread_create(&t[tnum], NULL,

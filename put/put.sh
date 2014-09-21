@@ -1,5 +1,15 @@
-#!/bin/sh
+#!/bin/bash
 # job.sh ALGORITHM NUMBER_OF_INSTANCES
+
+usage(){
+    cat<<EOF
+put.sh is a command to throw job for the lucy server.
+
+Usage:
+  $(basename ${0}) <algorithm> <problem number> <thread number>
+EOF
+
+}
 
 t=$3
 if [ $# -ne 3 ]
@@ -7,7 +17,6 @@ then
     t=1
 fi
 
-SCRIPT="cd /home/jinnai/workspace/ethan ; ./job.sh $1 $2 $t"
 
 
 
@@ -20,6 +29,12 @@ then
 	exit 0
     fi
 fi
+
+echo -n "Enter comment for the job->"
+read text
+
+
+SCRIPT="cd /home/jinnai/workspace/ethan ; ./job.sh $1 $2 $t $text"
 
 cd ../src
 make
