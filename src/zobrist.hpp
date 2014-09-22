@@ -50,11 +50,14 @@ public:
 		return h;
 	}
 
+//#define RANDOM_ZOBRIST_INITIALIZATION
 
 private:
 	void initZobrist() {
 		// Not sure I should initialize it by time as it randomize the results for each run.
+#ifdef RANDOM_ZOBRIST_INITIALIZATION
 		srand(time(NULL));
+#endif
 		for (int j = 0; j < size; ++j) {
 			zbr[0][j] = 0;
 		}

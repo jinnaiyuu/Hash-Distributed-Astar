@@ -23,13 +23,17 @@
 #include "buffer.hpp"
 #include "zobrist.hpp"
 
+#define OUTSOURCING
+
 //#define ANALYZE_INCOME
 //#define ANALYZE_OUTGO
 //#define ANALYZE_DUPLICATE
-//#define ANALYZE_DISTRIBUTION
+#define ANALYZE_DISTRIBUTION
 //#define ANALYZE_FTRACE
-#define OUTSOURCING
 
+#ifdef OUTSOURCING
+#define ANALYZE_OUTSOURCING
+#endif
 
 template<class D> class HDAstar: public SearchAlg<D> {
 
@@ -68,17 +72,30 @@ template<class D> class HDAstar: public SearchAlg<D> {
 	Zobrist<16> z; // Members for Zobrist hashing.
 
 	std::atomic<int> incumbent; // The best solution so far.
-
 	bool* terminate;
 
-	// TODO: These allocations wont needed if not defineded
-	int max_income; // ANALYZE_INCOME
-	int max_outgo; // ANALYZE_OUTGO
-	int duplicate; // ANALYZE_DUPLICATE
-	int* expd_distribution; // ANALYZE_DISTRIBUTION
-	double wall0; // ANALYZE_FTRACE
-	int* fvalues; // OUTSOURCING
+	int* expd_distribution;
+	int* gend_distribution;
 
+
+#ifdef ANALYZE_INCOME
+	int max_income = 0;
+#endif
+#ifdef ANALYZE_OUTGO
+	int max_outgo = 0;
+#endif
+#ifdef ANALYZE_DUPLICATE
+	int duplicate = 0;
+#endif
+#ifdef ANALYZE_FTRACE
+	double wall0 = 0; // ANALYZE_FTRACE
+#endif
+#ifdef ANALYZE_OUTSOURCING
+	int* fvalues; // OUTSOURCING
+#ifdef ANALYZE_OUTSOURCING
+	int outsource_pushed = 0; // ANALYZE_OUTSOURCING
+#endif
+#endif
 	buffer<Node>* offshore_buffer;
 
 public:
@@ -88,15 +105,17 @@ public:
 	// now      200000000
 
 	HDAstar(D &d, int tnum_ = 0) :
-			SearchAlg<D>(d), tnum(tnum_), thread_id(0), z(tnum), incumbent(100), max_income(
-					0), max_outgo(0), duplicate(0), wall0(0) {
+			SearchAlg<D>(d), tnum(tnum_), thread_id(0), z(tnum), incumbent(100) {
 		income_buffer = new buffer<Node> [tnum];
 		terminate = new bool[tnum];
 		expd_distribution = new int[tnum];
+		gend_distribution = new int[tnum];
 
 		// Fields for Out sourcing
+#ifdef OUTSOURCING
 		fvalues = new int[tnum];
 		offshore_buffer = new buffer<Node> [tnum];
+#endif
 	}
 
 	// expanded 32334,
@@ -126,10 +145,8 @@ public:
 		// Also we need to fix it to compile in Clang++.
 		std::vector<Node*> outgo_buffer[tnum];
 
-		// TODO: temporal buffer to store nodes from income buffer.
-		// Might need to optimize with reserve().
 		std::vector<Node*> tmp;
-		tmp.reserve(10);
+		tmp.reserve(10); // TODO: ad hoc random number
 
 		uint expd_here = 0;
 		uint gend_here = 0;
@@ -147,101 +164,99 @@ public:
 #ifdef OUTSOURCING
 			if (!offshore_buffer[id].isempty()) {
 				n = offshore_buffer[id].pull();
-				printf("%d: Got out sourcing offer\n", id);
+				dbgprintf("%d: I'm offshore...\n", id);
 				isOffshorejob = true;
 			} else {
 				isOffshorejob = false;
 //				printf("Instate business\n");
 
 #endif
-			//			&&  !(open.isempty() && income_buffer[id].isempty())
-			//			dbgprintf("id: %d\n"
-			//					"expd = %d\n"
-			//					"bufsize = %d\n", id, expd_here,
-			//					income_buffer[id].size());
-			//			sleep(1);
-			//			printf("expd = %d\n", expd_here);
-			//			printf("buf size = %d\n", income_buffer[id].size());
-			// TODO: Get nodes from income buffer and put it into open list.
-			if (!income_buffer[id].isempty()) {
-				terminate[id] = false;
-				if (income_buffer[id].try_lock()) {
-					tmp = income_buffer[id].pull_all_with_lock();
-					income_buffer[id].release_lock();
+				//			&&  !(open.isempty() && income_buffer[id].isempty())
+				//			dbgprintf("id: %d\n"
+				//					"expd = %d\n"
+				//					"bufsize = %d\n", id, expd_here,
+				//					income_buffer[id].size());
+				//			sleep(1);
+				//			printf("expd = %d\n", expd_here);
+				//			printf("buf size = %d\n", income_buffer[id].size());
 
-					uint size = tmp.size();
+				if (!income_buffer[id].isempty()) {
+					terminate[id] = false;
+					if (income_buffer[id].try_lock()) {
+						tmp = income_buffer[id].pull_all_with_lock();
+						income_buffer[id].release_lock();
+
+						uint size = tmp.size();
 #ifdef ANALYZE_INCOME
-					if (max_income_buffer_size < size) {
-						max_income_buffer_size = size;
-					}
-					dbgprintf("size = %d\n", size);
+						if (max_income_buffer_size < size) {
+							max_income_buffer_size = size;
+						}
+						dbgprintf("size = %d\n", size);
 #endif // ANALYZE_INCOME
-					for (int i = 0; i < size; ++i) {
-						dbgprintf("pushing %d, ", i);
-						open.push(tmp[i]); // Not sure optimal or not.
+						for (int i = 0; i < size; ++i) {
+							dbgprintf("pushing %d, ", i);
+							open.push(tmp[i]); // Not sure optimal or not.
+						}
+						tmp.clear();
 					}
-					tmp.clear();
 				}
-			}
-			//			printf("\n");
+				//			printf("\n");
 
-			// TODO: minf(int f):
-			//			printf("incumbent = %d \n", incumbent.load());
-			//			bool em = open.isemptyunder(incumbent.load());
-			//			printf("inc = %d, isemptyunber = %d\n", incumbent.load(), em);
-			if (open.isemptyunder(incumbent.load())) {
-				dbgprintf("open is empty.\n");
-				terminate[id] = true;
-				if (hasterminated()) {
-					break;
+				if (open.isemptyunder(incumbent.load())) {
+					dbgprintf("open is empty.\n");
+					terminate[id] = true;
+					if (hasterminated()) {
+						break;
+					}
+					continue; // ad hoc
 				}
-				continue; // ad hoc
-			}
-			dbgprintf("incumbent = %d, open.min = %d\n", incumbent.load(),
-					open.minf());
+				dbgprintf("incumbent = %d, open.min = %d\n", incumbent.load(),
+						open.minf());
 
-			n = static_cast<Node*>(open.pop());
+				n = static_cast<Node*>(open.pop());
 
-			// TODO: Might not be the best way.
-			if (n->f != fvalues[id]) {
-				fvalues[id] = n->f;
+				// TODO: Might not be the best way.
+				// Would there be more novel way?
+				if (n->f != fvalues[id]) {
+					fvalues[id] = n->f;
 
 #ifdef ANALYZE_FTRACE
-				current_f = n->f;
-				printf("ftrace %d %d %f\n", id, current_f, walltime() - wall0);
-			}
+					current_f = n->f;
+					printf("ftrace %d %d %f\n", id, current_f, walltime() - wall0);
+
 #endif //ANALYZE_FTRACE
-			}
-			// If the new node n is duplicated and
-			// the f value is higher than or equal to the duplicate, discard it.
-			Node *duplicate = closed.find(n->packed);
-			if (duplicate) {
-				if (duplicate->f <= n->f) {
-					dbgprintf("Discarded\n");
-					nodes.destruct(n);
-					continue;
 				}
-				// Node access here is unnecessary duplicates.
-				dbgprintf("Duplicated\n");
+				// If the new node n is duplicated and
+				// the f value is higher than or equal to the duplicate, discard it.
+				Node *duplicate = closed.find(n->packed);
+				if (duplicate) {
+					if (duplicate->f <= n->f) {
+						dbgprintf("Discarded\n");
+						nodes.destruct(n);
+						continue;
+					}
+					// Node access here is unnecessary duplicates.
+					dbgprintf("Duplicated\n");
 #ifdef ANALYZE_DUPLICATE
-				duplicate_here++;
+					duplicate_here++;
 #endif // ANALYZE_DUPLICATE
-			}
+				}
 
-
-			// Would be nice if it can determine whether it should be
-			// thrown or not.
+				// Would be nice if it can determine whether it should be
+				// thrown or not.
 #ifdef OUTSOURCING
-		}
-		// Prohibit outsourcing outsourced job
-		// This ensures possible live lock.
-		if (!isOffshorejob && outsourcing(n, id)) {
-			// TODO: closed shouldnt added twice
-			closed.add(n);
-			printf("Out sourced a node\n");
-			continue;
+				// Prohibit outsourcing outsourced job
+				// This ensures possible live lock.
+				if (outsourcing(n, id)) {
+					closed.add(n);
+#ifdef ANALYZE_OUTSOURCING
+					outsource_pushed++;
+#endif
+					dbgprintf("Out sourced a node\n");
+					continue;
 
-		}
+				}
+			}
 #endif // OUTSOURCING
 
 			typename D::State state;
@@ -263,7 +278,7 @@ public:
 				}
 				int length = newpath.size();
 				dbgprintf("length = %d\n", length);
-				// TODO: need it to be atomic.
+				// TODO: need to be atomic. Really?
 				if (incumbent > length) {
 					incumbent = length;
 					path = newpath;
@@ -272,9 +287,10 @@ public:
 				continue;
 			}
 
-			closed.add(n);
-
-
+			// If the node is not your own business, no need to put in closed list.
+			if (!isOffshorejob) {
+				closed.add(n);
+			}
 
 			expd_here++;
 			for (int i = 0; i < this->dom.nops(state); i++) {
@@ -295,7 +311,8 @@ public:
 
 				dbgprintf("mv blank op = %d %d %d \n", moving_tile, blank, op);
 				int zbr = (n->zbr ^ z.inc_hash_tnum(moving_tile, blank, op));
-				dbgprintf("inc_zbr_tnum = %d, ", z.inc_hash_tnum(moving_tile, blank, op));
+				dbgprintf("inc_zbr_tnum = %d, ",
+						z.inc_hash_tnum(moving_tile, blank, op));
 //				int zbr = z.hash_tnum(state.tiles);
 				dbgprintf("zbr = %d\n", zbr);
 
@@ -338,13 +355,19 @@ public:
 		}
 		//		path =
 		dbgprintf("pathsize = %lu\n", path.size());
-		this->expd += expd_here;
-		this->gend += gend_here;
 
-		this->max_outgo += max_outgo_buffer_size;
-		this->max_income += max_income_buffer_size;
-		this->duplicate += duplicate_here;
 		this->expd_distribution[id] = expd_here;
+		this->gend_distribution[id] = gend_here;
+
+#ifdef ANALYZE_OUTGO
+		this->max_outgo += max_outgo_buffer_size;
+#endif
+#ifdef ANALYZE_INCOME
+		this->max_income += max_income_buffer_size;
+#endif
+#ifdef ANALYZE_DUPLICATE
+		this->duplicate += duplicate_here;
+#endif
 
 		dbgprintf("END\n");
 		return 0;
@@ -368,11 +391,12 @@ public:
 
 		income_buffer[z.hash_tnum(init.tiles)].push(n);
 
+#ifdef ANALYZE_FTRACE
 		wall0 = walltime();
+#endif
 		for (int i = 0; i < tnum; ++i) {
 			fvalues[i] = n->f;
 		}
-
 
 		for (int i = 0; i < tnum; ++i) {
 			pthread_create(&t[tnum], NULL,
@@ -382,15 +406,31 @@ public:
 			pthread_join(t[tnum], NULL);
 		}
 
-		// TODO: Time to printing these texts are included in the walltime.
-		printf("average of max_income_buffer_size = %d\n", max_income / tnum);
-		printf("average of max_outgo_buffer_size = %d\n", max_outgo / tnum);
-		printf("duplicated nodes = %d\n", duplicate);
+		for (int i = 0; i < tnum; ++i) {
+			this->expd += expd_distribution[i];
+			this->gend += gend_distribution[i];
+		}
 
-		// TODO: pack to a method
+#ifdef ANALYZE_INCOME
+		printf("average of max_income_buffer_size = %d\n", max_income / tnum);
+#endif
+#ifdef ANALYZE_OUTGO
+		printf("average of max_outgo_buffer_size = %d\n", max_outgo / tnum);
+#endif
+#ifdef ANALYZE_DUPLICATE
+		printf("duplicated nodes = %d\n", duplicate);
+#endif
 #ifdef ANALYZE_DISTRIBUTION
-		analyze_distribution();
-#endif // ANALYZE_DISTRIBUTION
+		printf("expansion distribution = ");
+		printf("\nexpansion stddev = %f\n",
+				analyze_distribution(expd_distribution));
+		printf("generation distribution = ");
+		printf("\ngeneration stddev = %f\n",
+				analyze_distribution(gend_distribution));
+#endif
+#ifdef ANALYZE_OUTSOURCING
+		printf("outsource node pushed = %d\n", outsource_pushed);
+#endif
 		return path;
 	}
 
@@ -427,27 +467,24 @@ public:
 		printf("\n");
 	}
 
-	void analyze_distribution() {
-		int avrg = 0;
+	double analyze_distribution(int* distribution) {
+		double avrg = 0;
 		for (int i = 0; i < tnum; ++i) {
-			avrg += expd_distribution[i];
+			avrg += distribution[i];
 		}
 		avrg /= tnum;
 
-		int var = 0;
+		double var = 0;
 		for (int i = 0; i < tnum; ++i) {
-			var +=  (avrg - expd_distribution[i]) * (avrg - expd_distribution[i]);
+			var += (avrg - distribution[i]) * (avrg - distribution[i]);
 		}
 		var /= tnum;
 		double stddev = sqrt(var);
-		printf("Expansion of each thread = ");
 		for (int i = 0; i < tnum; ++i) {
-			printf("%d ", expd_distribution[i]);
+			printf("%d ", distribution[i]);
 		}
-		printf("\n");
-		printf("distribution: stddev = %f\n", stddev);
+		return stddev;
 	}
-
 
 	// TODO: Parameter would differ for every problem and every environment.
 	bool isFree(int id) {
@@ -464,7 +501,7 @@ public:
 	}
 
 	// TODO: Parameter would differ for every problem and every environment.
-	// TODO: isBusy and outsourcing is duplicated. Should be in one method
+	// isBusy and outsourcing is duplicated. Should be in one method
 	//       to determine it should outsource and then push to the freest node.
 	bool isBusy(int id) {
 		static int uneven = 2;
@@ -480,7 +517,6 @@ public:
 	}
 
 	bool outsourcing(Node *p, int id) {
-		// TODO: should da be optimized with macro.
 		if (tnum == 1) {
 			return false;
 		}
@@ -488,13 +524,7 @@ public:
 		int myValue = fvalues[id];
 
 		int bestf = 100;
-		int bestThread;
-
-//		printf("fvalues = ");
-//		for (int i = 0; i < tnum; ++i) {
-//			printf("%d ", fvalues[i]);
-//		}
-//		printf("\n");
+		int bestThread = 100;
 
 		for (int i = 0; i < tnum; ++i) {
 			if (i != id) {
@@ -509,8 +539,9 @@ public:
 				}
 			}
 		}
-		printf("send %d to %d\n", id, bestThread);
+		dbgprintf("send %d to %d\n", id, bestThread);
 		offshore_buffer[bestThread].push(p);
+		return true;
 	}
 };
 

@@ -51,11 +51,11 @@ awk '($1==3){ printf("%f %d\n", $2, $3) }' < ftrace.dat > ftrace3.dat
 gnuplot <<EOF
    set ylabel "Trace of f value for each thread"   
    set xrange [0:]
-   set terminal postscript
+   set terminal png
    plot "ftrace0.dat" using 1:2 with lp
    replot "ftrace1.dat" using 1:2 with lp
    replot "ftrace2.dat" using 1:2 with lp
-   set output "analysis/ftrace.ps"
+   set output "analysis/ftrace.png"
    replot "ftrace3.dat" using 1:2 with lp
 EOF
 

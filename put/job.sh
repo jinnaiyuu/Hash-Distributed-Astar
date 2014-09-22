@@ -8,7 +8,7 @@ i=1
 max=`expr $2 - 1`
 
 t=1
-if [ $# -eq 3 ]
+if [ $# -ge 3 ]
 then
     t=`expr $3`
 fi
