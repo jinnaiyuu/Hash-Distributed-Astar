@@ -39,6 +39,6 @@ SCRIPT="cd /home/jinnai/workspace/ethan ; ./job.sh $1 $2 $t $text"
 cd ../src
 make
 cd ..
-scp  ./src/tiles ./put/job.sh ./put/run.sh ./put/mail.sh ./src/instances jinnai@funlucy:/home/jinnai/workspace/ethan/
+scp  ./src/tiles ./put/job.sh ./put/run.sh ./put/mail.sh ./src/instances ./src/big_first_instances ./src/small_first_instances jinnai@funlucy:/home/jinnai/workspace/ethan/
 ssh -l jinnai funlucy "${SCRIPT}"
 

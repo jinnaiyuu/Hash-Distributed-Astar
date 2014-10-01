@@ -13,6 +13,7 @@
 #include <atomic>
 #include <unistd.h>
 #include <math.h>
+#include <algorithm>
 
 #include "search.hpp"
 #include "utils.hpp"
@@ -30,7 +31,7 @@
 //#define ANALYZE_DUPLICATE
 #define ANALYZE_DISTRIBUTION
 //#define ANALYZE_FTRACE
-
+//#define ANALYZE_GLOBALF
 #ifdef OUTSOURCING
 #define ANALYZE_OUTSOURCING
 #endif
@@ -39,7 +40,12 @@ template<class D> class HDAstar: public SearchAlg<D> {
 
 	struct Node {
 		char f, g, pop;
+
 		char zbr; // zobrist value. stored here for now. Also the size is char for now.
+
+		// TODO: wont needed in non-outsourcing
+		char thrown; // How many time this node was outsourced. There would be a cap to outsource.
+
 		int openind;
 		Node *parent;
 		typename D::PackedState packed;
@@ -77,7 +83,6 @@ template<class D> class HDAstar: public SearchAlg<D> {
 	int* expd_distribution;
 	int* gend_distribution;
 
-
 #ifdef ANALYZE_INCOME
 	int max_income = 0;
 #endif
@@ -90,8 +95,14 @@ template<class D> class HDAstar: public SearchAlg<D> {
 #ifdef ANALYZE_FTRACE
 	double wall0 = 0; // ANALYZE_FTRACE
 #endif
-#ifdef ANALYZE_OUTSOURCING
+#ifdef ANALYZE_GLOBALF
+	int globalf = 10000000; // Ad hoc number.
+#ifndef ANALYZE_FTRACE
+	double wall0 = 0;
+#endif
+#endif
 	int* fvalues; // OUTSOURCING
+#ifdef OUTSOURCING
 #ifdef ANALYZE_OUTSOURCING
 	int outsource_pushed = 0; // ANALYZE_OUTSOURCING
 #endif
@@ -105,15 +116,16 @@ public:
 	// now      200000000
 
 	HDAstar(D &d, int tnum_ = 0) :
-			SearchAlg<D>(d), tnum(tnum_), thread_id(0), z(tnum), incumbent(100) {
+			SearchAlg<D>(d), tnum(tnum_), thread_id(0), z(tnum), incumbent(100000) {
 		income_buffer = new buffer<Node> [tnum];
 		terminate = new bool[tnum];
 		expd_distribution = new int[tnum];
 		gend_distribution = new int[tnum];
 
 		// Fields for Out sourcing
-#ifdef OUTSOURCING
 		fvalues = new int[tnum];
+
+#ifdef OUTSOURCING
 		offshore_buffer = new buffer<Node> [tnum];
 #endif
 	}
@@ -161,47 +173,47 @@ public:
 		//		while (path.size() == 0) {
 		while (true) {
 			Node *n;
+
+			if (!income_buffer[id].isempty()) {
+				terminate[id] = false;
+				if (income_buffer[id].try_lock()) {
+					tmp = income_buffer[id].pull_all_with_lock();
+					income_buffer[id].release_lock();
+
+					uint size = tmp.size();
+#ifdef ANALYZE_INCOME
+					if (max_income_buffer_size < size) {
+						max_income_buffer_size = size;
+					}
+					dbgprintf("size = %d\n", size);
+#endif // ANALYZE_INCOME
+					for (int i = 0; i < size; ++i) {
+						dbgprintf("pushing %d, ", i);
+						open.push(tmp[i]); // Not sure optimal or not.
+					}
+					tmp.clear();
+				}
+			}
+
+
+#ifdef ANALYZE_FTRACE
+			int newf = open.minf();
+			if (fvalues[id] != newf) {
+				printf("ftrace %d %d %f\n", id, current_f, walltime() - wall0);
+#ifndef OUTSOURCING
+				fvalues[id] = newf;
+#endif
+			}
+#endif // ANALYZE_FTRACE
 #ifdef OUTSOURCING
+			fvalues[id] = open.minf();
 			if (!offshore_buffer[id].isempty()) {
 				n = offshore_buffer[id].pull();
 				dbgprintf("%d: I'm offshore...\n", id);
 				isOffshorejob = true;
 			} else {
 				isOffshorejob = false;
-//				printf("Instate business\n");
-
 #endif
-				//			&&  !(open.isempty() && income_buffer[id].isempty())
-				//			dbgprintf("id: %d\n"
-				//					"expd = %d\n"
-				//					"bufsize = %d\n", id, expd_here,
-				//					income_buffer[id].size());
-				//			sleep(1);
-				//			printf("expd = %d\n", expd_here);
-				//			printf("buf size = %d\n", income_buffer[id].size());
-
-				if (!income_buffer[id].isempty()) {
-					terminate[id] = false;
-					if (income_buffer[id].try_lock()) {
-						tmp = income_buffer[id].pull_all_with_lock();
-						income_buffer[id].release_lock();
-
-						uint size = tmp.size();
-#ifdef ANALYZE_INCOME
-						if (max_income_buffer_size < size) {
-							max_income_buffer_size = size;
-						}
-						dbgprintf("size = %d\n", size);
-#endif // ANALYZE_INCOME
-						for (int i = 0; i < size; ++i) {
-							dbgprintf("pushing %d, ", i);
-							open.push(tmp[i]); // Not sure optimal or not.
-						}
-						tmp.clear();
-					}
-				}
-				//			printf("\n");
-
 				if (open.isemptyunder(incumbent.load())) {
 					dbgprintf("open is empty.\n");
 					terminate[id] = true;
@@ -210,22 +222,25 @@ public:
 					}
 					continue; // ad hoc
 				}
-				dbgprintf("incumbent = %d, open.min = %d\n", incumbent.load(),
-						open.minf());
+				dbgprintf("incumbent = %d, open.min = %d\n", incumbent.load(), open.minf());
 
 				n = static_cast<Node*>(open.pop());
 
 				// TODO: Might not be the best way.
 				// Would there be more novel way?
+
+#ifdef ANALYZE_GLOBALF
 				if (n->f != fvalues[id]) {
 					fvalues[id] = n->f;
+					int min = *std::min_element(fvalues, fvalues+tnum);
 
-#ifdef ANALYZE_FTRACE
-					current_f = n->f;
-					printf("ftrace %d %d %f\n", id, current_f, walltime() - wall0);
-
-#endif //ANALYZE_FTRACE
+					if (min != globalf) {
+						globalf = min;
+						printf("globalf %d %d %f\n", id, min, walltime() - wall0);
+					}
 				}
+#endif
+
 				// If the new node n is duplicated and
 				// the f value is higher than or equal to the duplicate, discard it.
 				Node *duplicate = closed.find(n->packed);
@@ -288,10 +303,13 @@ public:
 			}
 
 			// If the node is not your own business, no need to put in closed list.
+#ifdef OUTSOURCING
 			if (!isOffshorejob) {
 				closed.add(n);
 			}
-
+#else
+			closed.add(n);
+#endif
 			expd_here++;
 			for (int i = 0; i < this->dom.nops(state); i++) {
 				// op is the next blank position.
@@ -393,10 +411,16 @@ public:
 
 #ifdef ANALYZE_FTRACE
 		wall0 = walltime();
+#else
+#ifdef ANALYZE_GLOBALF
+		wall0 = walltime();
 #endif
+#endif
+#ifdef OUTSOURCING
 		for (int i = 0; i < tnum; ++i) {
 			fvalues[i] = n->f;
 		}
+#endif
 
 		for (int i = 0; i < tnum; ++i) {
 			pthread_create(&t[tnum], NULL,
@@ -487,6 +511,7 @@ public:
 	}
 
 	// TODO: Parameter would differ for every problem and every environment.
+#ifdef OUTSOURCING
 	bool isFree(int id) {
 		static int uneven = 4;
 		int myValue = fvalues[id];
@@ -543,6 +568,7 @@ public:
 		offshore_buffer[bestThread].push(p);
 		return true;
 	}
+#endif // OUTSOURCING
 };
 
 #endif /* HDASTAR_HPP_ */

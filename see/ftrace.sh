@@ -36,8 +36,10 @@ EOF
 #awk '/initial heuristic/{printf("%d %f %d\n", 2, 0, $4)}'
 #awk '/initial heuristic/{printf("%d %f %d\n", 3, 0, $4)}'
 
-awk '/initial heuristic/{printf("%d %f %d\n", 0, 0, $4)} \
-     /ftrace/{ printf("%d %f %d\n", $2, $4, $3) }' > ftrace.dat;
+#awk '/initial heuristic/{printf("%d %f %d\n", 0, 0, $4)} \
+#    /ftrace/{ printf("%d %f %d\n", $2, $4, $3) }' > ftrace.dat;
+
+awk   '/ftrace/{ printf("%d %f %d\n", $2, $4, $3) }' > ftrace.dat;
 
 # Input:  <thread number> <wall time> <f value>
 # Output: <wall time> <f value>
@@ -50,8 +52,8 @@ awk '($1==3){ printf("%f %d\n", $2, $3) }' < ftrace.dat > ftrace3.dat
 
 gnuplot <<EOF
    set ylabel "Trace of f value for each thread"   
-   set xrange [0:]
-   set terminal png
+   set terminal png size 1280, 960
+   set ytics 2
    plot "ftrace0.dat" using 1:2 with lp
    replot "ftrace1.dat" using 1:2 with lp
    replot "ftrace2.dat" using 1:2 with lp

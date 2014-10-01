@@ -14,7 +14,7 @@ then
 fi
 
 # Array job
-JOB_ARRAY_ID=`qsub -t 1-$2 -l nodes=1:ppn=8,walltime=02:00:00 -N $1$t -j oe -v arg1=$1,arg2=$t  ./run.sh`
+JOB_ARRAY_ID=`qsub -t 1-$2 -l nodes=1:ppn=8,walltime=04:00:00 -N $1$t -j oe -v arg1=$1,arg2=$t  ./run.sh`
 
 JOB_NUMBER=`echo $JOB_ARRAY_ID | awk -F "." '{print $1}'` 
 
