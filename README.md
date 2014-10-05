@@ -31,6 +31,28 @@ HDA*(start, goal)
 
 ---
 
+### Job Outsourcing HDA* algorithm in Simplest Pseudo code
+
+```
+JOHDA*(start, goal)
+
+  spawin threads
+    while true
+      open.pushall(incomebuffer)
+      n := open.pop
+      if closed has find n.state with lesser or equal f value
+        continue
+      if n is goal
+        incumbent := n
+      if there is a thread, offshore with no significant job
+        incomebuffer[offshore].push(n)
+      for each neighbor of n
+        incomebuffer[n.hash].push(neighbor)
+     
+```
+
+---
+
 ### HDA* algorithm in Pseudo code
 
 ```
@@ -121,9 +143,9 @@ HDA*(start, goal)
     outgobuffer = {empty, empty, empty,...}
 
     while true
-      lock(incomebuffer[id])
-      openlist.addall(incomebuffer[id])
-      unlick(incomebuffer[id])
+      if trylock(incomebuffer[id])
+        openlist.addall(incomebuffer[id])
+        unlock(incomebuffer[id])
       if openlist is empty OR openlist.f < incumbent
           terminate[id] = true
           if terminate is all true
