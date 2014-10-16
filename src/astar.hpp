@@ -38,7 +38,7 @@ public:
 
 	// closed might be waaaay too big for my memory....
 	// original 512927357
-	// now      200000000
+	// now      200　000　000
 	Astar(D &d) : SearchAlg<D>(d), closed(200000000), open(100) { }
 
 

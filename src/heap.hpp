@@ -77,10 +77,10 @@ public:
 		int p0 = n->f;
  
 		// TODO: Need to halt if the number growing crazy.
-		assert (p0 < qs.size());
 		// TODO: ad hoc solution.
 		if (p0 >= qs.size()) {
-			printf("f value going crazy.\n");
+			printf("f going crazy.\n");
+			assert (p0 < qs.size());
 			p0 -= 50;
 			return;
 		}

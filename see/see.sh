@@ -36,8 +36,7 @@ fi
 for FILE in $1*.o$2-* 
 do
 
-    ./parse.sh < ${FILE} >> $1.dat
-
+    ./parse.sh < ${FILE} >> $1_$2.dat
 done
 
 # visualize with R

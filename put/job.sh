@@ -14,6 +14,12 @@ then
 fi
 
 # Array job
+
+# TODO: Name the job with a bunch of parameters.
+# Parameters to put on.
+# algorithm.threadnumber.corenumber.memorysize.parameterforalgorithm.parametertoanalyze
+
+# For HDASTAR example
 JOB_ARRAY_ID=`qsub -t 1-$2 -l nodes=1:ppn=8,walltime=04:00:00 -N $1$t -j oe -v arg1=$1,arg2=$t  ./run.sh`
 
 JOB_NUMBER=`echo $JOB_ARRAY_ID | awk -F "." '{print $1}'` 

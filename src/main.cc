@@ -21,6 +21,7 @@
 #include "astar.hpp"
 #include "pastar.hpp"
 #include "hdastar.hpp"
+#include "oshdastar.hpp"
 
 void handler(int sig) {
 	void *array[10];
@@ -37,7 +38,7 @@ void handler(int sig) {
 
 int main(int argc, const char *argv[]) {
 	try {
-		if (argc != 3 && argc != 4)
+		if (!(3 <= argc && argc <= 5))
 			throw Fatal(
 					"Usage: tiles <algorithm> <problem number> or \n"
 							"tiles <parallel algorithm> <problem number> <thread number>");
@@ -62,10 +63,16 @@ int main(int argc, const char *argv[]) {
 				search = new Pastar<Tiles>(tiles);
 			}
 		} else if (strcmp(argv[1], "hdastar") == 0) {
-			if (argc == 4) {
-				search = new HDAstar<Tiles>(tiles, std::stoi(argv[3]));
+			if (argc == 5) {
+				search = new HDAstar<Tiles>(tiles, std::stoi(argv[3]), std::stoi(argv[4]));
 			} else {
-				search = new HDAstar<Tiles>(tiles);
+				search = new HDAstar<Tiles>(tiles, std::stoi(argv[3])); // Completely Asynchronous
+			}
+		} else if (strcmp(argv[1], "oshdastar") == 0) {
+			if (argc == 5) {
+				search = new OSHDAstar<Tiles>(tiles, std::stoi(argv[3]), std::stoi(argv[4]));
+			} else {
+				search = new OSHDAstar<Tiles>(tiles, std::stoi(argv[3]));
 			}
 		} else
 			throw Fatal("Unknown algorithm: %s", argv[1]);
@@ -80,8 +87,11 @@ int main(int argc, const char *argv[]) {
 		printf("\n");
 
 		dfpair(stdout, "problem number", "%02d", pnum);
-		if (strcmp(argv[3], "")) {
+		if (argc > 3 && strcmp(argv[3], "")) {
 			dfpair(stdout, "thread number", "%02d", std::stoi(argv[3]));
+		}
+		if (argc > 4) {
+			dfpair(stdout, "localstorage threshould", "%d", std::stoi(argv[4]));
 		}
 		dfpair(stdout, "initial heuristic", "%d", tiles.h(init));
 		double wall0 = walltime(), cpu0 = cputime();

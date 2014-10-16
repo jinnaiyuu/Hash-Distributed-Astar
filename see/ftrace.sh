@@ -51,9 +51,16 @@ awk '($1==3){ printf("%f %d\n", $2, $3) }' < ftrace.dat > ftrace3.dat
 
 
 gnuplot <<EOF
-   set ylabel "Trace of f value for each thread"   
+   set title "Transition of f value"
+   set xlabel "Number of Threads"
+   set ylabel "f value"
+   set title font "Arial, 26"
+   set xlabel font "Arial, 26"
+   set ylabel font "Arial, 26"
+   set tics font "Arial, 20"
    set terminal png size 1280, 960
    set ytics 2
+   set nokey
    plot "ftrace0.dat" using 1:2 with lp
    replot "ftrace1.dat" using 1:2 with lp
    replot "ftrace2.dat" using 1:2 with lp
