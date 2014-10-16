@@ -31,6 +31,28 @@ HDA*(start, goal)
 
 ---
 
+### Job Outsourcing HDA* algorithm in Simplest Pseudo code
+
+```
+JOHDA*(start, goal)
+
+  spawin threads
+    while true
+      open.pushall(incomebuffer)
+      n := open.pop
+      if closed has find n.state with lesser or equal f value
+        continue
+      if n is goal
+        incumbent := n
+      if there is a thread, offshore with no significant job
+        incomebuffer[offshore].push(n)
+      for each neighbor of n
+        incomebuffer[n.hash].push(neighbor)
+     
+```
+
+---
+
 ### HDA* algorithm in Pseudo code
 
 ```
@@ -110,53 +132,31 @@ HDA*(start, goal)
 HDA*(start, goal)
 
   incomebuffer[start.zobrist] = {start}
+  fvalues = {0, 0, 0,...}
   terminate = {false, false, false,...}
-  incumbent = very big atomic integer
+  incumbent = +infinitie
   
   initiate threads
-
-    id = getThreadId
+    id = thread id
     closedlist  = empty
     openlist    = empty
     outgobuffer = {empty, empty, empty,...}
 
     while true
-
-      if fvalue is comparatively too high
-        isFree = true
-      else if fvalue is comparatively too low
-        isBusy = true
-
-      if (isFree & !offshorebuffer.isempty) {
-        lock(offshorebuffer)
-        tmp = offshorebuffer.retrieve
-        unlock(offshorebuffer)
-        n = tmp.pop
-      }
-      else 
-      {
-        if incomebuffer[id] is not empty
-          lock(incomebuffer)
-          tmp = incomebuffer.retrieveAll
-          incomebuffer.clear
-          unlock()
-      
-        if (openlist is empty) or (openlist.f < incumbent)
+      if trylock(incomebuffer[id])
+        openlist.addall(incomebuffer[id])
+        unlock(incomebuffer[id])
+      if openlist is empty OR openlist.f < incumbent
           terminate[id] = true
           if terminate is all true
-  	    break
+  	    exit
           else  
             continue
 
-        n = open.pop
-      
-        duplicate = closed.find(n)      
-        if duplicate exist
-          if duplicate.f <= n.f
-            discard n as duplicate
-            continue
-      
-      }
+      n = open.pop
+      duplicate = closed.find(n)      
+      if duplicate exist and duplicate.f <= n.f
+        continue
 
       if n is goal state
         newPath = getPath(n)
@@ -165,26 +165,30 @@ HDA*(start, goal)
           path = newPath
         continue
 
-      closed.add(n)
+      if n.outsourcing == 0
+        closed.add(n)
 
-      for all possible operation op for n
-        if op == n.pastop
-          continue
+      if there is a thread, offshore, with no significant job 
+        // The judge depends on each implementation
         
-        nextEdge = apply(n, op)
-	
-        zobrist = nextEdge.zobrist
-        if zobrist == id
-          open.push(next)
-        else if incomebuffer[zobrist].trylock
-          lock(incomebuffer[zobrist])
-          incomebuffer[zobrist].push(nextEdge)
-          incomebuffer[zobrist].push(outgobuffer[zobrist])
-          unlock(incomebuffer[zobrist])
-          outgobuffer[zobrist].clear
+        if incomebuffer[offshore].trylock
+          incomebuffer[offshore].push(n)
+          incomebuffer[offshore].push(outgobuffer[offshore])
+          unlock(incomebuffer[offshore])
+          outgobuffer[offshore].clear
         else 
-          outgobuffer[zobrist].push(nextEdge)
-       
+          outgobuffer[offshore].push(n)
+      else
+        for each neighbor to n
+          zobrist = neighbor.zobrist
+          if incomebuffer[zobrist].trylock
+            incomebuffer[zobrist].push(neighbor)
+            incomebuffer[zobrist].push(outgobuffer[zobrist])
+            unlock(incomebuffer[zobrist])
+            outgobuffer[zobrist].clear
+          else 
+            outgobuffer[zobrist].push(neighbor)
+  
   return path
 
 ```
