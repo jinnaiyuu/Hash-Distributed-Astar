@@ -213,6 +213,7 @@ double cputime(void) {
 	return clock() / CLOCKS_PER_SEC;
 }
 
+
 bool fileexists(const char *path) {
 	struct stat sb;
 	if (stat(path, &sb) == -1) {

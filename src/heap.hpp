@@ -80,8 +80,6 @@ public:
 		// TODO: ad hoc solution.
 		if (p0 >= qs.size()) {
 			printf("f going crazy.\n");
-			assert (p0 < qs.size());
-			p0 -= 50;
 			return;
 		}
 

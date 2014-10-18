@@ -1,6 +1,8 @@
 #!/bin/bash
 # job.sh ALGORITHM NUMBER_OF_INSTANCES
 
+time=`date +%m%d%k%M%S`
+
 usage(){
     cat<<EOF
 put.sh is a command to throw job for the lucy server.
@@ -11,21 +13,22 @@ EOF
 
 }
 
-t=$3
-if [ $# -ne 3 ]
-then
-    t=1
-fi
+
+algorithm=$1
+problem_size=$2
+thread_number=$3
+os_parameter=$4
 
 
-
-
-if [ $# -ne 2 ]
+if [ $# -lt 2 ]
 then 
-    if [ $# -ne 3 ]
+    if [ $# -gt 4 ]
     then
 	echo "Usage: $0 <algorithm> <problem number> OR"
+	echo "Multithreaded Algorithms"
 	echo "Usage: $0 <algorithm> <problem number> <thread number>"
+	echo "Job Outsourcing"
+	echo "Usage: $0 <algorithm> <problem number> <thread number> <outsourcing parameter>"
 	exit 0
     fi
 fi
@@ -34,11 +37,12 @@ echo -n "Enter comment for the job->"
 read text
 
 
-SCRIPT="cd /home/jinnai/workspace/ethan ; ./job.sh $1 $2 $t $text"
+SCRIPT="cd /home/jinnai/workspace/ethan ; ./job.sh $time $algorithm $problem_size $thread_number $os_parameter $text"
 
 cd ../src
 make
 cd ..
-scp  ./src/tiles ./put/job.sh ./put/run.sh ./put/mail.sh ./src/instances ./src/big_first_instances ./src/small_first_instances jinnai@funlucy:/home/jinnai/workspace/ethan/
+cp ./src/tiles ./src/tiles$time
+scp  ./src/tiles$time ./put/job.sh ./put/run.sh ./put/mail.sh ./src/instances ./src/big_first_instances ./src/small_first_instances jinnai@funlucy:/home/jinnai/workspace/ethan/
 ssh -l jinnai funlucy "${SCRIPT}"
 

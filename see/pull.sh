@@ -11,6 +11,7 @@ then
     exit 1
 fi
 scp  jinnai@funlucy:/home/jinnai/workspace/ethan/$1*.o$2-* ./
+scp  jinnai@funlucy:/home/jinnai/workspace/ethan/job_list.dat ./
 ssh funlucy<<EOF
    cd /home/jinnai/workspace/ethan 
    mv $1*.o$2-* $1

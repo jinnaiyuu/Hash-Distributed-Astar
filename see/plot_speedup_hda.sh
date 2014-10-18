@@ -13,8 +13,48 @@ data8=hdastar_8_1012_noos_163132.dat
 # Input Data Structure
 # <problem number> <walltime> <expand> <generate> <path length>
 
+
+
+
+# Search Overhead and Speedup
+
+# Input raw data file and print search overhead and speedup ratio.
+awk 'FNR==NR{astar_wall[$1]=$2; astar_expd[$1]=$3; next} { \
+if (length(astar_wall[$1]) != 0) \
+if (length($2) != 0) \
+if ($1 <= 10) \
+if (astar_wall[$1]/$2 <= 8.3) \
+print astar_wall[$1]/$2, $3/astar_expd[$1]}' $astar $data4 > searchoverhead_speedup_astar_4threads_$date.dat
+
+gnuplot <<EOF
+   set terminal postscript color
+   set title "Search Overhead and Speedup of Wall Time"
+   set title font "Arial, 20"
+   set xlabel "nodes expanded relative to A*"
+   set xlabel font "Arial, 20"
+   set ylabel "Wall time relative to A*"
+   set ylabel font "Arial, 20"
+   set nokey
+   set output "analysis/searchoverhead_speedup_astar_4threads_$date.ps"
+   plot "searchoverhead_speedup_astar_4threads_$date.dat" using 1:2
+EOF
+
+exit 0
+
+awk 'FNR==NR{astar[$1]=$2; next} (FNR+100)==NR{a[$1]=$2; next} (FNR+200)==NR{b[$1]=$2; next} (FNR+300)==NR{c[$1]=$2; next} \
+(FNR+400)==NR{\
+if (length(astar[$1]) != 0) \
+if (length(a[$1]) != 0) \
+if (length(b[$1]) != 0) \
+if (length(c[$1]) != 0) \
+if (length($2) != 0) \
+print astar[$1], a[$1], b[$1], c[$1], $2}' ${astar} ${data1} ${data2} ${data4} ${data8} > speedup_$date.dat
+
+
 # Two awk scripts can be piped. For debugging purpose, we save the intermediate data structure.
 #awk 'FNR==NR{astar[$1]=$2; next} (FNR+100)==NR{print astar[$1], $4}' astar.dat hdastar_1_opt.dat > speedup.dat
+awk '{ astar += $1; single+= $2; duo+=$3; quadra+=$4; oct+=$5; } END{ printf("1 %f\n2 %f\n4 %f\n8 %f", astar/single, astar/duo, astar/quadra, astar/oct)}' \
+speedup_$date.dat > spd
 
 
 awk 'FNR==NR{astar[$1]=$2; next} (FNR+100)==NR{a[$1]=$2; next} (FNR+200)==NR{b[$1]=$2; next} (FNR+300)==NR{c[$1]=$2; next} \

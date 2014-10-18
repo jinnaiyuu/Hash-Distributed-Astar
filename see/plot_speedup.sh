@@ -147,26 +147,26 @@ print ss[$1]/astar[$1], sb[$1], ds[$1]/astar[$1], db[$1], \
 qs[$1]/astar[$1], qb[$1], $5/astar[$1], $3}' \
 ${astar} ${data1} ${data2} ${data4} ${data8} > searchoverhead
 
-exit 0
 gnuplot <<EOF
    set terminal postscript
    set title "Size of Local Buffer and Search Overhead"
    set xlabel "Maxium Local Buffer Size"
    set ylabel "Expansion"
-
+   set logscale x
+   set logscale y
    set title font "Arial, 26"
    set xlabel font "Arial, 26"
    set ylabel font "Arial, 26"
    set tics font "Arial, 20"
 
-   set output "analysis/outgo.comparedto.searchoverhead.ps" 
-   plot "searchoverhead" using 1:2 pt 1 title "1 thread "
-   replot "searchoverhead" using 3:4 pt 2 title "2 threads"
-   replot "searchoverhead" using 5:6 pt 3 title "4 threads"
-   replot "searchoverhead" using 7:8 pt 4 title "8 threads"
+   set output "analysis/outgo.searchoverhead.ps" 
+   plot "searchoverhead" using 4:3 pt 2 title "2 threads"
+   plot "searchoverhead" using 6:5 pt 3 title "4 threads"
+   plot "searchoverhead" using 8:7 pt 4 title "8 threads"
 EOF
 
 
+# The Maxium Size of Outgo Buffer and Search Overhead: Scatter Plot
 
 
 #rm spd expd gene

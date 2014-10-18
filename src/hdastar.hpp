@@ -24,15 +24,6 @@
 #include "buffer.hpp"
 #include "zobrist.hpp"
 
-//#define SEMISYNC
-
-//#define ANALYZE_INCOME
-//#define ANALYZE_OUTGO
-//#define ANALYZE_DUPLICATE
-//#define ANALYZE_DISTRIBUTION
-//#define ANALYZE_FTRACE
-//#define ANALYZE_GLOBALF
-//#define ANALYZE_SEMISYNC
 
 template<class D> class HDAstar: public SearchAlg<D> {
 
@@ -109,6 +100,9 @@ public:
 					100000), outgo_threshould(outgo_threshould_), forcepush(0) {
 		income_buffer = new buffer<Node> [tnum];
 		terminate = new bool[tnum];
+		for (int i = 0; i < tnum; ++i) {
+			terminate[i] = 0;
+		}
 		expd_distribution = new int[tnum];
 		gend_distribution = new int[tnum];
 
@@ -154,10 +148,15 @@ public:
 
 		int current_f = 0;
 
+		double lapse;
+
 		//		while (path.size() == 0) {
 		while (true) {
 			Node *n;
 
+#ifdef ANALYZE_LAP
+			startlapse(lapse);
+#endif
 			if (!income_buffer[id].isempty()) {
 				terminate[id] = false;
 				if (income_buffer[id].try_lock()) {
@@ -179,20 +178,23 @@ public:
 					tmp.clear();
 				}
 			}
-
+#ifdef ANALYZE_LAPSE
+			endlapse(lapse, "incomebuffer");
+			startlapse(&lapse);
+#endif
 			if (open.isemptyunder(incumbent.load())) {
 				dbgprintf("open is empty.\n");
 				terminate[id] = true;
-				if (hasterminated()) {
+				if (hasterminated() && incumbent != 100000) {
 					printf("terminated\n");
 					break;
 				}
 				continue; // ad hoc
 			}
-			dbgprintf("incumbent = %d, open.min = %d\n", incumbent.load(),
-					open.minf());
-
 			n = static_cast<Node*>(open.pop());
+#ifdef ANALYZE_LAPSE
+			endlapse(lapse, "openlist");
+#endif
 			if (n->f == 0) {
 				printf("TODO: f == 0 problem. %d\n", __LINE__);
 				continue;
@@ -223,7 +225,9 @@ public:
 
 			// If the new node n is duplicated and
 			// the f value is higher than or equal to the duplicate, discard it.
-
+#ifdef ANALYZE_LAPSE
+			startlapse(&lapse);
+#endif
 			Node *duplicate = closed.find(n->packed);
 			if (duplicate) {
 				if (duplicate->f <= n->f) {
@@ -237,24 +241,9 @@ public:
 				duplicate_here++;
 #endif // ANALYZE_DUPLICATE
 			}
-
-			// Would be nice if it can determine whether it should be
-			// thrown or not.
-#ifdef OUTSOURCING
-			// Prohibit outsourcing outsourced job
-			// This ensures possible live lock.
-			// TODO: Might need an adjustment for its threshould.
-			if ((n->thrown < 5) && outsourcing(n, id)) {
-				if (n->thrown == 0) {
-					closed.add(n);
-				}
-#ifdef ANALYZE_OUTSOURCING
-				outsource_pushed++;
+#ifdef ANALYZE_LAPSE
+			endlapse(lapse, "closedlist");
 #endif
-				dbgprintf("Out sourced a node\n");
-				continue;
-			}
-#endif // OUTSOURCING
 
 			typename D::State state;
 			this->dom.unpack(state, n->packed);
@@ -285,15 +274,11 @@ public:
 				continue;
 			}
 
-			// If the node is not your own business, no need to put in closed list.
-#ifdef OUTSOURCING
-			if (n->thrown == 0) {
-				closed.add(n);
-			}
-#else
 			closed.add(n);
-#endif
 			expd_here++;
+#ifdef ANALYZE_LAPSE
+			startlapse(&lapse);
+#endif
 			for (int i = 0; i < this->dom.nops(state); i++) {
 				// op is the next blank position.
 				int op = this->dom.nthop(state, i);
@@ -365,6 +350,9 @@ public:
 
 				this->dom.undo(state, e);
 			}
+#ifdef ANALYZE_LAPSE
+			endlapse(lapse, "expand");
+#endif
 		}
 		//		path =
 		dbgprintf("pathsize = %lu\n", path.size());
@@ -447,9 +435,9 @@ public:
 		printf("\ngeneration stddev = %f\n",
 				analyze_distribution(gend_distribution));
 #endif
-#ifdef ANALYZE_OUTSOURCING
-		printf("outsource node pushed = %d\n", outsource_pushed);
-#endif
+//#ifdef ANALYZE_OUTSOURCING
+//		printf("outsource node pushed = %d\n", outsource_pushed);
+//#endif
 		printf("forcepush = %d\n", forcepush);
 
 		return path;
@@ -506,6 +494,22 @@ public:
 		}
 		return stddev;
 	}
+
+
+	// CAUTIONS!!!!:
+	// These lapsing methods uses cputime methods.
+	// It won't take into account for locks or any other synchronous methods.
+	void startlapse(double* laptime) {
+		*laptime = clock();
+//		printf("st %f\n", laptime);
+	}
+
+	void endlapse(double previous, const char* comment) {
+		double wt = clock() - previous;
+//		printf("end %f\n",wt);
+		printf("lapse %s %.0f\n", comment, wt);
+	}
+
 
 	// TODO: Parameter would differ for every problem and every environment.
 

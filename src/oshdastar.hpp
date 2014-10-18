@@ -24,17 +24,7 @@
 #include "buffer.hpp"
 #include "zobrist.hpp"
 
-#define OUTSOURCING
 
-//#define ANALYZE_INCOME
-//#define ANALYZE_OUTGO
-//#define ANALYZE_DUPLICATE
-//#define ANALYZE_DISTRIBUTION
-//#define ANALYZE_FTRACE
-//#define ANALYZE_GLOBALF
-#ifdef OUTSOURCING
-#define ANALYZE_OUTSOURCING
-#endif
 
 template<class D> class OSHDAstar: public SearchAlg<D> {
 
@@ -122,6 +112,9 @@ public:
 					100000), os_trigger_f(os_trigger_f_) {
 		income_buffer = new buffer<Node> [tnum];
 		terminate = new bool[tnum];
+		for (int i = 0; i < tnum; ++i) {
+			terminate[i] = false;
+		}
 		expd_distribution = new int[tnum];
 		gend_distribution = new int[tnum];
 
@@ -201,8 +194,8 @@ public:
 #ifdef ANALYZE_FTRACE
 			int newf = open.minf();
 			if (fvalues[id] != newf) {
-					printf("ftrace %d %d %f\n", id, fvalues[id],
-							walltime() - wall0);
+				printf("ftrace %d %d %f\n", id, fvalues[id],
+						walltime() - wall0);
 				fvalues[id] = newf;
 			}
 #else
@@ -220,8 +213,9 @@ public:
 			if (open.isemptyunder(incumbent.load())) {
 				dbgprintf("open is empty.\n");
 				terminate[id] = true;
-				if (hasterminated()) {
-					break;
+				// If no goal found, just continue
+				if (hasterminated() && incumbent != 100000) {
+						break;
 				}
 				continue; // ad hoc
 			}
@@ -361,13 +355,13 @@ public:
 					// Therefore, first try to acquire the lock & then check whether the size
 					// exceeds the threshold.
 					// For more bigger system, this might change.
-				  //if (outgo_buffer[zbr].size() > outgo_threshould) {
-				  //income_buffer[zbr].lock();
-				//income_buffer[zbr].push_with_lock(next);
-				//income_buffer[zbr].push_all_with_lock(outgo_buffer[zbr]);
-				//outgo_buffer[zbr].clear();
-				//income_buffer[zbr].release_lock();
-				//else {
+					//if (outgo_buffer[zbr].size() > outgo_threshould) {
+					//income_buffer[zbr].lock();
+					//income_buffer[zbr].push_with_lock(next);
+					//income_buffer[zbr].push_all_with_lock(outgo_buffer[zbr]);
+					//outgo_buffer[zbr].clear();
+					//income_buffer[zbr].release_lock();
+					//else {
 					// if the buffer is locked, store the node locally.
 					outgo_buffer[zbr].push_back(next);
 					// printf("%d: size = %d\n",zbr, outgo_buffer[zbr].size());
@@ -525,34 +519,6 @@ public:
 
 	// TODO: Parameter would differ for every problem and every environment.
 #ifdef OUTSOURCING
-	bool isFree(int id) {
-		static int uneven = 4;
-		int myValue = fvalues[id];
-		for (int i = 0; i < tnum; ++i) {
-			if (i != id) {
-				if (myValue > fvalues[i] + uneven) {
-					return true;
-				}
-			}
-		}
-		return false;
-	}
-
-	// TODO: Parameter would differ for every problem and every environment.
-	// isBusy and outsourcing is duplicated. Should be in one method
-	//       to determine it should outsource and then push to the freest node.
-	bool isBusy(int id) {
-		static int uneven = 2;
-		int myValue = fvalues[id];
-		for (int i = 0; i < tnum; ++i) {
-			if (i != id) {
-				if (myValue < fvalues[i] - uneven) {
-					return true;
-				}
-			}
-		}
-		return false;
-	}
 
 	bool outsourcing(Node *p, int id) {
 		if (tnum == 1) {
@@ -583,6 +549,36 @@ public:
 		income_buffer[bestThread].push(p);
 		return true;
 	}
+
+//	bool isFree(int id) {
+//		static int uneven = 4;
+//		int myValue = fvalues[id];
+//		for (int i = 0; i < tnum; ++i) {
+//			if (i != id) {
+//				if (myValue > fvalues[i] + uneven) {
+//					return true;
+//				}
+//			}
+//		}
+//		return false;
+//	}
+//
+//	// TODO: Parameter would differ for every problem and every environment.
+//	// isBusy and outsourcing is duplicated. Should be in one method
+//	//       to determine it should outsource and then push to the freest node.
+//	bool isBusy(int id) {
+//		static int uneven = 2;
+//		int myValue = fvalues[id];
+//		for (int i = 0; i < tnum; ++i) {
+//			if (i != id) {
+//				if (myValue < fvalues[i] - uneven) {
+//					return true;
+//				}
+//			}
+//		}
+//		return false;
+//	}
+
 #endif // OUTSOURCING
 };
 
