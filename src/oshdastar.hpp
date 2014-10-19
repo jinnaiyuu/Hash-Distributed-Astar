@@ -126,12 +126,9 @@ public:
 #endif
 	}
 
-	// expanded 32334,
-
-	// length 46 : 14 1 9 6 4 8 12 5 7 2 3 0 10 11 13 15
-
-	// 5,934,442 Nodes   : 13 14 6 12 4 5 1 0 9 3 10 2 15 11 8 7
-	// 62,643,179 Nodes  : 5 12 10 7 15 11 14 0 8 2 1 13 3 4 9 6
+	//      32,334  46   : 14 1 9 6 4 8 12 5 7 2 3 0 10 11 13 15
+	//   5,934,442 Nodes : 13 14 6 12 4 5 1 0 9 3 10 2 15 11 8 7
+	//  62,643,179 Nodes : 5 12 10 7 15 11 14 0 8 2 1 13 3 4 9 6
 	// 565,994,203 Nodes : 14 7 8 2 13 11 10 4 9 12 5 0 3 6 1 15
 
 	void* thread_search(void * arg) {
@@ -151,7 +148,8 @@ public:
 		// This array would be allocated in heap rather than stack.
 		// Therefore, not the best optimized way to do.
 		// Also we need to fix it to compile in Clang++.
-		std::vector<Node*> outgo_buffer[tnum];
+		std::vector<std::vector<Node*>> outgo_buffer;
+		outgo_buffer.reserve(8);
 
 		std::vector<Node*> tmp;
 		tmp.reserve(10); // TODO: ad hoc random number

@@ -103,6 +103,7 @@ int main(int argc, const char *argv[]) {
 		Tiles::State init = tiles.initial();
 
 		dfheader(stdout);
+		dfpair(stdout, "algorithm", "%s", argv[1]);
 		printf("#tiles	");
 		for (int i = 0; i < 16; i++) {
 			printf("%d ", init.tiles[i]);
@@ -114,7 +115,7 @@ int main(int argc, const char *argv[]) {
 			dfpair(stdout, "thread number", "%02d", std::stoi(argv[3]));
 		}
 		if (argc > 4) {
-			dfpair(stdout, "localstorage threshould", "%d", std::stoi(argv[4]));
+			dfpair(stdout, "localbuffer threshold", "%d", std::stoi(argv[4]));
 		}
 		dfpair(stdout, "initial heuristic", "%d", tiles.h(init));
 		double wall0 = walltime(), cpu0 = cputime();
