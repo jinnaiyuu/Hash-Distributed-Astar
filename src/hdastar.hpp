@@ -24,6 +24,7 @@
 
 #include "buffer.hpp"
 #include "zobrist.hpp"
+#include "trivial_hash.hpp"
 
 
 template<class D> class HDAstar: public SearchAlg<D> {
@@ -31,7 +32,7 @@ template<class D> class HDAstar: public SearchAlg<D> {
 	struct Node {
 		char f, g, pop;
 
-		char zbr; // zobrist value. stored here for now. Also the size is char for now.
+		std::bitset<4> zbr; // zobrist value. stored here for now. Also the size is char for now.
 
 		int openind;
 		Node *parent;
@@ -151,13 +152,14 @@ public:
 		int current_f = 0;
 
 		double lapse;
+		TrivialHash<16> th(tnum);
 
 		//		while (path.size() == 0) {
 		while (true) {
 			Node *n;
 
 #ifdef ANALYZE_LAP
-			startlapse(lapse);
+			startlapse(lapse); // income buffer
 #endif
 			if (!income_buffer[id].isempty()) {
 				terminate[id] = false;
@@ -182,7 +184,7 @@ public:
 			}
 #ifdef ANALYZE_LAPSE
 			endlapse(lapse, "incomebuffer");
-			startlapse(&lapse);
+			startlapse(&lapse); // open list
 #endif
 			if (open.isemptyunder(incumbent.load())) {
 				dbgprintf("open is empty.\n");
@@ -197,10 +199,7 @@ public:
 #ifdef ANALYZE_LAPSE
 			endlapse(lapse, "openlist");
 #endif
-			if (n->f == 0) {
-				printf("TODO: f == 0 problem. %d\n", __LINE__);
-				continue;
-			}
+
 #ifdef ANALYZE_FTRACE
 			int newf = open.minf();
 			if (fvalues[id] != newf) {
@@ -228,7 +227,7 @@ public:
 			// If the new node n is duplicated and
 			// the f value is higher than or equal to the duplicate, discard it.
 #ifdef ANALYZE_LAPSE
-			startlapse(&lapse);
+			startlapse(&lapse); // closed list
 #endif
 			Node *duplicate = closed.find(n->packed);
 			if (duplicate) {
@@ -294,13 +293,15 @@ public:
 				int blank = state.blank;
 
 				Edge<D> e = this->dom.apply(state, op);
+//				printf("%d %d\n", id, n->zbr);
 
 				Node* next = wrap(state, n, e.cost, e.pop, nodes);
-
 				dbgprintf("mv blank op = %d %d %d \n", moving_tile, blank, op);
-				int zbr = (n->zbr ^ z.inc_hash_tnum(moving_tile, blank, op));
+				next->zbr = n->zbr ^ z.inc_hash(moving_tile, blank, op);
+				unsigned long zbr = next->zbr.to_ulong() % tnum;
+//				printf("%d %d\n", th.hash(state.tiles), th.hash(state.tiles) % tnum);
 				dbgprintf("inc_zbr_tnum = %d, ",
-						z.inc_hash_tnum(moving_tile, blank, op));
+						z.inc_hash(moving_tile, blank, op));
 //				int zbr = z.hash_tnum(state.tiles);
 				dbgprintf("zbr = %d\n", zbr);
 
@@ -390,9 +391,9 @@ public:
 			n->parent = 0;
 			this->dom.pack(n->packed, init);
 		}
-		dbgprintf("zobrist of init = %d", z.hash_tnum(init.tiles));
+		dbgprintf("zobrist of init = %d", z.hash(init.tiles));
 
-		income_buffer[z.hash_tnum(init.tiles)].push(n);
+		income_buffer[z.hash(init.tiles).to_ulong() % tnum].push(n);
 
 #ifdef ANALYZE_FTRACE
 		wall0 = walltime();

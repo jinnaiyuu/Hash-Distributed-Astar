@@ -31,12 +31,19 @@ else
     paramname="osdiff"
 fi
 
+# 
+i=1
+for [ $i -le $problem_size ] 
+do
+    ./run_xeon.sh $time $algname $thread_number $osparam $i $algname.${thread_number}threads.16gbmem.${paramname}${osparam}
+done
+## These are the code for Lucy.
 
-JOB_ARRAY_ID=`qsub -t 1-$problem_size -l nodes=1:ppn=8,walltime=00:20:00 -N $algname.${thread_number}threads.16gbmem.${paramname}${osparam} -j oe -v arg1=$time,arg2=$algname,arg3=$thread_number,arg4=$osparam  ./run.sh`
+#JOB_ARRAY_ID=`qsub -t 1-$problem_size -l nodes=1:ppn=8,walltime=00:20:00 -N $algname.${thread_number}threads.16gbmem.${paramname}${osparam} -j oe -v arg1=$time,arg2=$algname,arg3=$thread_number,arg4=$osparam  ./run.sh`
 
-JOB_NUMBER=`echo $JOB_ARRAY_ID | awk -F "." '{print $1}'` 
+#JOB_NUMBER=`echo $JOB_ARRAY_ID | awk -F "." '{print $1}'` 
 
-echo $JOB_NUMBER $algname $problem_size $thread_number "16gb" $osparam $comment  >> job_list.dat
+#echo $JOB_NUMBER $algname $problem_size $thread_number "16gb" $osparam $comment  >> job_list.dat
 
 # Not working. Not sure how to fix it.
 #qsub -W depend:afterokarray:$JOB_ARRAY_ID[] -M ddyuudd@gmail.com -m ae ./mail.sh
