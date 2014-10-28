@@ -29,19 +29,30 @@ fi
 if [ $# -eq 3 ]
 then 
     echo "From local"
-    mv hdastar/$1*.o$2-* ./
+    mv $1/$1*.o$2-* ./
 fi
 
 
+<<<<<<< HEAD
 # TODO: 
 # Name the file here. Well, this should be easy as the raw data files have
 # enough information in its name. Just parse it down.
 
 # Parse data into astar.dat
+=======
+
+>>>>>>> 6626f80399e81a89e7f7541742efb8a140480ce9
 for FILE in $1*.o$2-* 
 do
+    filename=`echo ${FILE} | awk 'BEGIN{FS = "-"} {print $1}'`
+    break
+done
 
-    ./parse.sh < ${FILE} >> $1_$2.dat
+# Parse data into astar.dat
+for FILE in $1*.o$2-* 
+do
+    
+    ./parse.sh < ${FILE} >> ${filename}
 done
 
 # visualize with R

@@ -1,7 +1,7 @@
 #!/bin/bash
 # job.sh ALGORITHM NUMBER_OF_INSTANCES
 
-time=`date +%m%d%H%M%S`
+time=`date +%m%d%k%M%S`
 
 usage(){
     cat<<EOF
@@ -18,7 +18,11 @@ algorithm=$1
 problem_size=$2
 thread_number=$3
 os_parameter=$4
-
+computer=$5
+if [ $computer == "" ]
+then
+    computer="xeon8"
+fi
 
 if [ $# -ne 4 ]
 then
@@ -30,12 +34,12 @@ echo -n "Enter comment for the job->"
 read text
 
 
-SCRIPT="cd /home/jinnai/workspace/ethan ; ./job.sh $time $algorithm $problem_size $thread_number $os_parameter $text"
+SCRIPT="cd /home/jinnai/workspace/ethan ; ./job_xeon.sh $time $algorithm $problem_size $thread_number $os_parameter $text"
 
 cd ../src
 make
 cd ..
 cp ./src/tiles ./src/tiles$time
-scp  ./src/tiles$time ./put/job.sh ./put/run.sh ./put/mail.sh ./src/instances ./src/big_first_instances ./src/small_first_instances jinnai@funlucy:/home/jinnai/workspace/ethan/
-ssh -l jinnai funlucy "${SCRIPT}"
+scp  ./src/tiles$time ./put/job.sh ./put/run.sh ./put/mail.sh ./src/instances ./src/big_first_instances ./src/small_first_instances jinnai@${computer}:/home/jinnai/workspace/ethan/
+ssh -l jinnai ${computer} "${SCRIPT}"
 
