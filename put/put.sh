@@ -20,17 +20,10 @@ thread_number=$3
 os_parameter=$4
 
 
-if [ $# -lt 2 ]
-then 
-    if [ $# -gt 4 ]
-    then
-	echo "Usage: $0 <algorithm> <problem number> OR"
-	echo "Multithreaded Algorithms"
-	echo "Usage: $0 <algorithm> <problem number> <thread number>"
-	echo "Job Outsourcing"
-	echo "Usage: $0 <algorithm> <problem number> <thread number> <outsourcing parameter>"
-	exit 0
-    fi
+if [ $# -ne 4 ]
+then
+    echo "Usage: $0 <algorithm> <problem number> <thread number> <parameter>"
+    exit 0
 fi
 
 echo -n "Enter comment for the job->"

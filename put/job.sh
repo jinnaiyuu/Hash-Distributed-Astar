@@ -24,7 +24,15 @@ comment=$6
 # algorithm.threadnumber.corenumber.memorysize.parameterforalgorithm.parametertoanalyze
 
 # For HDASTAR example
-JOB_ARRAY_ID=`qsub -t 1-$problem_size -l nodes=1:ppn=8,walltime=03:00:00 -N $algname.${thread_number}threads.16gbmem.osfdiff${osparam} -j oe -v arg1=$time,arg2=$algname,arg3=$thread_number,arg4=$osparam  ./run.sh`
+if [ "$algname" = "hdastar" ]
+then
+    paramname="bufmaxsize"
+else
+    paramname="osdiff"
+fi
+
+
+JOB_ARRAY_ID=`qsub -t 1-$problem_size -l nodes=1:ppn=8,walltime=00:20:00 -N $algname.${thread_number}threads.16gbmem.${paramname}${osparam} -j oe -v arg1=$time,arg2=$algname,arg3=$thread_number,arg4=$osparam  ./run.sh`
 
 JOB_NUMBER=`echo $JOB_ARRAY_ID | awk -F "." '{print $1}'` 
 
