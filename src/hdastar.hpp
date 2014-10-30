@@ -32,7 +32,7 @@ template<class D> class HDAstar: public SearchAlg<D> {
 	struct Node {
 		char f, g, pop;
 
-		std::bitset<4> zbr; // zobrist value. stored here for now. Also the size is char for now.
+		char zbr; // zobrist value. stored here for now. Also the size is char for now.
 
 		int openind;
 		Node *parent;
@@ -298,7 +298,7 @@ public:
 				Node* next = wrap(state, n, e.cost, e.pop, nodes);
 				dbgprintf("mv blank op = %d %d %d \n", moving_tile, blank, op);
 				next->zbr = n->zbr ^ z.inc_hash(moving_tile, blank, op);
-				unsigned long zbr = next->zbr.to_ulong() % tnum;
+				unsigned long zbr = next->zbr % tnum;
 //				printf("%d %d\n", th.hash(state.tiles), th.hash(state.tiles) % tnum);
 				dbgprintf("inc_zbr_tnum = %d, ",
 						z.inc_hash(moving_tile, blank, op));
@@ -393,7 +393,7 @@ public:
 		}
 		dbgprintf("zobrist of init = %d", z.hash(init.tiles));
 
-		income_buffer[z.hash(init.tiles).to_ulong() % tnum].push(n);
+		income_buffer[z.hash(init.tiles) % tnum].push(n);
 
 #ifdef ANALYZE_FTRACE
 		wall0 = walltime();

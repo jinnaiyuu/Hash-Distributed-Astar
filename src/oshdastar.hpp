@@ -99,7 +99,7 @@ template<class D> class OSHDAstar: public SearchAlg<D> {
 	int outsource_pushed = 0; // ANALYZE_OUTSOURCING
 #endif
 #endif
-	buffer<Node>* offshore_buffer;
+//	buffer<Node>* offshore_buffer;
 
 public:
 
@@ -107,7 +107,7 @@ public:
 	// original 512927357
 	// now      200000000
 
-	OSHDAstar(D &d, int tnum_ = 0, int os_trigger_f_ = 0) :
+	OSHDAstar(D &d, int tnum_ = 1, int os_trigger_f_ = 4) :
 			SearchAlg<D>(d), tnum(tnum_), thread_id(0), z(tnum), incumbent(
 					100000), os_trigger_f(os_trigger_f_) {
 		income_buffer = new buffer<Node> [tnum];
@@ -121,9 +121,9 @@ public:
 		// Fields for Out sourcing
 		fvalues = new int[tnum];
 
-#ifdef OUTSOURCING
-		offshore_buffer = new buffer<Node> [tnum];
-#endif
+//#ifdef OUTSOURCING
+//		offshore_buffer = new buffer<Node> [tnum];
+//#endif
 	}
 
 	//      32,334  46   : 14 1 9 6 4 8 12 5 7 2 3 0 10 11 13 15
@@ -144,10 +144,6 @@ public:
 
 		// If the buffer is locked when the thread pushes a node,
 		// stores it locally and pushes it afterward.
-		// TODO: Array of dynamic sized objects.
-		// This array would be allocated in heap rather than stack.
-		// Therefore, not the best optimized way to do.
-		// Also we need to fix it to compile in Clang++.
 		std::vector<std::vector<Node*>> outgo_buffer;
 		outgo_buffer.reserve(8);
 
@@ -396,9 +392,11 @@ public:
 	}
 
 	std::vector<typename D::State> search(typename D::State &init) {
+		printf("a");
 
 		pthread_t t[tnum];
 		this->init = init;
+		printf("b");
 
 		// wrap a new node.
 		Node* n = new Node;
@@ -411,6 +409,7 @@ public:
 			this->dom.pack(n->packed, init);
 		}
 		dbgprintf("zobrist of init = %d", z.hash_tnum(init.tiles));
+		printf("c");
 
 		income_buffer[z.hash_tnum(init.tiles)].push(n);
 

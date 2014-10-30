@@ -1,4 +1,4 @@
-CXX=g++
+CXX=clang++
 CXXFLAGS=-g -Wall -static -pthread -std=c++11 -O3
 
 all: tiles
