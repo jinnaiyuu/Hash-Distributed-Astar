@@ -4,7 +4,7 @@
 # <time> <algorithm> <problem number> <thread number> <outsourcing parameter> <comment for the job>
 
 
-cd /home/jinnai/workspace/ethan
+cd /home/yuu/workspace/ethan
 
 time=$1
 algname=$2

@@ -17,7 +17,7 @@
 #endif // #ifdef DEBUG
 
 //#define OUTSOURCING
-//#define SEMISYNC
+#define SEMISYNC
 
 #define ANALYZE_INCOME
 #define ANALYZE_OUTGO
