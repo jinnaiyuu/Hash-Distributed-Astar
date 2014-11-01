@@ -19,15 +19,15 @@
 //#define OUTSOURCING
 #define SEMISYNC
 
-#define ANALYZE_INCOME
-#define ANALYZE_OUTGO
-#define ANALYZE_DUPLICATE
-#define ANALYZE_DISTRIBUTION
+//#define ANALYZE_INCOME
+//#define ANALYZE_OUTGO
+//#define ANALYZE_DUPLICATE
+//#define ANALYZE_DISTRIBUTION
 //#define ANALYZE_FTRACE
 //#define ANALYZE_GLOBALF
 //#define ANALYZE_LAPSE
 #ifdef OUTSOURCING
-#define ANALYZE_OUTSOURCING
+//#define ANALYZE_OUTSOURCING
 #endif
 #ifdef SEMISYNC
 #define ANALYZE_SEMISYNC
@@ -39,7 +39,7 @@
 #include "astar.hpp"
 #include "pastar.hpp"
 #include "hdastar.hpp"
-//#include "oshdastar.hpp"
+#include "oshdastar.hpp"
 
 //	 expd 32334 length 46   : 14 1 9 6 4 8 12 5 7 2 3 0 10 11 13 15
 //	 expd 909442 length 53  : 13 14 6 12 4 5 1 0 9 3 10 2 15 11 8 7
@@ -49,6 +49,7 @@
 void handler(int sig) {
 	void *array[10];
 	size_t size;
+
 
 	// get void*'s for all entries on the stack
 	size = backtrace(array, 10);
@@ -91,12 +92,13 @@ int main(int argc, const char *argv[]) {
 			} else {
 				search = new HDAstar<Tiles>(tiles, std::stoi(argv[3])); // Completely Asynchronous
 			}
-//		} else if (strcmp(argv[1], "oshdastar") == 0) {
-//			if (argc == 5) {
-//				search = new OSHDAstar<Tiles>(tiles, std::stoi(argv[3]), std::stoi(argv[4]));
-//			} else {
-//				search = new OSHDAstar<Tiles>(tiles, std::stoi(argv[3]));
-//			}
+		} else if (strcmp(argv[1], "oshdastar") == 0) {
+			printf("3,4 = %d %d\n", std::stoi(argv[3]), std::stoi(argv[4]));
+			if (argc == 5) {
+				search = new OSHDAstar<Tiles>(tiles, std::stoi(argv[3]), std::stoi(argv[4]));
+			} else {
+				search = new OSHDAstar<Tiles>(tiles, std::stoi(argv[3]));
+			}
 		} else
 			throw Fatal("Unknown algorithm: %s", argv[1]);
 
@@ -119,7 +121,7 @@ int main(int argc, const char *argv[]) {
 		}
 		dfpair(stdout, "initial heuristic", "%d", tiles.h(init));
 		double wall0 = walltime(), cpu0 = cputime();
-
+		printf("walltime\n");
 		std::vector<Tiles::State> path = search->search(init);
 
 		double wtime = walltime() - wall0, ctime = cputime() - cpu0;
