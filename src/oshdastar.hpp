@@ -329,7 +329,7 @@ public:
 				next->thrown = 0; // TODO: won't need without Outsourcing
 
 				dbgprintf("mv blank op = %d %d %d \n", moving_tile, blank, op);
-				int zbr = (n->zbr ^ z.inc_hash(moving_tile, blank, op));
+				int zbr = (n->zbr ^ z.inc_hash(moving_tile, blank, op)) % tnum;
 				dbgprintf("inc_zbr_tnum = %d, ",
 						z.inc_hash_tnum(moving_tile, blank, op));
 //				int zbr = z.hash_tnum(state.tiles);

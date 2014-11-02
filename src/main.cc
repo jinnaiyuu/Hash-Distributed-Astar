@@ -16,18 +16,18 @@
 #define dbgprintf   printf
 #endif // #ifdef DEBUG
 
-//#define OUTSOURCING
-#define SEMISYNC
+#define OUTSOURCING
+//#define SEMISYNC
 
-//#define ANALYZE_INCOME
-//#define ANALYZE_OUTGO
-//#define ANALYZE_DUPLICATE
-//#define ANALYZE_DISTRIBUTION
+#define ANALYZE_INCOME
+#define ANALYZE_OUTGO
+#define ANALYZE_DUPLICATE
+#define ANALYZE_DISTRIBUTION
 //#define ANALYZE_FTRACE
 //#define ANALYZE_GLOBALF
 //#define ANALYZE_LAPSE
 #ifdef OUTSOURCING
-//#define ANALYZE_OUTSOURCING
+#define ANALYZE_OUTSOURCING
 #endif
 #ifdef SEMISYNC
 #define ANALYZE_SEMISYNC
@@ -93,7 +93,6 @@ int main(int argc, const char *argv[]) {
 				search = new HDAstar<Tiles>(tiles, std::stoi(argv[3])); // Completely Asynchronous
 			}
 		} else if (strcmp(argv[1], "oshdastar") == 0) {
-			printf("3,4 = %d %d\n", std::stoi(argv[3]), std::stoi(argv[4]));
 			if (argc == 5) {
 				search = new OSHDAstar<Tiles>(tiles, std::stoi(argv[3]), std::stoi(argv[4]));
 			} else {
@@ -121,7 +120,6 @@ int main(int argc, const char *argv[]) {
 		}
 		dfpair(stdout, "initial heuristic", "%d", tiles.h(init));
 		double wall0 = walltime(), cpu0 = cputime();
-		printf("walltime\n");
 		std::vector<Tiles::State> path = search->search(init);
 
 		double wtime = walltime() - wall0, ctime = cputime() - cpu0;
