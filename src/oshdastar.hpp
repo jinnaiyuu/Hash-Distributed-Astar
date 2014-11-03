@@ -26,7 +26,7 @@
 
 
 
-template<class D> class OSHDAstar: public SearchAlg<D> {
+template<class D, class hash> class OSHDAstar: public SearchAlg<D> {
 
 	struct Node {
 		char f, g, pop;
@@ -65,7 +65,7 @@ template<class D> class OSHDAstar: public SearchAlg<D> {
 	typename D::State init;
 	int tnum;
 	std::atomic<int> thread_id; // set thread id for zobrist hashing.
-	Zobrist<16> z; // Members for Zobrist hashing.
+	hash z; // Members for Zobrist hashing.
 
 	std::atomic<int> incumbent; // The best solution so far.
 	bool* terminate;
@@ -107,8 +107,8 @@ public:
 	// original 512927357
 	// now      200000000
 
-	OSHDAstar(D &d, int tnum_ = 1, int os_trigger_f_ = 4) :
-			SearchAlg<D>(d), tnum(tnum_), thread_id(0), z(tnum), incumbent(
+	OSHDAstar(D &d, int tnum_ = 1, int os_trigger_f_ = 4, typename hash::ABST abst = hash::SINGLE) :
+			SearchAlg<D>(d), tnum(tnum_), thread_id(0), z(tnum, abst), incumbent(
 					100000), os_trigger_f(os_trigger_f_) {
 		income_buffer = new buffer<Node> [tnum];
 		terminate = new bool[tnum];
@@ -329,10 +329,9 @@ public:
 				next->thrown = 0; // TODO: won't need without Outsourcing
 
 				dbgprintf("mv blank op = %d %d %d \n", moving_tile, blank, op);
-				int zbr = (n->zbr ^ z.inc_hash(moving_tile, blank, op)) % tnum;
-				dbgprintf("inc_zbr_tnum = %d, ",
-						z.inc_hash_tnum(moving_tile, blank, op));
-//				int zbr = z.hash_tnum(state.tiles);
+				next->zbr = z.inc_hash(n->zbr, moving_tile, blank, op, state.tiles);
+				unsigned char zbr = next->zbr;
+
 				dbgprintf("zbr = %d\n", zbr);
 
 				// If the node belongs to itself, just push to this open list.
@@ -433,6 +432,9 @@ public:
 		for (int i = 0; i < tnum; ++i) {
 			pthread_join(t[tnum], NULL);
 		}
+
+		this->wtime = walltime();
+		this->ctime = cputime();
 
 		for (int i = 0; i < tnum; ++i) {
 			this->expd += expd_distribution[i];

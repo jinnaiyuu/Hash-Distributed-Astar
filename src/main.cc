@@ -17,7 +17,7 @@
 #endif // #ifdef DEBUG
 
 #define OUTSOURCING
-//#define SEMISYNC
+#define SEMISYNC
 
 #define ANALYZE_INCOME
 #define ANALYZE_OUTGO
@@ -49,11 +49,8 @@
 void handler(int sig) {
 	void *array[10];
 	size_t size;
-
-
 	// get void*'s for all entries on the stack
 	size = backtrace(array, 10);
-
 	// print out all the frames to stderr
 	fprintf(stderr, "Error: signal %d:\n", sig);
 	backtrace_symbols_fd(array, size, STDERR_FILENO);
@@ -62,7 +59,7 @@ void handler(int sig) {
 
 int main(int argc, const char *argv[]) {
 	try {
-		if (!(3 <= argc && argc <= 5))
+		if (!(3 <= argc && argc <= 6))
 			throw Fatal(
 					"Usage: tiles <algorithm> <problem number> or \n"
 							"tiles <parallel algorithm> <problem number> <thread number>");
@@ -87,16 +84,23 @@ int main(int argc, const char *argv[]) {
 				search = new Pastar<Tiles>(tiles);
 			}
 		} else if (strcmp(argv[1], "hdastar") == 0) {
-			if (argc == 5) {
-				search = new HDAstar<Tiles>(tiles, std::stoi(argv[3]), std::stoi(argv[4]));
+			if (argc == 6) {
+				search = new HDAstar<Tiles, Zobrist<16> >(tiles, std::stoi(argv[3]), std::stoi(argv[4]),
+						std::stoi(argv[5]));
 			} else {
-				search = new HDAstar<Tiles>(tiles, std::stoi(argv[3])); // Completely Asynchronous
+				search = new HDAstar<Tiles, Zobrist<16> >(tiles, std::stoi(argv[3])); // Completely Asynchronous
+			}
+		} else if (strcmp(argv[1], "hdastar_trivial") == 0) {
+			if (argc >= 5) {
+				search = new HDAstar<Tiles, TrivialHash<16> >(tiles, std::stoi(argv[3]), std::stoi(argv[4]), std::stoi(argv[5]));
+			} else {
+				search = new HDAstar<Tiles, TrivialHash<16> >(tiles, std::stoi(argv[3])); // Completely Asynchronous
 			}
 		} else if (strcmp(argv[1], "oshdastar") == 0) {
 			if (argc == 5) {
-				search = new OSHDAstar<Tiles>(tiles, std::stoi(argv[3]), std::stoi(argv[4]));
+				search = new OSHDAstar<Tiles, Zobrist<16> >(tiles, std::stoi(argv[3]), std::stoi(argv[4]));
 			} else {
-				search = new OSHDAstar<Tiles>(tiles, std::stoi(argv[3]));
+				search = new OSHDAstar<Tiles, Zobrist<16> >(tiles, std::stoi(argv[3]));
 			}
 		} else
 			throw Fatal("Unknown algorithm: %s", argv[1]);
@@ -115,14 +119,15 @@ int main(int argc, const char *argv[]) {
 		if (argc > 3 && strcmp(argv[3], "")) {
 			dfpair(stdout, "thread number", "%02d", std::stoi(argv[3]));
 		}
-		if (argc > 4) {
-			dfpair(stdout, "localbuffer threshold", "%d", std::stoi(argv[4]));
+		if (argc > 5) {
+			dfpair(stdout, "income buffer threshold", "%d", std::stoi(argv[4]));
+			dfpair(stdout, "outgo buffer threshold", "%d", std::stoi(argv[5]));
 		}
 		dfpair(stdout, "initial heuristic", "%d", tiles.h(init));
 		double wall0 = walltime(), cpu0 = cputime();
 		std::vector<Tiles::State> path = search->search(init);
 
-		double wtime = walltime() - wall0, ctime = cputime() - cpu0;
+		double wtime = search->wtime - wall0, ctime = search->ctime - cpu0;
 		sleep(2);
 		dfpair(stdout, "total wall time", "%g", wtime);
 		dfpair(stdout, "total cpu time", "%g", ctime);

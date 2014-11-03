@@ -39,6 +39,8 @@ template<class D> struct SearchAlg {
 	// expd and gend are the number of states that have been
 	// expanded and generated respectively.
 	unsigned long expd, gend;
+
+	double wtime, ctime;
 };
 
 #endif	// _SEARCH_HPP_

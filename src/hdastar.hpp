@@ -21,19 +21,17 @@
 #include "hashtbl.hpp"
 #include "heap.hpp"
 #include "pool.hpp"
-
 #include "buffer.hpp"
+
 #include "zobrist.hpp"
 #include "trivial_hash.hpp"
 
 
-template<class D> class HDAstar: public SearchAlg<D> {
+template<class D, class hash> class HDAstar: public SearchAlg<D> {
 
 	struct Node {
 		char f, g, pop;
-
 		char zbr; // zobrist value. stored here for now. Also the size is char for now.
-
 		int openind;
 		Node *parent;
 		typename D::PackedState packed;
@@ -63,12 +61,13 @@ template<class D> class HDAstar: public SearchAlg<D> {
 	typename D::State init;
 	int tnum;
 	std::atomic<int> thread_id; // set thread id for zobrist hashing.
-	Zobrist<16> z; // Members for Zobrist hashing.
+	hash z; // Members for Zobrist hashing.
 
 	std::atomic<int> incumbent; // The best solution so far.
 	bool* terminate;
 
-	int outgo_threshould;
+	int income_threshold;
+	int outgo_threshold;
 
 	int forcepush;
 
@@ -97,9 +96,9 @@ template<class D> class HDAstar: public SearchAlg<D> {
 
 public:
 
-	HDAstar(D &d, int tnum_, int outgo_threshould_ = 10000000) :
-			SearchAlg<D>(d), tnum(tnum_), thread_id(0), z(tnum), incumbent(
-					100000), outgo_threshould(outgo_threshould_), forcepush(0) {
+	HDAstar(D &d, int tnum_, int income_threshold_ = 1000000, int outgo_threshold_ = 10000000, typename hash::ABST abst = hash::SINGLE) :
+			SearchAlg<D>(d), tnum(tnum_), thread_id(0), z(tnum, abst), incumbent(
+					100000), income_threshold(income_threshold_), outgo_threshold(outgo_threshold_), forcepush(0) {
 		income_buffer = new buffer<Node> [tnum];
 		terminate = new bool[tnum];
 		for (int i = 0; i < tnum; ++i) {
@@ -121,7 +120,7 @@ public:
 	void* thread_search(void * arg) {
 
 		int id = thread_id.fetch_add(1);
-		dbgprintf("id = %d\n", id);
+		printf("id = %d\n", id);
 
 		// closed might be waaaay too big for my memory....
 		// original 512927357
@@ -163,7 +162,23 @@ public:
 #endif
 			if (!income_buffer[id].isempty()) {
 				terminate[id] = false;
-				if (income_buffer[id].try_lock()) {
+				if (income_buffer[id].size() >= income_threshold) {
+					income_buffer[id].lock();
+					tmp = income_buffer[id].pull_all_with_lock();
+					income_buffer[id].release_lock();
+					uint size = tmp.size();
+#ifdef ANALYZE_INCOME
+					if (max_income_buffer_size < size) {
+						max_income_buffer_size = size;
+					}
+					dbgprintf("size = %d\n", size);
+#endif // ANALYZE_INCOME
+					for (int i = 0; i < size; ++i) {
+						dbgprintf("pushing %d, ", i);
+						open.push(tmp[i]); // Not sure optimal or not. Vector to Heap.
+					}
+					tmp.clear();
+				} else if (income_buffer[id].try_lock()) {
 					tmp = income_buffer[id].pull_all_with_lock();
 //					printf("%d", __LINE__);
 					income_buffer[id].release_lock();
@@ -297,12 +312,9 @@ public:
 
 				Node* next = wrap(state, n, e.cost, e.pop, nodes);
 				dbgprintf("mv blank op = %d %d %d \n", moving_tile, blank, op);
-				next->zbr = n->zbr ^ z.inc_hash(moving_tile, blank, op);
-				unsigned long zbr = next->zbr % tnum;
-//				printf("%d %d\n", th.hash(state.tiles), th.hash(state.tiles) % tnum);
-				dbgprintf("inc_zbr_tnum = %d, ",
-						z.inc_hash(moving_tile, blank, op));
-//				int zbr = z.hash_tnum(state.tiles);
+				next->zbr = z.inc_hash(n->zbr, moving_tile, blank, op, state.tiles);
+//				next->zbr = (n->zbr ^ z.inc_hash(moving_tile, blank, op, state.tiles)) % tnum;
+				unsigned long zbr = next->zbr; // % tnum;
 				dbgprintf("zbr = %d\n", zbr);
 
 				// If the node belongs to itself, just push to this open list.
@@ -311,7 +323,7 @@ public:
 				}
 #ifdef SEMISYNC
 				// Synchronous communication to avoid search overhead
-				else if (outgo_buffer[zbr].size() > outgo_threshould) {
+				else if (outgo_buffer[zbr].size() > outgo_threshold) {
 					income_buffer[zbr].lock();
 					income_buffer[zbr].push_with_lock(next);
 					income_buffer[zbr].push_all_with_lock(outgo_buffer[zbr]);
@@ -391,9 +403,9 @@ public:
 			n->parent = 0;
 			this->dom.pack(n->packed, init);
 		}
-		dbgprintf("zobrist of init = %d", z.hash(init.tiles));
+		dbgprintf("zobrist of init = %d", z.hash_tnum(init.tiles));
 
-		income_buffer[z.hash(init.tiles) % tnum].push(n);
+		income_buffer[z.hash_tnum(init.tiles)].push(n);
 
 #ifdef ANALYZE_FTRACE
 		wall0 = walltime();
@@ -420,6 +432,9 @@ public:
 			this->expd += expd_distribution[i];
 			this->gend += gend_distribution[i];
 		}
+
+		this->wtime = walltime();
+		this->ctime = cputime();
 
 #ifdef ANALYZE_INCOME
 		printf("average of max_income_buffer_size = %d\n", max_income / tnum);

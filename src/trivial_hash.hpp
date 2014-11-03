@@ -14,22 +14,35 @@
 template <int size>
 class TrivialHash {
 public:
+	enum ABST {SINGLE = 0, PAIR = 1, LINE = 2, BLOCK = 3};
 //	typedef std::bitset<4> bits;
 	// Should delete compatibility for performance.
-	TrivialHash(int tnum_ = 1) :
+	TrivialHash(int tnum_ = 1, ABST abst = SINGLE) :
 			tnum(tnum_) {
 		initHash();
 	}
+//	unsigned char inc_hash_tnum(const int number, const int from,
+//			const int to, const char* const newBoard) {
+//		return hash_tnum(newBoard);
+//	}
+	unsigned char inc_hash(unsigned char previous, const int number, const int from, const int to, const char* const newBoard) {
+		return hash(newBoard) % tnum;
+	}
 
-	int hash(const char* const board) {
-		int h = 0;
+	unsigned char hash_tnum(const char* const board) {
+		return hash(board) % tnum;
+	}
+private:
+
+	unsigned char hash(const char* const board) {
+		unsigned char h = 0;
 		for (int i = 0; i < size; ++i) {
-			h = h * 17 + board[i];
+			h = h << 1 ^ board[i];
 		}
+//		printf("row hash = %d\n", h);
 		return h;
 	}
 
-private:
 	void initHash() {
 	}
 
