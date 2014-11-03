@@ -59,7 +59,7 @@ void handler(int sig) {
 
 int main(int argc, const char *argv[]) {
 	try {
-		if (!(3 <= argc && argc <= 6))
+		if (!(3 <= argc && argc <= 7))
 			throw Fatal(
 					"Usage: tiles <algorithm> <problem number> or \n"
 							"tiles <parallel algorithm> <problem number> <thread number>");
@@ -84,9 +84,9 @@ int main(int argc, const char *argv[]) {
 				search = new Pastar<Tiles>(tiles);
 			}
 		} else if (strcmp(argv[1], "hdastar") == 0) {
-			if (argc == 6) {
+			if (argc >= 5) {
 				search = new HDAstar<Tiles, Zobrist<16> >(tiles, std::stoi(argv[3]), std::stoi(argv[4]),
-						std::stoi(argv[5]));
+						std::stoi(argv[5]), std::stoi(argv[6]));
 			} else {
 				search = new HDAstar<Tiles, Zobrist<16> >(tiles, std::stoi(argv[3])); // Completely Asynchronous
 			}
@@ -119,9 +119,12 @@ int main(int argc, const char *argv[]) {
 		if (argc > 3 && strcmp(argv[3], "")) {
 			dfpair(stdout, "thread number", "%02d", std::stoi(argv[3]));
 		}
-		if (argc > 5) {
+		if (argc == 7) {
 			dfpair(stdout, "income buffer threshold", "%d", std::stoi(argv[4]));
 			dfpair(stdout, "outgo buffer threshold", "%d", std::stoi(argv[5]));
+			dfpair(stdout, "abstraction", "%d", std::stoi(argv[6]));
+		} else if (argc == 5){
+			dfpair(stdout, "outsourcing f diff threshold", "%d", std::stoi(argv[4]));
 		}
 		dfpair(stdout, "initial heuristic", "%d", tiles.h(init));
 		double wall0 = walltime(), cpu0 = cputime();

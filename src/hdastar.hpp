@@ -69,7 +69,8 @@ template<class D, class hash> class HDAstar: public SearchAlg<D> {
 	int income_threshold;
 	int outgo_threshold;
 
-	int forcepush;
+	int force_income = 0;
+	int force_outgo = 0;
 
 	int* expd_distribution;
 	int* gend_distribution;
@@ -96,9 +97,10 @@ template<class D, class hash> class HDAstar: public SearchAlg<D> {
 
 public:
 
-	HDAstar(D &d, int tnum_, int income_threshold_ = 1000000, int outgo_threshold_ = 10000000, typename hash::ABST abst = hash::SINGLE) :
-			SearchAlg<D>(d), tnum(tnum_), thread_id(0), z(tnum, abst), incumbent(
-					100000), income_threshold(income_threshold_), outgo_threshold(outgo_threshold_), forcepush(0) {
+	HDAstar(D &d, int tnum_, int income_threshold_ = 1000000, int outgo_threshold_ = 10000000
+			, int abst = 0) :
+			SearchAlg<D>(d), tnum(tnum_), thread_id(0), z(tnum, static_cast<typename hash::ABST>(abst)), incumbent(
+					100000), income_threshold(income_threshold_), outgo_threshold(outgo_threshold_) {
 		income_buffer = new buffer<Node> [tnum];
 		terminate = new bool[tnum];
 		for (int i = 0; i < tnum; ++i) {
@@ -163,6 +165,7 @@ public:
 			if (!income_buffer[id].isempty()) {
 				terminate[id] = false;
 				if (income_buffer[id].size() >= income_threshold) {
+					++force_income;
 					income_buffer[id].lock();
 					tmp = income_buffer[id].pull_all_with_lock();
 					income_buffer[id].release_lock();
@@ -331,7 +334,7 @@ public:
 					income_buffer[zbr].release_lock();
 					outgo_buffer[zbr].clear();
 #ifdef ANALYZE_SEMISYNC
-					++forcepush;
+					++force_outgo;
 //					printf("semisync = %d to %d\n", id, zbr);
 #endif // ANALYZE_SEMISYNC
 				}
@@ -456,7 +459,8 @@ public:
 //#ifdef ANALYZE_OUTSOURCING
 //		printf("outsource node pushed = %d\n", outsource_pushed);
 //#endif
-		printf("forcepush = %d\n", forcepush);
+		printf("forcepush incomebuffer = %d\n", force_income);
+		printf("forcepush outgobuffer = %d\n", force_outgo);
 
 		return path;
 	}

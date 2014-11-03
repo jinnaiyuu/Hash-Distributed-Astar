@@ -1,20 +1,36 @@
 #!/bin/bash
 
 
-
 awk \ '
-$2=="problem" {printf("%s ",$4)} \
-$3=="wall" {printf("%s " ,$5)} \
-$4=="expanded" {printf("%s " ,$5)} \
-$4=="generated" {printf("%s ",$5)} \
-$2=="solution" {printf("%s", $4)} \
-$3=="max_income_buffer_size" {printf("%s ",$5)} \
-$3=="max_outgo_buffer_size" {printf("%s ",$5)} \
-$1=="duplicated" {printf("%s ", $4)} \
-$1=="expansion"&&$2=="stddev" {printf("%s ", $4)} \
-$1=="generation"&&$2=="stddev" {printf("%s ", $4)} \
-$1=="outsource" {printf("%s ", $5)} \
-END {printf("\n")}'
+$1=="#start" { \
+problem = -1; \ 
+wall = -1;\
+expd = -1;\
+gend = -1;\
+soltion = -1;\
+max_income_buffer = -1;\
+max_outgo_buffer = -1;\
+duplicated = -1;\
+expd_stddev = -1;\
+gend_stddev = -1;\
+outsource = -1;\
+income_force = -1;\
+outgo_force = -1;\
+}\
+$2=="problem" {problem = $4} \
+$3=="wall" {wall = $5} \
+$4=="expanded" {expd = $5} \
+$4=="generated" {gend = $5} \
+$2=="solution" {solution = $4} \
+$3=="max_income_buffer_size" {max_income_buffer = $5} \
+$3=="max_outgo_buffer_size"  {max_outgo_buffer = $5} \
+$1=="duplicated" {duplicated = $4} \
+$1=="expansion"&&$2=="stddev" {expd_stddev = $4} \
+$1=="generation"&&$2=="stddev" {gend_stddev = $4} \
+$1=="outsource" {outsource = $5} \
+$1=="forcepush"&&$2=="incomebuffer" {income_force = $4} \
+$1=="forcepush"&&$2=="outgobuffer" {outgo_force = $4} \
+$1=="#end"{printf("\n")}'
 
 exit 0
 

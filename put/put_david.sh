@@ -1,7 +1,6 @@
 #!/bin/bash
 # job.sh ALGORITHM NUMBER_OF_INSTANCES
 
-time=`date +%m%d%H%M%S`
 
 usage(){
     cat<<EOF
@@ -13,14 +12,15 @@ EOF
 
 }
 
-
+time=`date +%m%d%H%M%S`
 algorithm=$1
 problem_size=$2
 thread_number=$3
-os_parameter=$4
+parameter1=$4 # OS threshold, hdastar income buffer size
+parameter2=$5 # hdastar outgo buffer size
+parameter3=$6 # abstraction type
 
-
-if [ $# -ne 4 ]
+if [ $# -lt 4 ]
 then
     echo "Usage: $0 <algorithm> <problem number> <thread number> <parameter>"
     exit 0
@@ -30,9 +30,13 @@ echo -n "Enter comment for the job->"
 read text
 
 
-SCRIPT="cd /home/yuu/workspace/ethan ; ./job_david.sh $time $algorithm $problem_size $thread_number $os_parameter $text"
+SCRIPT="cd /home/yuu/workspace/ethan ; ./job_david.sh $time $algorithm $problem_size $thread_number $parameter1 $parameter2 $parameter3 $text"
 
-cd ../src
+cd ..
+git stage src/*.hpp src/main.cc put/*.sh see/*.sh
+git commit -m "Experiment: $time $algorithm $thread_number $parameter1 $parameter2 $parameter3 $text"
+
+cd src
 make
 cd ..
 cp ./src/tiles ./src/tiles$time
