@@ -97,8 +97,8 @@ int main(int argc, const char *argv[]) {
 				search = new HDAstar<Tiles, TrivialHash<16> >(tiles, std::stoi(argv[3])); // Completely Asynchronous
 			}
 		} else if (strcmp(argv[1], "oshdastar") == 0) {
-			if (argc == 5) {
-				search = new OSHDAstar<Tiles, Zobrist<16> >(tiles, std::stoi(argv[3]), std::stoi(argv[4]));
+			if (argc == 6) {
+				search = new OSHDAstar<Tiles, Zobrist<16> >(tiles, std::stoi(argv[3]), std::stoi(argv[4]), std::stoi(argv[5]));
 			} else {
 				search = new OSHDAstar<Tiles, Zobrist<16> >(tiles, std::stoi(argv[3]));
 			}

@@ -11,11 +11,11 @@ algname=$2
 problem_size=$3
 thread_number=$4
 param1=$5
-if [ $# -eq 6 ]
+param2=$6
+if [ $# -eq 7 ]
 then
-    comment=$6
+    comment=$7
 else 
-    param2=$6
     param3=$7
     comment=$8
 fi
@@ -36,6 +36,7 @@ then
     paramname3=".abstraction"
 else
     paramname1="osdiff"
+    paramname2=".abstraction"
 fi
 
 

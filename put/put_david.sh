@@ -16,9 +16,9 @@ time=`date +%m%d%H%M%S`
 algorithm=$1
 problem_size=$2
 thread_number=$3
-parameter1=$4 # OS threshold, hdastar income buffer size
-parameter2=$5 # hdastar outgo buffer size
-parameter3=$6 # abstraction type
+parameter1=$4 # OS threshold,   hdastar income buffer size
+parameter2=$5 # OS abstraction, hdastar outgo buffer size
+parameter3=$6 # OS N/A,         abstraction type
 
 if [ $# -lt 4 ]
 then
@@ -37,6 +37,7 @@ git stage src/*.hpp src/main.cc put/*.sh see/*.sh
 git commit -m "Experiment: $time $algorithm $thread_number $parameter1 $parameter2 $parameter3 $text"
 
 cd src
+clean
 make
 cd ..
 cp ./src/tiles ./src/tiles$time

@@ -107,8 +107,8 @@ public:
 	// original 512927357
 	// now      200000000
 
-	OSHDAstar(D &d, int tnum_ = 1, int os_trigger_f_ = 4, typename hash::ABST abst = hash::SINGLE) :
-			SearchAlg<D>(d), tnum(tnum_), thread_id(0), z(tnum, abst), incumbent(
+	OSHDAstar(D &d, int tnum_ = 1, int os_trigger_f_ = 4, int abst = 0) :
+			SearchAlg<D>(d), tnum(tnum_), thread_id(0), z(tnum, static_cast<typename hash::ABST>(abst)), incumbent(
 					100000), os_trigger_f(os_trigger_f_) {
 		income_buffer = new buffer<Node> [tnum];
 		terminate = new bool[tnum];
@@ -207,6 +207,7 @@ public:
 			if (open.isemptyunder(incumbent.load())) {
 				dbgprintf("open is empty.\n");
 				terminate[id] = true;
+				fvalues[id] = 1000000;
 				// If no goal found, just continue
 				if (hasterminated() && incumbent != 100000) {
 						break;
