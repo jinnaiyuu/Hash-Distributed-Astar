@@ -1,9 +1,10 @@
 #!/bin/bash
 
 
-awk \ '
+
+awk '\
 $1=="#start" { \
-problem = -1; \ 
+problem = -1; \
 wall = -1;\
 expd = -1;\
 gend = -1;\
@@ -30,7 +31,7 @@ $1=="generation"&&$2=="stddev" {gend_stddev = $4} \
 $1=="outsource" {outsource = $5} \
 $1=="forcepush"&&$2=="incomebuffer" {income_force = $4} \
 $1=="forcepush"&&$2=="outgobuffer" {outgo_force = $4} \
-$1=="#end"{printf("\n")}'
+$1=="#end"{ printf("%d %f %d %d %d %d %d %d %f %f %d %d %d\n", problem, wall, expd, gend, solution, max_income_buffer, max_outgo_buffer, duplicated, expd_stddev, gend_stddev, outsource, income_force, outgo_force)}'
 
 exit 0
 

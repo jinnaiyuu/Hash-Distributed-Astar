@@ -39,6 +39,8 @@ do
     break
 done
 
+#echo "problem wall expd gend solution max_income_buffer max_outgo_buffer duplicated expd_stddev gend_stddev outsource income_force outgo_force" > ${filename}
+
 # Parse data into astar.dat
 for FILE in $1*.o$2-* 
 do

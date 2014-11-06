@@ -37,7 +37,7 @@ git stage src/*.hpp src/main.cc put/*.sh see/*.sh
 git commit -m "Experiment: $time $algorithm $thread_number $parameter1 $parameter2 $parameter3 $text"
 
 cd src
-clean
+touch main.cc
 make
 cd ..
 cp ./src/tiles ./src/tiles$time

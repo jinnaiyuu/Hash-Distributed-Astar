@@ -26,7 +26,6 @@
 #include "zobrist.hpp"
 #include "trivial_hash.hpp"
 
-
 template<class D, class hash> class HDAstar: public SearchAlg<D> {
 
 	struct Node {
@@ -75,6 +74,16 @@ template<class D, class hash> class HDAstar: public SearchAlg<D> {
 	int* expd_distribution;
 	int* gend_distribution;
 
+	struct Logfvalue {
+		double walltime;
+		int fvalue;
+		int hvalue;
+		Logfvalue(double walltime_, int fvalue_, int hvalue_) :
+				walltime(walltime_), fvalue(fvalue_), hvalue(hvalue_) {
+		};
+	};
+	std::vector<Logfvalue>* logfvalue;
+
 #ifdef ANALYZE_INCOME
 	int max_income = 0;
 #endif
@@ -97,10 +106,11 @@ template<class D, class hash> class HDAstar: public SearchAlg<D> {
 
 public:
 
-	HDAstar(D &d, int tnum_, int income_threshold_ = 1000000, int outgo_threshold_ = 10000000
-			, int abst = 0) :
-			SearchAlg<D>(d), tnum(tnum_), thread_id(0), z(tnum, static_cast<typename hash::ABST>(abst)), incumbent(
-					100000), income_threshold(income_threshold_), outgo_threshold(outgo_threshold_) {
+	HDAstar(D &d, int tnum_, int income_threshold_ = 1000000,
+			int outgo_threshold_ = 10000000, int abst = 0) :
+			SearchAlg<D>(d), tnum(tnum_), thread_id(0), z(tnum,
+					static_cast<typename hash::ABST>(abst)), incumbent(100000), income_threshold(
+					income_threshold_), outgo_threshold(outgo_threshold_) {
 		income_buffer = new buffer<Node> [tnum];
 		terminate = new bool[tnum];
 		for (int i = 0; i < tnum; ++i) {
@@ -111,6 +121,8 @@ public:
 
 		// Fields for Out sourcing
 		fvalues = new int[tnum];
+
+		logfvalue = new std::vector<Logfvalue> [tnum];
 
 	}
 
@@ -153,7 +165,6 @@ public:
 		int current_f = 0;
 
 		double lapse;
-		TrivialHash<16> th(tnum);
 
 		//		while (path.size() == 0) {
 		while (true) {
@@ -220,13 +231,14 @@ public:
 
 #ifdef ANALYZE_FTRACE
 			int newf = open.minf();
+			Logfvalue* lg = new Logfvalue(walltime() - wall0, n->f, n->f - n->g);
+			logfvalue[id].push_back(*lg);
 			if (fvalues[id] != newf) {
-				printf("ftrace %d %d %f\n", id, fvalues[id],
-						walltime() - wall0);
+//				printf("ftrace %d %d %f\n", id, fvalues[id],
+//						walltime() - wall0);
 				fvalues[id] = newf;
 			}
 #endif // ANALYZE_FTRACE
-
 			// TODO: Might not be the best way.
 			// Would there be more novel way?
 
@@ -311,12 +323,11 @@ public:
 				int blank = state.blank;
 
 				Edge<D> e = this->dom.apply(state, op);
-//				printf("%d %d\n", id, n->zbr);
 
 				Node* next = wrap(state, n, e.cost, e.pop, nodes);
 				dbgprintf("mv blank op = %d %d %d \n", moving_tile, blank, op);
-				next->zbr = z.inc_hash(n->zbr, moving_tile, blank, op, state.tiles);
-//				next->zbr = (n->zbr ^ z.inc_hash(moving_tile, blank, op, state.tiles)) % tnum;
+				next->zbr = z.inc_hash(n->zbr, moving_tile, blank, op,
+						state.tiles);
 				unsigned long zbr = next->zbr; // % tnum;
 				dbgprintf("zbr = %d\n", zbr);
 
@@ -354,10 +365,8 @@ public:
 					// Therefore, first try to acquire the lock & then check whether the size
 					// exceeds the threshold.
 					// For more bigger system, this might change.
-
 					// if the buffer is locked, store the node locally.
 					outgo_buffer[zbr].push_back(next);
-					// printf("%d: size = %d\n",zbr, outgo_buffer[zbr].size());
 #ifdef ANALYZE_OUTGO
 					int size = outgo_buffer[zbr].size();
 					if (size > max_outgo_buffer_size) {
@@ -372,6 +381,11 @@ public:
 			endlapse(lapse, "expand");
 #endif
 		}
+
+		// Solved (maybe)
+
+		this->wtime = walltime();
+		this->ctime = cputime();
 		//		path =
 		dbgprintf("pathsize = %lu\n", path.size());
 
@@ -387,7 +401,6 @@ public:
 #ifdef ANALYZE_DUPLICATE
 		this->duplicate += duplicate_here;
 #endif
-
 		dbgprintf("END\n");
 		return 0;
 	}
@@ -426,7 +439,7 @@ public:
 		for (int i = 0; i < tnum; ++i) {
 			pthread_create(&t[tnum], NULL,
 					(void*(*)(void*))&HDAstar::thread_helper, this);
-		}
+				}
 		for (int i = 0; i < tnum; ++i) {
 			pthread_join(t[tnum], NULL);
 		}
@@ -435,9 +448,6 @@ public:
 			this->expd += expd_distribution[i];
 			this->gend += gend_distribution[i];
 		}
-
-		this->wtime = walltime();
-		this->ctime = cputime();
 
 #ifdef ANALYZE_INCOME
 		printf("average of max_income_buffer_size = %d\n", max_income / tnum);
@@ -456,11 +466,18 @@ public:
 		printf("\ngeneration stddev = %f\n",
 				analyze_distribution(gend_distribution));
 #endif
-//#ifdef ANALYZE_OUTSOURCING
-//		printf("outsource node pushed = %d\n", outsource_pushed);
-//#endif
 		printf("forcepush incomebuffer = %d\n", force_income);
 		printf("forcepush outgobuffer = %d\n", force_outgo);
+
+#ifdef ANALYZE_FTRACE
+		for (int i = 0; i < tnum; ++i) {
+			for (int j = 0; j < this->logfvalue[i].size(); ++j) {
+				printf("ftrace %f %d %d %d\n", logfvalue[i][j].walltime,
+						i, logfvalue[i][j].fvalue, logfvalue[i][j].hvalue);
+			}
+		}
+
+#endif
 
 		return path;
 	}
@@ -517,7 +534,6 @@ public:
 		return stddev;
 	}
 
-
 	// CAUTIONS!!!!:
 	// These lapsing methods uses cputime methods.
 	// It won't take into account for locks or any other synchronous methods.
@@ -531,7 +547,6 @@ public:
 //		printf("end %f\n",wt);
 		printf("lapse %s %.0f\n", comment, wt);
 	}
-
 
 	// TODO: Parameter would differ for every problem and every environment.
 

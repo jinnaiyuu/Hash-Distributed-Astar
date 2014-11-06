@@ -37,7 +37,7 @@ private:
 	unsigned char hash(const char* const board) {
 		unsigned char h = 0;
 		for (int i = 0; i < size; ++i) {
-			h = h << 1 ^ board[i];
+			h = (h * 33) ^ board[i]; // Optimized to shift and add
 		}
 //		printf("row hash = %d\n", h);
 		return h;
