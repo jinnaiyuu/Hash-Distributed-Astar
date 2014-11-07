@@ -84,6 +84,18 @@ template<class D, class hash> class HDAstar: public SearchAlg<D> {
 	};
 	std::vector<Logfvalue>* logfvalue;
 
+	struct LogIncumbent {
+		double walltime;
+		int incumbent;
+		LogIncumbent(double walltime_, int incumbent_) :
+				walltime(walltime_), incumbent(incumbent_) {
+		};
+	};
+	std::vector<LogIncumbent>* logincumbent;
+
+	double wall0 = 0; // ANALYZE_FTRACE
+
+
 #ifdef ANALYZE_INCOME
 	int max_income = 0;
 #endif
@@ -93,14 +105,8 @@ template<class D, class hash> class HDAstar: public SearchAlg<D> {
 #ifdef ANALYZE_DUPLICATE
 	int duplicate = 0;
 #endif
-#ifdef ANALYZE_FTRACE
-	double wall0 = 0; // ANALYZE_FTRACE
-#endif
 #ifdef ANALYZE_GLOBALF
 	int globalf = 10000000; // Ad hoc number.
-#ifndef ANALYZE_FTRACE
-	double wall0 = 0;
-#endif
 #endif
 	int* fvalues; // OUTSOURCING
 
@@ -123,7 +129,7 @@ public:
 		fvalues = new int[tnum];
 
 		logfvalue = new std::vector<Logfvalue> [tnum];
-
+		logincumbent = new std::vector<LogIncumbent> [tnum];
 	}
 
 	//      32,334 length 46 : 14 1 9 6 4 8 12 5 7 2 3 0 10 11 13 15
@@ -299,6 +305,8 @@ public:
 				// TODO: need to be atomic. Really?
 				if (incumbent > length) {
 					incumbent = length;
+					LogIncumbent* li = new LogIncumbent(walltime() - wall0, incumbent);
+					logincumbent[id].push_back(*li);
 					path = newpath;
 				}
 
@@ -423,13 +431,7 @@ public:
 
 		income_buffer[z.hash_tnum(init.tiles)].push(n);
 
-#ifdef ANALYZE_FTRACE
 		wall0 = walltime();
-#else
-#ifdef ANALYZE_GLOBALF
-		wall0 = walltime();
-#endif
-#endif
 #ifdef OUTSOURCING
 		for (int i = 0; i < tnum; ++i) {
 			fvalues[i] = n->f;
@@ -459,11 +461,11 @@ public:
 		printf("duplicated nodes = %d\n", duplicate);
 #endif
 #ifdef ANALYZE_DISTRIBUTION
-		printf("expansion distribution = ");
-		printf("\nexpansion stddev = %f\n",
+		printf("expansion balance = %f\n", load_balance(expd_distribution));
+		printf("expansion stddev = %f\n",
 				analyze_distribution(expd_distribution));
-		printf("generation distribution = ");
-		printf("\ngeneration stddev = %f\n",
+		printf("generation balance = %f\n", load_balance(gend_distribution));
+		printf("generation stddev = %f\n",
 				analyze_distribution(gend_distribution));
 #endif
 		printf("forcepush incomebuffer = %d\n", force_income);
@@ -478,7 +480,15 @@ public:
 		}
 
 #endif
+#ifdef ANALYZE_INCUMBENT_TRACE
+		for (int i = 0; i < tnum; ++i) {
+			for (int j = 0; j < this->logincumbent[i].size(); ++j) {
+				printf("incumbent %f %d %d\n", logincumbent[i][j].walltime,
+						i, logincumbent[i][j].incumbent);
+			}
+		}
 
+#endif
 		return path;
 	}
 
@@ -515,22 +525,34 @@ public:
 		printf("\n");
 	}
 
+	// MAX / AVERAGE
+	double load_balance(int* distribution) {
+		double avrg = 0, max = 0;
+		for (int i = 0; i < tnum; ++i) {
+			avrg += distribution[i];
+			if (max < distribution[i]) {
+				max = distribution[i];
+			}
+		}
+		avrg /= tnum;
+		return max / avrg;
+	}
+
 	double analyze_distribution(int* distribution) {
 		double avrg = 0;
 		for (int i = 0; i < tnum; ++i) {
 			avrg += distribution[i];
 		}
 		avrg /= tnum;
-
 		double var = 0;
 		for (int i = 0; i < tnum; ++i) {
 			var += (avrg - distribution[i]) * (avrg - distribution[i]);
 		}
 		var /= tnum;
 		double stddev = sqrt(var);
-		for (int i = 0; i < tnum; ++i) {
-			printf("%d ", distribution[i]);
-		}
+//		for (int i = 0; i < tnum; ++i) {
+//			printf("%d ", distribution[i]);
+//		}
 		return stddev;
 	}
 

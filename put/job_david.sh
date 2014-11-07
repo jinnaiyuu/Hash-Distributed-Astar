@@ -40,7 +40,7 @@ else
 fi
 
 
-JOB_ARRAY_ID=`qsub -t 1-$problem_size -l nodes=1:ppn=8,walltime=00:40:00 -N $algname.${thread_number}threads.${mem}.${paramname1}${param1}${paramname2}${param2}${paramname3}${param3}.${time} -j oe -v arg1=$time,arg2=$algname,arg3=$thread_number,arg4=$param1,arg5=$param2,arg6=$param3  ./run.sh`
+JOB_ARRAY_ID=`qsub -t 1-$problem_size -l nodes=1:ppn=8,walltime=01:20:00 -N $algname.${thread_number}threads.${mem}.${paramname1}${param1}${paramname2}${param2}${paramname3}${param3}.${time} -j oe -v arg1=$time,arg2=$algname,arg3=$thread_number,arg4=$param1,arg5=$param2,arg6=$param3  ./run.sh`
 
 JOB_NUMBER=`echo $JOB_ARRAY_ID | awk -F "." '{print $1}'` 
 
