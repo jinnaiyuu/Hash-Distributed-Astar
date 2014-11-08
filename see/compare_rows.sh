@@ -24,3 +24,5 @@ gnuplot <<EOF
    set output "analysis/$title.eps"
    replot a*x+b title ti
 EOF
+
+rm xy_data

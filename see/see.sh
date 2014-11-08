@@ -48,6 +48,15 @@ do
     ./parse.sh < ${FILE} >> ${filename}
 done
 
+
+sort -n ${filename} > ${filename}buf
+
+rm ${filename}
+
+cp ${filename}buf ${filename}
+
+rm ${filename}buf
+
 # visualize with R
 # Duplicated valuable. 
 #./visualize.sh $1 < $1.dat
