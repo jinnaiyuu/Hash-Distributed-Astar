@@ -12,6 +12,8 @@ soltion = -1;\
 max_income_buffer = -1;\
 max_outgo_buffer = -1;\
 duplicated = -1;\
+expd_balance = -1;\
+gend_balance = -1;\
 expd_stddev = -1;\
 gend_stddev = -1;\
 outsource = -1;\
@@ -26,12 +28,14 @@ $2=="solution" {solution = $4} \
 $3=="max_income_buffer_size" {max_income_buffer = $5} \
 $3=="max_outgo_buffer_size"  {max_outgo_buffer = $5} \
 $1=="duplicated" {duplicated = $4} \
+$1=="expansion"&&$2=="balance" {expd_balance = $4} \
+$1=="generation"&&$2=="balance" {gend_balance = $4} \
 $1=="expansion"&&$2=="stddev" {expd_stddev = $4} \
 $1=="generation"&&$2=="stddev" {gend_stddev = $4} \
 $1=="outsource" {outsource = $5} \
 $1=="forcepush"&&$2=="incomebuffer" {income_force = $4} \
 $1=="forcepush"&&$2=="outgobuffer" {outgo_force = $4} \
-$1=="#end"{ printf("%d %f %d %d %d %d %d %d %f %f %d %d %d\n", problem, wall, expd, gend, solution, max_income_buffer, max_outgo_buffer, duplicated, expd_stddev, gend_stddev, outsource, income_force, outgo_force)}'
+$1=="#end"{ printf("%d %f %d %d %d %d %d %d %f %f %f %f %d %d %d\n", problem, wall, expd, gend, solution, max_income_buffer, max_outgo_buffer, duplicated, expd_balance, gend_balance, expd_stddev, gend_stddev, outsource, income_force, outgo_force)}'
 
 exit 0
 

@@ -1,5 +1,10 @@
 #!/bin/sh
 
+
+# arg1 = time
+#
+#
+
 cd $PBS_O_WORKDIR
-./tiles$arg1 $arg2 $PBS_ARRAYID $arg3 $arg4 $arg5 $arg6 < random_instances
+./tiles$time $algname $PBS_ARRAYID $thread_number $param1 $param2 $param3 < $problem_type
 
