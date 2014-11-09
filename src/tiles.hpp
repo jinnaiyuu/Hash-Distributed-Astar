@@ -11,8 +11,8 @@
 
 struct Tiles {
 	enum {
-		Width = 5,
-		Height = 5,
+		Width = 4,
+		Height = 4,
 		Ntiles = Width*Height,
 	};
 

@@ -80,7 +80,8 @@ template<class D, class hash> class HDAstar: public SearchAlg<D> {
 		int hvalue;
 		Logfvalue(double walltime_, int fvalue_, int hvalue_) :
 				walltime(walltime_), fvalue(fvalue_), hvalue(hvalue_) {
-		};
+		}
+		;
 	};
 	std::vector<Logfvalue>* logfvalue;
 
@@ -89,12 +90,12 @@ template<class D, class hash> class HDAstar: public SearchAlg<D> {
 		int incumbent;
 		LogIncumbent(double walltime_, int incumbent_) :
 				walltime(walltime_), incumbent(incumbent_) {
-		};
+		}
+		;
 	};
 	std::vector<LogIncumbent>* logincumbent;
 
 	double wall0 = 0; // ANALYZE_FTRACE
-
 
 #ifdef ANALYZE_INCOME
 	int max_income = 0;
@@ -128,8 +129,8 @@ public:
 		// Fields for Out sourcing
 		fvalues = new int[tnum];
 
-		logfvalue = new std::vector<Logfvalue> [tnum];
-		logincumbent = new std::vector<LogIncumbent> [tnum];
+		logfvalue = new std::vector<Logfvalue>[tnum];
+		logincumbent = new std::vector<LogIncumbent>[tnum];
 	}
 
 	//      32,334 length 46 : 14 1 9 6 4 8 12 5 7 2 3 0 10 11 13 15
@@ -305,7 +306,8 @@ public:
 				// TODO: need to be atomic. Really?
 				if (incumbent > length) {
 					incumbent = length;
-					LogIncumbent* li = new LogIncumbent(walltime() - wall0, incumbent);
+					LogIncumbent* li = new LogIncumbent(walltime() - wall0,
+							incumbent);
 					logincumbent[id].push_back(*li);
 					path = newpath;
 				}
@@ -464,9 +466,20 @@ public:
 		printf("expansion balance = %f\n", load_balance(expd_distribution));
 		printf("expansion stddev = %f\n",
 				analyze_distribution(expd_distribution));
+		printf("expansion =");
+		for(int i=0; i<tnum;++i) {
+			printf(" %d", expd_distribution[i]);
+		}
+		printf("\n");
+
 		printf("generation balance = %f\n", load_balance(gend_distribution));
 		printf("generation stddev = %f\n",
 				analyze_distribution(gend_distribution));
+		printf("generation =");
+		for(int i=0; i<tnum;++i) {
+			printf(" %d", gend_distribution[i]);
+		}
+		printf("\n");
 #endif
 		printf("forcepush incomebuffer = %d\n", force_income);
 		printf("forcepush outgobuffer = %d\n", force_outgo);
