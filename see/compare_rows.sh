@@ -1,28 +1,21 @@
 #!/bin/bash
 
-xfile=$1
-xrow=$2
-yfile=$3
-xrownum=`cat $xfile | awk 'BEGIN{nf = 0} {if(nf < NF) nf = NF} END {print NF}'`
-yrow=`expr $4 + $xrownum`
+column=$1
+dat1=$2
+dat2=$3
+dat3=$4
+dat4=$5
+dat5=$6
 
-read -p "Enter Graph Title: " title
+echo "title = "
+read title
 
-paste $xfile $yfile > xy_data
-
-
-
-gnuplot <<EOF
-   set terminal postscript eps
-   set title "$title"
-   set xlabel "${xfile}-${xrow}"
-   set ylabel "${yfile}-$4"
-   fit a*x+b "xy_data" using $xrow:$yrow via a,b
-   ti = sprintf("%f", a)
-   plot x with line ls 1
-   replot "xy_data" using $xrow:$yrow 
-   set output "analysis/$title.eps"
-   replot a*x+b title ti
+gnuplot<<EOF
+  set terminal postscript enhanced
+  plot "$dat1" using 1:$column w l title "$dat1"
+  replot "$dat2" using 1:$column w l title "$dat2"
+  replot "$dat3" using 1:$column w l title "$dat3"
+  replot "$dat4" using 1:$column w l title "$dat4"
+  set output "analysis/$title.eps"
+  replot "$dat5" using 1:$column w l title "$dat5"
 EOF
-
-rm xy_data
