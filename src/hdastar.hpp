@@ -268,6 +268,9 @@ public:
 #endif
 			Node *duplicate = closed.find(n->packed);
 			if (duplicate) {
+#ifdef ANALYZE_DUPLICATE
+				duplicate_here++;
+#endif // ANALYZE_DUPLICATE
 				if (duplicate->f <= n->f) {
 					dbgprintf("Discarded\n");
 					nodes.destruct(n);
@@ -275,9 +278,6 @@ public:
 				}
 				// Node access here is unnecessary duplicates.
 				dbgprintf("Duplicated\n");
-#ifdef ANALYZE_DUPLICATE
-				duplicate_here++;
-#endif // ANALYZE_DUPLICATE
 			}
 #ifdef ANALYZE_LAPSE
 			endlapse(lapse, "closedlist");
