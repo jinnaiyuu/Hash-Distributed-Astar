@@ -5,21 +5,24 @@
 #define _HASHTBL_HPP_
 
 #include <vector>
+#include <stdio.h>
 //#include "pool.hpp"
 
-template <class Node> struct HashEntry {
+template<class Node> struct HashEntry {
 	unsigned long hash;
 	Node *next;
 };
 
 // HashTable implements a simple single-sized hash table.
-template <class Key, class Node> class HashTable {
+template<class Key, class Node> class HashTable {
 
 	std::vector<Node*> buckets;
 
 public:
 
-	HashTable(unsigned int sz) : buckets(sz, 0) { }
+	HashTable(unsigned int sz) :
+			buckets(sz, 0) {
+	}
 
 	// find looks up the given key in the hash table and returns
 	// the data value if it is found or else it returns 0.
@@ -41,7 +44,6 @@ public:
 		n->hashentry().next = buckets[ind];
 		buckets[ind] = n;
 	}
-
 };
 
 #endif	// _HASHTBL_HPP_

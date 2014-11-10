@@ -97,7 +97,7 @@ struct Tiles {
 		dst.word = 0;	// to make g++ shut up about uninitialized usage.
 		s.tiles[(int) s.blank] = 0;
 		for (int i = 0; i < Ntiles; i++)
-			dst.word = (dst.word << 4) | s.tiles[i];
+			dst.word = (dst.word << 4) | s.tiles[i]; // TODO: 15 puzzle specific
 	}
 
 	// unpack unpacks the packed state s into the state dst.
@@ -105,7 +105,7 @@ struct Tiles {
 		dst.h = 0;
 		dst.blank = -1;
 		for (int i = Ntiles - 1; i >= 0; i--) {
-			int t = s.word & 0xF;
+			int t = s.word & 0xF; // 15 Puzzle specific
 			s.word >>= 4;
 			dst.tiles[i] = t;
 			if (t == 0)

@@ -31,7 +31,7 @@ template<class D, class hash> class HDAstar: public SearchAlg<D> {
 	struct Node {
 		char f, g, pop;
 		char zbr; // zobrist value. stored here for now. Also the size is char for now.
-		int openind;
+		int openind; // How many times this node has been outsourced.
 		Node *parent;
 		typename D::PackedState packed;
 		HashEntry<Node> hentry;
@@ -74,6 +74,8 @@ template<class D, class hash> class HDAstar: public SearchAlg<D> {
 	int* expd_distribution;
 	int* gend_distribution;
 
+	std::atomic<int> globalOrder;
+
 	struct Logfvalue {
 		double walltime;
 		int fvalue;
@@ -94,6 +96,33 @@ template<class D, class hash> class HDAstar: public SearchAlg<D> {
 		;
 	};
 	std::vector<LogIncumbent>* logincumbent;
+
+	struct LogNodeOrder {
+		int globalOrder;
+		uint64_t packedState;
+		LogNodeOrder(int globalOrder_, char* tiles) :
+				globalOrder(globalOrder_) {
+			packedState = pack(tiles);
+		}
+		uint64_t pack(char* tiles) {
+			uint64_t word = 0; // to make g++ shut up about uninitialized usage.
+			for (int i = 0; i < D::Ntiles; i++) {
+				word = (word << 4) | tiles[i];
+			}
+			return word;
+		}
+		char* unpack() {
+			uint64_t word = packedState;
+			char* tiles = new char[D::Ntiles];
+			for (int i = D::Ntiles - 1; i >= 0; i--) {
+				int t = word & 0xF; // 15 Puzzle specific
+				word >>= 4;
+				tiles[i] = t;
+			}
+			return tiles;
+		}
+	};
+	std::vector<LogNodeOrder>* lognodeorder;
 
 	double wall0 = 0; // ANALYZE_FTRACE
 
@@ -117,7 +146,8 @@ public:
 			int outgo_threshold_ = 10000000, int abst = 0) :
 			SearchAlg<D>(d), tnum(tnum_), thread_id(0), z(tnum,
 					static_cast<typename hash::ABST>(abst)), incumbent(100000), income_threshold(
-					income_threshold_), outgo_threshold(outgo_threshold_) {
+					income_threshold_), outgo_threshold(outgo_threshold_), globalOrder(
+					0) {
 		income_buffer = new buffer<Node> [tnum];
 		terminate = new bool[tnum];
 		for (int i = 0; i < tnum; ++i) {
@@ -131,6 +161,7 @@ public:
 
 		logfvalue = new std::vector<Logfvalue>[tnum];
 		logincumbent = new std::vector<LogIncumbent>[tnum];
+		lognodeorder = new std::vector<LogNodeOrder>[tnum];
 	}
 
 	//      32,334 length 46 : 14 1 9 6 4 8 12 5 7 2 3 0 10 11 13 15
@@ -317,6 +348,11 @@ public:
 
 			closed.add(n);
 			expd_here++;
+
+			LogNodeOrder* ln = new LogNodeOrder(globalOrder.fetch_add(1),
+					state.tiles);
+			lognodeorder[id].push_back(*ln);
+
 #ifdef ANALYZE_LAPSE
 			startlapse(&lapse);
 #endif
@@ -396,6 +432,9 @@ public:
 
 		this->wtime = walltime();
 		this->ctime = cputime();
+
+		// From here, you can dump every comments as it would not be included in walltime & cputime.
+
 		//		path =
 		dbgprintf("pathsize = %lu\n", path.size());
 
@@ -502,6 +541,14 @@ public:
 		}
 
 #endif
+
+//#ifdef
+		for (int id = 0; id < tnum; ++id) {
+			for (int i = 0; i < lognodeorder[id].size(); ++i) {
+				printf("%d %016lx\n", lognodeorder[id][i].globalOrder, lognodeorder[id][i].packedState);
+			}
+		}
+//#endif
 		return path;
 	}
 
