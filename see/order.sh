@@ -22,7 +22,7 @@ echo "dat4 done"
 
 # 2. Join two input data into a single data. First need to sort to join.
 
-join -j 2 ${dat1}.buf ${dat2}.buf > order.dat | join -1 3 -2 2 - dat3.buf | join -1 4 -2 2 - dat4.buf > ${dat1}order.dat
+join -j 2 ${dat1}.buf ${dat2}.buf | join -1 3 -2 2 - dat3.buf | join -1 4 -2 2 - dat4.buf > ${dat1}order.dat
 echo "joined"
 
 # 3. Plot
