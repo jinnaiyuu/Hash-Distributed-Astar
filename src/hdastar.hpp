@@ -552,7 +552,7 @@ public:
 #ifdef ANALYZE_ORDER
 		for (int id = 0; id < tnum; ++id) {
 			for (int i = 0; i < lognodeorder[id].size(); ++i) {
-				printf("%d %016lx\n", lognodeorder[id][i].globalOrder, lognodeorder[id][i].packedState);
+				printf("%d %d %016lx\n", id, lognodeorder[id][i].globalOrder, lognodeorder[id][i].packedState);
 			}
 		}
 #endif // ANALYZE_ORDER
