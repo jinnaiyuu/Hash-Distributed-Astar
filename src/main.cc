@@ -34,7 +34,7 @@
 #define ANALYZE_SEMISYNC
 #endif
 
-//#define ANALYZE_ORDER
+#define ANALYZE_ORDER
 
 #include "tiles.hpp"
 #include "idastar.hpp"
