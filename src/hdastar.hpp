@@ -26,6 +26,8 @@
 #include "zobrist.hpp"
 #include "trivial_hash.hpp"
 
+#define DELAY 1000000
+
 template<class D, class hash> class HDAstar: public SearchAlg<D> {
 
 	struct Node {
@@ -123,7 +125,6 @@ template<class D, class hash> class HDAstar: public SearchAlg<D> {
 		}
 	};
 	std::vector<LogNodeOrder>* lognodeorder;
-
 	double wall0 = 0; // ANALYZE_FTRACE
 
 #ifdef ANALYZE_INCOME
@@ -203,6 +204,8 @@ public:
 		int current_f = 0;
 
 		double lapse;
+
+		int useless = 0;
 
 		//		while (path.size() == 0) {
 		while (true) {
@@ -348,11 +351,11 @@ public:
 
 			closed.add(n);
 			expd_here++;
-
+#ifdef ANALYZE_ORDER
 			LogNodeOrder* ln = new LogNodeOrder(globalOrder.fetch_add(1),
 					state.tiles);
 			lognodeorder[id].push_back(*ln);
-
+#endif // ANALYZE_ORDER
 #ifdef ANALYZE_LAPSE
 			startlapse(&lapse);
 #endif
@@ -365,6 +368,8 @@ public:
 				}
 
 				gend_here++;
+
+				useless += uselessCalc(useless);
 				int moving_tile = state.tiles[op];
 				int blank = state.blank;
 
@@ -432,6 +437,8 @@ public:
 
 		this->wtime = walltime();
 		this->ctime = cputime();
+
+		printf("useless = %d\n", useless);
 
 		// From here, you can dump every comments as it would not be included in walltime & cputime.
 
@@ -542,13 +549,13 @@ public:
 
 #endif
 
-//#ifdef
+#ifdef ANALYZE_ORDER
 		for (int id = 0; id < tnum; ++id) {
 			for (int i = 0; i < lognodeorder[id].size(); ++i) {
 				printf("%d %016lx\n", lognodeorder[id][i].globalOrder, lognodeorder[id][i].packedState);
 			}
 		}
-//#endif
+#endif // ANALYZE_ORDER
 		return path;
 	}
 
@@ -628,6 +635,21 @@ public:
 		double wt = clock() - previous;
 //		printf("end %f\n",wt);
 		printf("lapse %s %.0f\n", comment, wt);
+	}
+
+	int uselessCalc(int useless) {
+		int uselessLocal = 0;
+		for (int i = 0; i < DELAY; ++i) {
+			int l = 0;
+			l += useless;
+			l = 2 * l - uselessLocal;
+			if (l != 0) {
+				uselessLocal = l % useless;
+			} else {
+				uselessLocal = useless * 2;
+		}
+	}
+		return uselessLocal;
 	}
 
 	// TODO: Parameter would differ for every problem and every environment.
