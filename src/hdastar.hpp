@@ -26,7 +26,7 @@
 #include "zobrist.hpp"
 #include "trivial_hash.hpp"
 
-#define DELAY 1000000
+#define DELAY 0
 
 template<class D, class hash> class HDAstar: public SearchAlg<D> {
 
@@ -102,8 +102,9 @@ template<class D, class hash> class HDAstar: public SearchAlg<D> {
 	struct LogNodeOrder {
 		int globalOrder;
 		uint64_t packedState;
-		LogNodeOrder(int globalOrder_, char* tiles) :
-				globalOrder(globalOrder_) {
+		int fvalue;
+		LogNodeOrder(int globalOrder_, char* tiles, int fvalue_ = -1) :
+				globalOrder(globalOrder_), fvalue(fvalue_) {
 			packedState = pack(tiles);
 		}
 		uint64_t pack(char* tiles) {
@@ -206,6 +207,8 @@ public:
 		double lapse;
 
 		int useless = 0;
+
+		int fval = -1;
 
 		//		while (path.size() == 0) {
 		while (true) {
@@ -352,9 +355,16 @@ public:
 			closed.add(n);
 			expd_here++;
 #ifdef ANALYZE_ORDER
-			LogNodeOrder* ln = new LogNodeOrder(globalOrder.fetch_add(1),
-					state.tiles);
-			lognodeorder[id].push_back(*ln);
+			if (fval != n->f) {
+				fval = n->f;
+				LogNodeOrder* ln = new LogNodeOrder(globalOrder.fetch_add(1),
+						state.tiles, fval);
+				lognodeorder[id].push_back(*ln);
+			} else {
+				LogNodeOrder* ln = new LogNodeOrder(globalOrder.fetch_add(1),
+						state.tiles);
+				lognodeorder[id].push_back(*ln);
+			}
 #endif // ANALYZE_ORDER
 #ifdef ANALYZE_LAPSE
 			startlapse(&lapse);
@@ -552,7 +562,8 @@ public:
 #ifdef ANALYZE_ORDER
 		for (int id = 0; id < tnum; ++id) {
 			for (int i = 0; i < lognodeorder[id].size(); ++i) {
-				printf("%d %d %016lx\n", id, lognodeorder[id][i].globalOrder, lognodeorder[id][i].packedState);
+				printf("%d %d %016lx %d\n", id, lognodeorder[id][i].globalOrder, lognodeorder[id][i].packedState,
+						lognodeorder[id][i].fvalue);
 			}
 		}
 #endif // ANALYZE_ORDER
@@ -647,8 +658,8 @@ public:
 				uselessLocal = l % useless;
 			} else {
 				uselessLocal = useless * 2;
+			}
 		}
-	}
 		return uselessLocal;
 	}
 
