@@ -26,7 +26,7 @@
 #include "zobrist.hpp"
 #include "trivial_hash.hpp"
 
-#define DELAY 0
+#define DELAY 100000
 
 template<class D, class hash> class HDAstar: public SearchAlg<D> {
 
@@ -323,6 +323,19 @@ public:
 			typename D::State state;
 			this->dom.unpack(state, n->packed);
 
+#ifdef ANALYZE_ORDER
+			if (fval != n->f) {
+				fval = n->f;
+				LogNodeOrder* ln = new LogNodeOrder(globalOrder.fetch_add(1),
+						state.tiles, fval);
+				lognodeorder[id].push_back(*ln);
+			} else {
+				LogNodeOrder* ln = new LogNodeOrder(globalOrder.fetch_add(1),
+						state.tiles);
+				lognodeorder[id].push_back(*ln);
+			}
+#endif // ANALYZE_ORDER
+
 			if (this->dom.isgoal(state)) {
 				// TODO: For some reason, sometimes pops broken node.
 				if (state.tiles[1] == 0) {
@@ -354,18 +367,7 @@ public:
 
 			closed.add(n);
 			expd_here++;
-#ifdef ANALYZE_ORDER
-			if (fval != n->f) {
-				fval = n->f;
-				LogNodeOrder* ln = new LogNodeOrder(globalOrder.fetch_add(1),
-						state.tiles, fval);
-				lognodeorder[id].push_back(*ln);
-			} else {
-				LogNodeOrder* ln = new LogNodeOrder(globalOrder.fetch_add(1),
-						state.tiles);
-				lognodeorder[id].push_back(*ln);
-			}
-#endif // ANALYZE_ORDER
+
 #ifdef ANALYZE_LAPSE
 			startlapse(&lapse);
 #endif
