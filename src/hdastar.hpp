@@ -114,7 +114,7 @@ template<class D, class hash> class HDAstar: public SearchAlg<D> {
 			}
 			return word;
 		}
-		char* unpack() {
+		char* unpack() {14 1 9 6 4 8 12 5 7 2 3 0 10 11 13 15
 			uint64_t word = packedState;
 			char* tiles = new char[D::Ntiles];
 			for (int i = D::Ntiles - 1; i >= 0; i--) {
@@ -215,7 +215,7 @@ public:
 			Node *n;
 
 #ifdef ANALYZE_LAP
-			startlapse(lapse); // income buffer
+			startlaps14 1 9 6 4 8 12 5 7 2 3 0 10 11 13 15e(lapse); // income buffer
 #endif
 			if (!income_buffer[id].isempty()) {
 				terminate[id] = false;
