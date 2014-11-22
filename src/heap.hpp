@@ -22,8 +22,9 @@ template <class HeapElm> class Heap {
 			if (p > max)
 				max = p;
 
-			n->openind = bins[p].size();
-			bins[p].push_back(n);
+			// If you put p to 0, No h tie-breaking.
+			n->openind = bins[0].size();
+			bins[0].push_back(n);
 			fill++;
 		}
 

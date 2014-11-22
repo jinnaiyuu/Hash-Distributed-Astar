@@ -26,7 +26,7 @@
 #include "zobrist.hpp"
 #include "trivial_hash.hpp"
 
-#define DELAY 10000000
+#define DELAY 100000
 
 template<class D, class hash> class HDAstar: public SearchAlg<D> {
 
