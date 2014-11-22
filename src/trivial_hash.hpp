@@ -46,7 +46,7 @@ private:
 			h += board[i] * primes[i];
 		}
 
-		printf("row hash = %d\n", h);
+//		printf("row hash = %d\n", h);
 		return h;
 	}
 
