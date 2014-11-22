@@ -26,7 +26,7 @@
 #include "zobrist.hpp"
 #include "trivial_hash.hpp"
 
-#define DELAY 100000
+#define DELAY 10000000
 
 template<class D, class hash> class HDAstar: public SearchAlg<D> {
 
@@ -114,7 +114,7 @@ template<class D, class hash> class HDAstar: public SearchAlg<D> {
 			}
 			return word;
 		}
-		char* unpack() {14 1 9 6 4 8 12 5 7 2 3 0 10 11 13 15
+		char* unpack() {
 			uint64_t word = packedState;
 			char* tiles = new char[D::Ntiles];
 			for (int i = D::Ntiles - 1; i >= 0; i--) {
