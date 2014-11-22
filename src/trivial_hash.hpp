@@ -35,11 +35,18 @@ public:
 private:
 
 	unsigned char hash(const char* const board) {
+//		unsigned char h = 31;
+//		for (int i = 0; i < size; ++i) {
+//			h = (h * 76963) ^ (board[i] * 54059); // Optimized to shift and add
+//		}
 		unsigned char h = 0;
-		for (int i = 0; i < size; ++i) {
-			h = (h * 33) ^ board[i]; // Optimized to shift and add
+		int primes[16] = {1, 31, 137, 389, 1571, 3079, 11047, 77813, 197713, 786433,
+				3145739, 12582917, 50331653, 201326611, 0, 805306457};
+		for (int i = 0; i< size; ++i) {
+			h += board[i] * primes[i];
 		}
-//		printf("row hash = %d\n", h);
+
+		printf("row hash = %d\n", h);
 		return h;
 	}
 

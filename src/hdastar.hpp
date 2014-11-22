@@ -382,6 +382,7 @@ public:
 				gend_here++;
 
 				useless += uselessCalc(useless);
+
 				int moving_tile = state.tiles[op];
 				int blank = state.blank;
 
