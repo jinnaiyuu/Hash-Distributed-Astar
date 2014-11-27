@@ -532,7 +532,7 @@ public:
 		printf("expansion balance = %f\n", load_balance(expd_distribution));
 		printf("expansion stddev = %f\n",
 				analyze_distribution(expd_distribution));
-		printf("expansion =");
+		printf("expansion distribution =");
 		for(int i=0; i<tnum;++i) {
 			printf(" %d", expd_distribution[i]);
 		}
