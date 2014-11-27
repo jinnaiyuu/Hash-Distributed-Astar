@@ -104,8 +104,9 @@ template<class D, class hash> class HDAstar: public SearchAlg<D> {
 		int globalOrder;
 		uint64_t packedState;
 		int fvalue;
-		LogNodeOrder(int globalOrder_, char* tiles, int fvalue_ = -1) :
-				globalOrder(globalOrder_), fvalue(fvalue_) {
+		int openlistSize;
+		LogNodeOrder(int globalOrder_, char* tiles, int fvalue_ = -1, int openlistSize_ = -1) :
+				globalOrder(globalOrder_), fvalue(fvalue_), openlistSize(openlistSize_) {
 			packedState = pack(tiles);
 		}
 		uint64_t pack(char* tiles) {
@@ -127,6 +128,8 @@ template<class D, class hash> class HDAstar: public SearchAlg<D> {
 		}
 	};
 	std::vector<LogNodeOrder>* lognodeorder;
+
+
 	double wall0 = 0; // ANALYZE_FTRACE
 
 	int* open_sizes;
@@ -332,11 +335,11 @@ public:
 			if (fval != n->f) {
 				fval = n->f;
 				LogNodeOrder* ln = new LogNodeOrder(globalOrder.fetch_add(1),
-						state.tiles, fval);
+						state.tiles, fval, open.getsize());
 				lognodeorder[id].push_back(*ln);
 			} else {
 				LogNodeOrder* ln = new LogNodeOrder(globalOrder.fetch_add(1),
-						state.tiles);
+						state.tiles, -1, open.getsize());
 				lognodeorder[id].push_back(*ln);
 			}
 #endif // ANALYZE_ORDER
@@ -572,8 +575,8 @@ public:
 #ifdef ANALYZE_ORDER
 		for (int id = 0; id < tnum; ++id) {
 			for (int i = 0; i < lognodeorder[id].size(); ++i) {
-				printf("%d %d %016lx %d\n", id, lognodeorder[id][i].globalOrder, lognodeorder[id][i].packedState,
-						lognodeorder[id][i].fvalue);
+				printf("%d %d %016lx %d %d\n", id, lognodeorder[id][i].globalOrder, lognodeorder[id][i].packedState,
+						lognodeorder[id][i].fvalue, lognodeorder[id][i].openlistSize);
 			}
 		}
 #endif // ANALYZE_ORDER

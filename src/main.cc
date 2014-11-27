@@ -36,6 +36,8 @@
 
 #define ANALYZE_ORDER
 
+//#define ANALYZE_OPENLIST_SIZE
+
 #include "tiles.hpp"
 #include "idastar.hpp"
 #include "astar.hpp"

@@ -88,7 +88,7 @@ public:
 		// TODO: Need to halt if the number growing crazy.
 		// TODO: ad hoc solution.
 		if (p0 >= qs.size()) {
-			printf("f going crazy.\n");
+			dbgprintf("f going crazy.\n");
 			return;
 		}
 
@@ -126,7 +126,7 @@ public:
 	// return false. This will be used for termination detection.
 	// Why minus 1? Because the total length contains the initial state.
 	// Path contains n nodes and n+1 edge. - 1
-	bool isemptyunder(int incumbent) { return (((incumbent - 1) <= min) || fill == 0);}
+	bool isemptyunder(int incumbent) { return (((incumbent ) <= min) || fill == 0);}
 
 	bool mem(HeapElm *n) { return n->openind >= 0; }
 
@@ -134,7 +134,7 @@ public:
 
 	int getsize() {
 		int sum = 0;
-		printf("qs.size = %zu\n", qs.size() );
+		dbgprintf("qs.size = %zu\n", qs.size() );
 		for (int i = 0; i < qs.size(); ++i) {
 			sum += qs[i].getsize();
 		}
