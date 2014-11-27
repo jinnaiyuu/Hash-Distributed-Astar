@@ -25,8 +25,9 @@
 
 #include "zobrist.hpp"
 #include "trivial_hash.hpp"
+#include "random_hash.hpp"
 
-#define DELAY 100000
+#define DELAY 10000000
 
 template<class D, class hash> class HDAstar: public SearchAlg<D> {
 
@@ -128,6 +129,8 @@ template<class D, class hash> class HDAstar: public SearchAlg<D> {
 	std::vector<LogNodeOrder>* lognodeorder;
 	double wall0 = 0; // ANALYZE_FTRACE
 
+	int* open_sizes;
+
 #ifdef ANALYZE_INCOME
 	int max_income = 0;
 #endif
@@ -164,6 +167,8 @@ public:
 		logfvalue = new std::vector<Logfvalue>[tnum];
 		logincumbent = new std::vector<LogIncumbent>[tnum];
 		lognodeorder = new std::vector<LogNodeOrder>[tnum];
+
+		open_sizes = new int[tnum];
 	}
 
 	//      32,334 length 46 : 14 1 9 6 4 8 12 5 7 2 3 0 10 11 13 15
@@ -453,6 +458,8 @@ public:
 
 		printf("useless = %d\n", useless);
 
+		this->open_sizes[id] = open.getsize();
+
 		// From here, you can dump every comments as it would not be included in walltime & cputime.
 
 		//		path =
@@ -570,6 +577,11 @@ public:
 			}
 		}
 #endif // ANALYZE_ORDER
+		printf("openlist size =");
+		for (int id = 0; id < tnum; ++id) {
+			printf(" %d", this->open_sizes[id]);
+		}
+		printf("\n");
 		return path;
 	}
 

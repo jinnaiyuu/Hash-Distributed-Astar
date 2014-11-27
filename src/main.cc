@@ -63,8 +63,8 @@ int main(int argc, const char *argv[]) {
 	try {
 		if (!(3 <= argc && argc <= 7))
 			throw Fatal(
-					"Usage: tiles <algorithm> <problem number> or \n"
-							"tiles <parallel algorithm> <problem number> <thread number>");
+					"Usage: tiles <algorithm> <problem number> "
+					"<thread number> <income threshold> <outgo threshold> <abstraction>\n");
 
 		int pnum = 0;
 		for (int i = 0; argv[2][i] != '\0'; ++i) {
@@ -97,6 +97,12 @@ int main(int argc, const char *argv[]) {
 				search = new HDAstar<Tiles, TrivialHash<16> >(tiles, std::stoi(argv[3]), std::stoi(argv[4]), std::stoi(argv[5]));
 			} else {
 				search = new HDAstar<Tiles, TrivialHash<16> >(tiles, std::stoi(argv[3])); // Completely Asynchronous
+			}
+		} else if (strcmp(argv[1], "hdastar_random") == 0) {
+			if (argc >= 5) {
+				search = new HDAstar<Tiles, RandomHash<16> >(tiles, std::stoi(argv[3]), std::stoi(argv[4]), std::stoi(argv[5]));
+			} else {
+				search = new HDAstar<Tiles, RandomHash<16> >(tiles, std::stoi(argv[3])); // Completely Asynchronous
 			}
 		} else if (strcmp(argv[1], "oshdastar") == 0) {
 			if (argc == 6) {

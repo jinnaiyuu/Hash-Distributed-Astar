@@ -62,6 +62,14 @@ template <class HeapElm> class Heap {
 
 		bool empty(void) { return fill == 0; }
 
+		int getsize() {
+			int sum = 0;
+			for (int i = 0; i < bins.size(); ++i) {
+				sum += bins[i].size();
+			}
+			return sum;
+		}
+
 		int fill, max;
 		std::vector< std::vector<HeapElm*> > bins;
 	};
@@ -123,6 +131,15 @@ public:
 	bool mem(HeapElm *n) { return n->openind >= 0; }
 
 	int minf() {return min;}
+
+	int getsize() {
+		int sum = 0;
+		printf("qs.size = %zu\n", qs.size() );
+		for (int i = 0; i < qs.size(); ++i) {
+			sum += qs[i].getsize();
+		}
+		return sum;
+	}
 
 	void clear(void) {
 		qs.clear();
