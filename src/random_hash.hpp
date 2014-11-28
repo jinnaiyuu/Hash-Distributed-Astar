@@ -19,17 +19,20 @@ public:
 	};
 
 	RandomHash(int tnum_ = 1, ABST abst = SINGLE) :
-			tnum(tnum_) {
+			tnum(tnum_), round(0) {
 		initHash();
 	}
 
 	unsigned char inc_hash(unsigned char previous, const int number,
 			const int from, const int to, const char* const newBoard) {
-		return hash() % tnum;
+		int id = round.fetch_add(1);
+//		printf("id = %d\n", id % tnum);
+		return id % tnum;
 	}
 
 	unsigned char hash_tnum(const char* const board) {
-		return hash() % tnum;
+		int id = round.fetch_add(1);
+		return id % tnum;
 	}
 private:
 
@@ -50,5 +53,6 @@ private:
 	std::uniform_int_distribution<> dis;
 	int tnum;
 
+	std::atomic<int> round;
 };
 #endif /* RANDOM_HASH_ */
