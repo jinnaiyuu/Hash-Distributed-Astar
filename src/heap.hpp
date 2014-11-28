@@ -126,7 +126,7 @@ public:
 	// return false. This will be used for termination detection.
 	// Why minus 1? Because the total length contains the initial state.
 	// Path contains n nodes and n+1 edge. - 1
-	bool isemptyunder(int incumbent) { return (((incumbent) <= min) || fill == 0);}
+	bool isemptyunder(int incumbent) { return (((incumbent - 1) <= min) || fill == 0);}
 
 	bool mem(HeapElm *n) { return n->openind >= 0; }
 
