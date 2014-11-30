@@ -6,10 +6,10 @@
 date=`date +"%m%d"`
 
 astar=astar.dat
-data1=hdastar_1_1013_noos_164836.dat
-data2=hdastar_2_1014_noos_164838.dat
-data4=hdastar_4_1013_noos_164837.dat
-data8=hdastar_8_1012_noos_163132.dat
+data1=$1
+data2=$2
+data4=$3
+data8=$4
 # Input Data Structure
 # <problem number> <walltime> <expand> <generate> <path length>
 
@@ -39,7 +39,7 @@ gnuplot <<EOF
    plot "searchoverhead_speedup_astar_4threads_$date.dat" using 1:2
 EOF
 
-exit 0
+
 
 awk 'FNR==NR{astar[$1]=$2; next} (FNR+100)==NR{a[$1]=$2; next} (FNR+200)==NR{b[$1]=$2; next} (FNR+300)==NR{c[$1]=$2; next} \
 (FNR+400)==NR{\

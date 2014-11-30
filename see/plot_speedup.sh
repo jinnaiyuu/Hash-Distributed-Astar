@@ -4,10 +4,10 @@
 # Plots the Speedup of the HDA*
 
 astar=astar.dat
-data1=hdastar_1_opt.dat
-data2=hdastar_2_opt.dat
-data4=hdastar_4_opt.dat
-data8=hdastar_8_opt.dat
+data1=$1
+data2=$2
+data4=$3
+data8=$4
 
 # Two awk scripts can be piped. For debugging purpose, we save the intermediate data structure.
 #awk 'FNR==NR{astar[$1]=$2; next} (FNR+100)==NR{print astar[$1], $4}' astar.dat hdastar_1_opt.dat > speedup.dat
@@ -89,10 +89,10 @@ EOF
 
 # Analysis of other factors
 
-data1=hdastar_1.dat
-data2=hdastar_2.dat
-data4=hdastar_4.dat
-data8=hdastar_8.dat
+data1=$1
+data2=$2
+data4=$3
+data8=$4
 
 
 # $2 = income buffer size

@@ -35,7 +35,8 @@ template<class D, class hash> class HDAstar: public SearchAlg<D> {
 	struct Node {
 		char f, g, pop;
 		char zbr; // zobrist value. stored here for now. Also the size is char for now.
-		int openind; // How many times this node has been outsourced.
+		int openind;
+		char thrown; // How many times this node has been outsourced.
 		Node *parent;
 		typename D::PackedState packed;
 		HashEntry<Node> hentry;
@@ -106,8 +107,10 @@ template<class D, class hash> class HDAstar: public SearchAlg<D> {
 		uint64_t packedState;
 		int fvalue;
 		int openlistSize;
-		LogNodeOrder(int globalOrder_, char* tiles, int fvalue_ = -1, int openlistSize_ = -1) :
-				globalOrder(globalOrder_), fvalue(fvalue_), openlistSize(openlistSize_) {
+		LogNodeOrder(int globalOrder_, char* tiles, int fvalue_ = -1,
+				int openlistSize_ = -1) :
+				globalOrder(globalOrder_), fvalue(fvalue_), openlistSize(
+						openlistSize_) {
 			packedState = pack(tiles);
 		}
 		uint64_t pack(char* tiles) {
@@ -130,7 +133,6 @@ template<class D, class hash> class HDAstar: public SearchAlg<D> {
 	};
 	std::vector<LogNodeOrder>* lognodeorder;
 
-
 	double wall0 = 0; // ANALYZE_FTRACE
 
 	int* open_sizes;
@@ -147,7 +149,14 @@ template<class D, class hash> class HDAstar: public SearchAlg<D> {
 #ifdef ANALYZE_GLOBALF
 	int globalf = 10000000; // Ad hoc number.
 #endif
+
 	int* fvalues; // OUTSOURCING
+	int* opensizes; // OUTSOURCING
+#ifdef OUTSOURCING
+#ifdef ANALYZE_OUTSOURCING
+	int outsource_pushed = 0; // ANALYZE_OUTSOURCING
+#endif
+#endif
 
 	int overrun;
 
@@ -229,7 +238,7 @@ public:
 			Node *n;
 
 #ifdef ANALYZE_LAP
-			startlaps14 1 9 6 4 8 12 5 7 2 3 0 10 11 13 15e(lapse); // income buffer
+			startlapse(lapse); // income buffer
 #endif
 			if (!income_buffer[id].isempty()) {
 				terminate[id] = false;
@@ -272,6 +281,9 @@ public:
 #ifdef ANALYZE_LAPSE
 			endlapse(lapse, "incomebuffer");
 			startlapse(&lapse); // open list
+#endif
+#ifdef OUTSOURCING
+			open_sizes[id] = open.getsize();
 #endif
 			if (open.isemptyunder(incumbent.load())) {
 				dbgprintf("open is empty.\n");
@@ -317,23 +329,37 @@ public:
 #ifdef ANALYZE_LAPSE
 			startlapse(&lapse); // closed list
 #endif
-			Node *duplicate = closed.find(n->packed);
-			if (duplicate) {
+			if (n->thrown == 0) {
+				Node *duplicate = closed.find(n->packed);
+				if (duplicate) {
 #ifdef ANALYZE_DUPLICATE
-				duplicate_here++;
+					duplicate_here++;
 #endif // ANALYZE_DUPLICATE
-				if (duplicate->f <= n->f) {
-					dbgprintf("Discarded\n");
-					nodes.destruct(n);
-					continue;
+					if (duplicate->f <= n->f) {
+						dbgprintf("Discarded\n");
+						nodes.destruct(n);
+						continue;
+					}
+					// Node access here is unnecessary duplicates.
+					dbgprintf("Duplicated\n");
 				}
-				// Node access here is unnecessary duplicates.
-				dbgprintf("Duplicated\n");
 			}
 #ifdef ANALYZE_LAPSE
 			endlapse(lapse, "closedlist");
 #endif
 
+#ifdef OUTSOURCING
+			if ((n->thrown < 5) && outsourcing(n, id)) {
+				if (n->thrown == 0) {
+					closed.add(n);
+				}
+#ifdef ANALYZE_OUTSOURCING
+				outsource_pushed++;
+#endif
+				dbgprintf("Out sourced a node\n");
+				continue;
+			}
+#endif // OUTSOURCING
 			typename D::State state;
 			this->dom.unpack(state, n->packed);
 
@@ -349,7 +375,6 @@ public:
 				lognodeorder[id].push_back(*ln);
 			}
 #endif // ANALYZE_ORDER
-
 			if (this->dom.isgoal(state)) {
 				// TODO: For some reason, sometimes pops broken node.
 				if (state.tiles[1] == 0) {
@@ -378,8 +403,13 @@ public:
 
 				continue;
 			}
-
+#ifdef OUTSOURCING
+			if (n->thrown == 0) {
+				closed.add(n);
+			}
+#else
 			closed.add(n);
+#endif
 			expd_here++;
 
 #ifdef ANALYZE_LAPSE
@@ -590,6 +620,9 @@ public:
 			}
 		}
 #endif // ANALYZE_ORDER
+#ifdef ANALYZE_OUTSOURCING
+		printf("outsource node pushed = %d\n", outsource_pushed);
+#endif
 		printf("openlist size =");
 		for (int id = 0; id < tnum; ++id) {
 			printf(" %d", this->open_sizes[id]);
@@ -677,8 +710,11 @@ public:
 	}
 
 	int uselessCalc(int useless) {
+		static const int zero = 0;
+//		int test = 0;
 		int uselessLocal = 0;
 		for (int i = 0; i < DELAY; ++i) {
+//			++test;
 			int l = 0;
 			l += useless;
 			l = 2 * l - uselessLocal;
@@ -688,43 +724,32 @@ public:
 				uselessLocal = useless * 2;
 			}
 		}
+//		printf("DELAY = %d\n", test);
 		return uselessLocal;
 	}
 
 	// TODO: Parameter would differ for every problem and every environment.
+	bool outsourcing(Node *p, int id) {
+		static const double threshold = 1.05;
+		static const int uneven = 2;
 
-	/*
-	 bool outsourcing(Node *p, int id) {
-	 if (tnum == 1) {
-	 return false;
-	 }
-	 static const int uneven = 2;
-	 int myValue = fvalues[id];
+		if (tnum == 1) {
+			return false; // Single thread.
+		}
 
-	 int bestf = 100;
-	 int bestThread = 100;
-
-	 for (int i = 0; i < tnum; ++i) {
-	 if (i != id) {
-	 int fi = fvalues[i];
-	 // If its not the most busiest thread by far
-	 if (myValue < fi - uneven) {
-	 if (fi < bestf) {
-	 bestf = fi;
-	 bestThread = i;
-	 }
-	 }
-	 }
-	 }
-	 if (bestf == 100) {
-	 return false;
-	 }
-	 dbgprintf("send %d to %d\n", id, bestThread);
-	 p->thrown += 1;
-	 income_buffer[bestThread].push(p);
-	 return true;
-	 }
-	 */
+		for (int i = 0; i < tnum; ++i) {
+			if (i != id) {
+				if (open_sizes[id] > open_sizes[i] * threshold) {
+					p->thrown += 1; // it indicates that the node has outsourced.
+					income_buffer[i].push(p);
+					printf("send %d to %d\n", id, i);
+					return true;
+				}
+			}
+		}
+		printf("failed %d\n", id);
+		return false;
+	}
 };
 
 #endif /* HDASTAR_HPP_ */
