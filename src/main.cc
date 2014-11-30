@@ -106,6 +106,13 @@ int main(int argc, const char *argv[]) {
 			} else {
 				search = new HDAstar<Tiles, RandomHash<16> >(tiles, std::stoi(argv[3])); // Completely Asynchronous
 			}
+		} else if (strcmp(argv[1], "hdastar_overrun") == 0) {
+			if (argc >= 5) {
+				search = new HDAstar<Tiles, Zobrist<16> >(tiles, std::stoi(argv[3]), std::stoi(argv[4]),
+						std::stoi(argv[5]), std::stoi(argv[6]), 1);
+			} else {
+				search = new HDAstar<Tiles, Zobrist<16> >(tiles, std::stoi(argv[3])); // Completely Asynchronous
+			}
 		} else if (strcmp(argv[1], "oshdastar") == 0) {
 			if (argc == 6) {
 				search = new OSHDAstar<Tiles, Zobrist<16> >(tiles, std::stoi(argv[3]), std::stoi(argv[4]), std::stoi(argv[5]));

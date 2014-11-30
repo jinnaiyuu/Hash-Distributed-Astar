@@ -27,6 +27,7 @@
 #include "trivial_hash.hpp"
 #include "random_hash.hpp"
 
+// DELAY 10,000,000 -> 3000 nodes per second
 #define DELAY 10000000
 
 template<class D, class hash> class HDAstar: public SearchAlg<D> {
@@ -148,14 +149,16 @@ template<class D, class hash> class HDAstar: public SearchAlg<D> {
 #endif
 	int* fvalues; // OUTSOURCING
 
+	int overrun;
+
 public:
 
 	HDAstar(D &d, int tnum_, int income_threshold_ = 1000000,
-			int outgo_threshold_ = 10000000, int abst = 0) :
+			int outgo_threshold_ = 10000000, int abst_ = 0, int overrun_ = 0) :
 			SearchAlg<D>(d), tnum(tnum_), thread_id(0), z(tnum,
-					static_cast<typename hash::ABST>(abst)), incumbent(100000), income_threshold(
+					static_cast<typename hash::ABST>(abst_)), incumbent(100000), income_threshold(
 					income_threshold_), outgo_threshold(outgo_threshold_), globalOrder(
-					0) {
+					0), overrun(overrun_) {
 		income_buffer = new buffer<Node> [tnum];
 		terminate = new bool[tnum];
 		for (int i = 0; i < tnum; ++i) {
@@ -172,6 +175,7 @@ public:
 		lognodeorder = new std::vector<LogNodeOrder>[tnum];
 
 		open_sizes = new int[tnum];
+
 	}
 
 	//      32,334 length 46 : 14 1 9 6 4 8 12 5 7 2 3 0 10 11 13 15
@@ -189,7 +193,7 @@ public:
 		// now      200000000
 		// TODO: Must optimize these numbers
 		HashTable<typename D::PackedState, Node> closed(200000000 / tnum);
-		Heap<Node> open(100);
+		Heap<Node> open(100, overrun);
 		Pool<Node> nodes(2048);
 
 		// If the buffer is locked when the thread pushes a node,

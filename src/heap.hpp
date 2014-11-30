@@ -77,8 +77,10 @@ template <class HeapElm> class Heap {
 	int fill, min;
 	std::vector<Maxq> qs;
 
+	int overrun;
+
 public:
-	Heap(unsigned int sz) : fill(0), min(0), qs(sz) { }
+	Heap(unsigned int sz, int overrun_ = 0) : fill(0), min(0), qs(sz), overrun(overrun_) { }
 
 	static const char *kind(void) { return "2d bucketed"; }
 
@@ -126,7 +128,7 @@ public:
 	// return false. This will be used for termination detection.
 	// Why minus 1? Because the total length contains the initial state.
 	// Path contains n nodes and n+1 edge. - 1
-	bool isemptyunder(int incumbent) { return (((incumbent -1) <= min) || fill == 0);}
+	bool isemptyunder(int incumbent) { return (((incumbent - 1 + overrun) <= min) || fill == 0);}
 
 	bool mem(HeapElm *n) { return n->openind >= 0; }
 
