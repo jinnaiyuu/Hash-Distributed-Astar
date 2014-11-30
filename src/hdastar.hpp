@@ -349,7 +349,7 @@ public:
 #endif
 
 #ifdef OUTSOURCING
-			if ((n->thrown < 5) && (expd_here > 1500) && outsourcing(n, id)) {
+			if ((n->thrown < 5) && (expd_here > 600) && outsourcing(n, id)) {
 				if (n->thrown == 0) {
 					closed.add(n);
 				}
@@ -730,25 +730,33 @@ public:
 
 	// TODO: Parameter would differ for every problem and every environment.
 	bool outsourcing(Node *p, int id) {
-		static const double threshold = 1.05;
+		static const double threshold = 1.005;
 		static const int uneven = 2;
 
 		if (tnum == 1) {
 			return false; // Single thread.
 		}
 
+		int minsize = 10000000000;
+		int minid = -1;
+
 		for (int i = 0; i < tnum; ++i) {
 			if (i != id) {
-				if (open_sizes[id] > open_sizes[i] * threshold) {
-					p->thrown += 1; // it indicates that the node has outsourced.
-					income_buffer[i].push(p);
-					printf("send %d to %d\n", id, i);
-					return true;
+				if (open_sizes[i] < minsize
+						&& open_sizes[id] > open_sizes[i] * threshold) {
+					minid = i;
+					minsize = open_sizes[i];
 				}
 			}
 		}
-		printf("failed %d\n", id);
-		return false;
+		if (minid == -1) {
+			printf("failed %d\n", id);
+			return false;
+		}
+		p->thrown += 1; // it indicates that the node has outsourced.
+		income_buffer[i].push(p);
+		printf("send %d to %d\n", id, i);
+		return true;
 	}
 };
 
