@@ -349,7 +349,7 @@ public:
 #endif
 
 #ifdef OUTSOURCING
-			if ((n->thrown < 5) && outsourcing(n, id)) {
+			if ((n->thrown < 5) && (expd_here > 1500) && outsourcing(n, id)) {
 				if (n->thrown == 0) {
 					closed.add(n);
 				}
