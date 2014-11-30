@@ -535,7 +535,7 @@ public:
 		printf("average of max_outgo_buffer_size = %d\n", max_outgo / tnum);
 #endif
 #ifdef ANALYZE_DUPLICATE
-		printf("duplicate distribution =");
+		printf("duplicate_distribution =");
 		for(int i=0; i<tnum;++i) {
 			printf(" %d", duplicates[i]);
 		}
@@ -545,7 +545,7 @@ public:
 		printf("expansion balance = %f\n", load_balance(expd_distribution));
 		printf("expansion stddev = %f\n",
 				analyze_distribution(expd_distribution));
-		printf("expansion distribution =");
+		printf("expansion_distribution =");
 		for(int i=0; i<tnum;++i) {
 			printf(" %d", expd_distribution[i]);
 		}
