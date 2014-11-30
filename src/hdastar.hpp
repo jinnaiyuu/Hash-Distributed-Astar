@@ -28,7 +28,7 @@
 #include "random_hash.hpp"
 
 // DELAY 10,000,000 -> 3000 nodes per second
-#define DELAY 10000000
+#define DELAY 0
 
 template<class D, class hash> class HDAstar: public SearchAlg<D> {
 
