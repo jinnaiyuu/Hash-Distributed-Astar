@@ -737,7 +737,7 @@ public:
 			return false; // Single thread.
 		}
 
-		int minsize = 10000000000;
+		int minsize = 1410065408;
 		int minid = -1;
 
 		for (int i = 0; i < tnum; ++i) {
