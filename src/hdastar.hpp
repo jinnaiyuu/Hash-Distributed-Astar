@@ -730,7 +730,7 @@ public:
 
 	// TODO: Parameter would differ for every problem and every environment.
 	bool outsourcing(Node *p, int id) {
-		static const double threshold = 1.005;
+		static const double threshold = 1.03;
 		static const int uneven = 2;
 
 		if (tnum == 1) {
