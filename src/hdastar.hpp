@@ -28,7 +28,7 @@
 #include "random_hash.hpp"
 
 // DELAY 10,000,000 -> 3000 nodes per second
-#define DELAY 0
+#define DELAY 10000000
 
 template<class D, class hash> class HDAstar: public SearchAlg<D> {
 
@@ -142,7 +142,7 @@ template<class D, class hash> class HDAstar: public SearchAlg<D> {
 	int max_outgo = 0;
 #endif
 #ifdef ANALYZE_DUPLICATE
-	int duplicate = 0;
+	int* duplicates = 0;
 #endif
 #ifdef ANALYZE_GLOBALF
 	int globalf = 10000000; // Ad hoc number.
@@ -166,6 +166,8 @@ public:
 		}
 		expd_distribution = new int[tnum];
 		gend_distribution = new int[tnum];
+
+		duplicates = new int[tnum];
 
 		// Fields for Out sourcing
 		fvalues = new int[tnum];
@@ -482,7 +484,7 @@ public:
 		this->max_income += max_income_buffer_size;
 #endif
 #ifdef ANALYZE_DUPLICATE
-		this->duplicate += duplicate_here;
+		this->duplicates[id] = duplicate_here;
 #endif
 		dbgprintf("END\n");
 		return 0;
@@ -533,7 +535,11 @@ public:
 		printf("average of max_outgo_buffer_size = %d\n", max_outgo / tnum);
 #endif
 #ifdef ANALYZE_DUPLICATE
-		printf("duplicated nodes = %d\n", duplicate);
+		printf("duplicate distribution =");
+		for(int i=0; i<tnum;++i) {
+			printf(" %d", duplicates[i]);
+		}
+		printf("\n");
 #endif
 #ifdef ANALYZE_DISTRIBUTION
 		printf("expansion balance = %f\n", load_balance(expd_distribution));

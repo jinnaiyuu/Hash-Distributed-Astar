@@ -135,12 +135,13 @@ public:
 	int minf() {return min;}
 
 	int getsize() {
-		int sum = 0;
-		dbgprintf("qs.size = %zu\n", qs.size() );
-		for (int i = 0; i < qs.size(); ++i) {
-			sum += qs[i].getsize();
-		}
-		return sum;
+//		int sum = 0;
+//		dbgprintf("qs.size = %zu\n", qs.size() );
+//		for (int i = 0; i < qs.size(); ++i) {
+//			sum += qs[i].getsize();
+//		}
+//		return sum;
+		return fill;
 	}
 
 	void clear(void) {
