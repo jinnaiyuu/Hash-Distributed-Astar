@@ -754,8 +754,8 @@ public:
 			return false;
 		}
 		p->thrown += 1; // it indicates that the node has outsourced.
-		income_buffer[i].push(p);
-		printf("send %d to %d\n", id, i);
+		income_buffer[minid].push(p);
+		printf("send %d to %d\n", id, minid);
 		return true;
 	}
 };
