@@ -699,7 +699,7 @@ public:
 		return stddev;
 	}
 
-	// CAUTIONS!!!!:
+	// CAUTIONS!
 	// These lapsing methods uses cputime methods.
 	// It won't take into account for locks or any other synchronous methods.
 	void startlapse(double* laptime) {
