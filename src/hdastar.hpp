@@ -23,14 +23,17 @@
 #include "pool.hpp"
 #include "buffer.hpp"
 
+#include "naive_heap.hpp"
+
 #include "zobrist.hpp"
 #include "trivial_hash.hpp"
 #include "random_hash.hpp"
 
 // DELAY 10,000,000 -> 3000 nodes per second
-#define DELAY 10000000
+#define DELAY 0
 
-template<class D, class hash> class HDAstar: public SearchAlg<D> {
+
+template<class D, class hash > class HDAstar: public SearchAlg<D> {
 
 	struct Node {
 		char f, g, pop;
@@ -193,7 +196,7 @@ public:
 	//     909,442 length 53 : 13 14 6 12 4 5 1 0 9 3 10 2 15 11 8 7
 	//   5,253,685 length 57 : 5 12 10 7 15 11 14 0 8 2 1 13 3 4 9 6
 	// 565,994,203 length ?? : 14 7 8 2 13 11 10 4 9 12 5 0 3 6 1 15
-
+	template<class heap>
 	void* thread_search(void * arg) {
 
 		int id = thread_id.fetch_add(1);
@@ -204,7 +207,8 @@ public:
 		// now      200000000
 		// TODO: Must optimize these numbers
 		HashTable<typename D::PackedState, Node> closed(200000000 / tnum);
-		Heap<Node> open(100, overrun);
+//		Heap<Node> open(100, overrun);
+		heap open(100, overrun);
 		Pool<Node> nodes(2048);
 
 		// If the buffer is locked when the thread pushes a node,
@@ -632,7 +636,7 @@ public:
 	}
 
 	static void* thread_helper(void* arg) {
-		return static_cast<HDAstar*>(arg)->thread_search(arg);
+		return static_cast<HDAstar*>(arg)->thread_search<NaiveHeap<Node> >(arg);
 	}
 
 	inline Node *wrap(typename D::State &s, Node *p, int c, int pop,
@@ -737,7 +741,7 @@ public:
 			return false; // Single thread.
 		}
 
-		int minsize = 1410065408;
+		int minsize = 1410065408; // max integer
 		int minid = -1;
 
 		for (int i = 0; i < tnum; ++i) {
@@ -750,12 +754,14 @@ public:
 			}
 		}
 		if (minid == -1) {
-			printf("failed %d\n", id);
+			dbgprintf("failed %d\n", id);
 			return false;
 		}
 		p->thrown += 1; // it indicates that the node has outsourced.
+
+		// Should this be try_push?
 		income_buffer[minid].push(p);
-		printf("send %d to %d\n", id, minid);
+		dbgprintf("send %d to %d\n", id, minid);
 		return true;
 	}
 };

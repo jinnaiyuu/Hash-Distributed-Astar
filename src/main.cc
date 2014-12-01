@@ -34,7 +34,7 @@
 #define ANALYZE_SEMISYNC
 #endif
 
-#define ANALYZE_ORDER
+//#define ANALYZE_ORDER
 
 //#define ANALYZE_OPENLIST_SIZE
 
@@ -44,6 +44,7 @@
 #include "pastar.hpp"
 #include "hdastar.hpp"
 #include "oshdastar.hpp"
+
 
 //	 expd 32334 length 46   : 14 1 9 6 4 8 12 5 7 2 3 0 10 11 13 15
 //	 expd 909442 length 53  : 13 14 6 12 4 5 1 0 9 3 10 2 15 11 8 7
@@ -89,7 +90,7 @@ int main(int argc, const char *argv[]) {
 			}
 		} else if (strcmp(argv[1], "hdastar") == 0) {
 			if (argc >= 5) {
-				search = new HDAstar<Tiles, Zobrist<16> >(tiles, std::stoi(argv[3]), std::stoi(argv[4]),
+				search = new HDAstar<Tiles, Zobrist<16>  >(tiles, std::stoi(argv[3]), std::stoi(argv[4]),
 						std::stoi(argv[5]), std::stoi(argv[6]));
 			} else {
 				search = new HDAstar<Tiles, Zobrist<16> >(tiles, std::stoi(argv[3])); // Completely Asynchronous
