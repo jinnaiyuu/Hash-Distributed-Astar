@@ -636,7 +636,7 @@ public:
 	}
 
 	static void* thread_helper(void* arg) {
-		return static_cast<HDAstar*>(arg)->thread_search<NaiveHeap<Node> >(arg);
+		return static_cast<HDAstar*>(arg)->thread_search<Heap<Node> >(arg);
 	}
 
 	inline Node *wrap(typename D::State &s, Node *p, int c, int pop,
