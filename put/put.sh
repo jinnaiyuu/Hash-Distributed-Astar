@@ -39,7 +39,7 @@ SCRIPT="cd /home/yuu/workspace/ethan ; ./job_david.sh $time $comment $@"
 cd ..
 git stage src/*.hpp src/main.cc put/*.sh see/*.sh
 #git commit -m "Experiment: $time $algorithm $problem_type $thread_number $parameter1 $parameter2 $parameter3 $text"
-git commit -m "Experiment: $time $@ $text"
+git commit -m "Experiment: $time $1 $2 $3 $4 $5 $6 $7 $8 $9 $text"
 
 cd src
 touch main.cc

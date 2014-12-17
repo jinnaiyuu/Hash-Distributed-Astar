@@ -64,10 +64,12 @@ void handler(int sig) {
 
 int main(int argc, const char *argv[]) {
 	try {
+		printf("argc == %d\n", argc);
+		fflush(stdout);
 /*
  		if (!(3 <= argc && argc <= 7))
 			throw Fatal(
-					"Usage: tiles <algorithm> <problem number> "
+					"Usage: tiles <domain (if 24)> <algorithm> <problem number> "
 							"<thread number> <income threshold> <outgo threshold> <abstraction>\n");
 */
 		int pnum = 0;

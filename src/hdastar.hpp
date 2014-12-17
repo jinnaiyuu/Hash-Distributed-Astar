@@ -438,11 +438,11 @@ public:
 
 				Node* next = wrap(state, n, e.cost, e.pop, nodes);
 //				printf("mv blank op = %d %d %d \n", moving_tile, blank, op);
-				print_state(state);
+				//print_state(state);
 				next->zbr = z.inc_hash(n->zbr, moving_tile, blank, op,
 						state.tiles);
 				unsigned long zbr = next->zbr; // % tnum;
-				printf("zbr = %d\n", zbr);
+				//printf("zbr = %d\n", zbr);
 
 				// If the node belongs to itself, just push to this open list.
 				if (zbr == id) {

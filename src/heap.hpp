@@ -102,8 +102,13 @@ public:
 	}
 
 	HeapElm *pop(void) {
-		for ( ; (unsigned int) min < qs.size() && qs[min].empty() ; min++)
+//		int mmin = min;
+		for ( ; (unsigned int) min < qs.size() && qs[min].empty() ; min++) {
 			;
+		}
+//		if (mmin != min) {
+//			printf("min = %d\n", min);
+//		}
 		fill--;
 		dbgprintf("f = %d\n", min);
 		return qs[min].pop();		
