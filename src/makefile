@@ -1,6 +1,6 @@
 CXX=clang++
-CXXFLAGS=-g -Wall -Wno-unused-value -static -pthread -std=c++11 -O3
-
+CXXFLAGS=-g -Wall -Wno-unused-value -Wno-char-subscripts -static -pthread -std=c++11 -O3
+# -g -Wall
 all: tiles
 
 tiles: *.cc *.hpp

@@ -3,6 +3,7 @@
 // license that can be found in the LICENSE file.
 #include "tiles24.hpp"
 #include <string>
+#include <cstdio>
 
 Tiles24::Tiles24(FILE *in) {
 	unsigned int w, h;
@@ -59,6 +60,18 @@ Tiles24::Tiles24(FILE *in, int line) {
 	initmd();
 //	printf("initoptab\n");
 	initoptab();
+
+	// Here read pattern database from the file.
+
+	FILE* infile = fopen("pat24.1256712.tab", "rb");
+	readfile(h0, infile);
+	fclose(infile);
+	printf("pattern 1 2 5 6 7 12 read in\n");
+	infile = fopen("pat24.34891314.tab", "rb");
+	readfile(h1, infile);
+	fclose(infile);
+	printf("pattern 3 4 8 9 13 14 read in\n");
+
 }
 
 void Tiles24::initmd() {
@@ -73,19 +86,14 @@ void Tiles24::initmd() {
 	for (int t = 1; t < Ntiles; t++) {
 		for (int d = 0; d < Ntiles; d++) {
 			int newmd = md[t][d];
-
 			for (int s = 0; s < Ntiles; s++)
 				mdincr[t][d][s] = -100;	// some invalid value.
-
 			if (d >= Width)
 				mdincr[t][d][d - Width] = md[t][d - Width] - newmd;
-
 			if (d % Width > 0)
 				mdincr[t][d][d - 1] = md[t][d - 1] - newmd;
-
 			if (d % Width < Width - 1)
 				mdincr[t][d][d + 1] = md[t][d + 1] - newmd;
-
 			if (d < Ntiles - Width)
 				mdincr[t][d][d + Width] = md[t][d + Width] - newmd;
 		}
@@ -106,3 +114,40 @@ void Tiles24::initoptab() {
 		assert(optab[i].n <= 4);
 	}
 }
+
+unsigned char Tiles24::h0[TABLESIZE]; /* heuristic tables for pattern databases */
+unsigned char Tiles24::h1[TABLESIZE];
+
+// Read pattern database files and store them up to the array.
+void Tiles24::readfile(unsigned char table[TABLESIZE], FILE* infile) {
+	int s[6]; /* positions of each pattern tile */
+	int index; /* direct access index */
+	for (s[0] = 0; s[0] < Ntiles; s[0]++) /* generate each possible permutation */
+	{
+		for (s[1] = 0; s[1] < Ntiles; s[1]++) {
+			if (s[1] == s[0])
+				continue;
+			for (s[2] = 0; s[2] < Ntiles; s[2]++) {
+				if (s[2] == s[0] || s[2] == s[1])
+					continue;
+				for (s[3] = 0; s[3] < Ntiles; s[3]++) {
+					if (s[3] == s[0] || s[3] == s[1] || s[3] == s[2])
+						continue;
+					for (s[4] = 0; s[4] < Ntiles; s[4]++) {
+						if (s[4] == s[0] || s[4] == s[1] || s[4] == s[2]
+								|| s[4] == s[3])
+							continue;
+						for (s[5] = 0; s[5] < Ntiles; s[5]++) {
+							if (s[5] == s[0] || s[5] == s[1] || s[5] == s[2]
+									|| s[5] == s[3] || s[5] == s[4])
+								continue;
+							index = ((((s[0] * 25 + s[1]) * 25 + s[2]) * 25
+									+ s[3]) * 25 + s[4]) * 25 + s[5];
+							table[index] = getc(infile); // TODO: infile
+						}
+					}
+				}
+			}
+		}
+	}
+} /* read moves and store in array */
