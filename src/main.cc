@@ -15,7 +15,6 @@
 #else // #ifdef DEBUG
 #define dbgprintf   printf
 #endif // #ifdef DEBUG
-
 //#define OUTSOURCING
 //#define SEMISYNC
 
@@ -45,6 +44,7 @@
 #include "hdastar.hpp"
 #include "oshdastar.hpp"
 
+#include "tiles24.hpp"
 
 //	 expd 32334 length 46   : 14 1 9 6 4 8 12 5 7 2 3 0 10 11 13 15
 //	 expd 909442 length 53  : 13 14 6 12 4 5 1 0 9 3 10 2 15 11 8 7
@@ -64,107 +64,167 @@ void handler(int sig) {
 
 int main(int argc, const char *argv[]) {
 	try {
-		if (!(3 <= argc && argc <= 7))
+/*
+ 		if (!(3 <= argc && argc <= 7))
 			throw Fatal(
 					"Usage: tiles <algorithm> <problem number> "
-					"<thread number> <income threshold> <outgo threshold> <abstraction>\n");
-
+							"<thread number> <income threshold> <outgo threshold> <abstraction>\n");
+*/
 		int pnum = 0;
-		for (int i = 0; argv[2][i] != '\0'; ++i) {
-			pnum *= 10;
-			pnum += argv[2][i] - '0';
-		}
+
 //		printf("pnum = %d\n", pnum);
-		Tiles tiles(stdin, pnum);
-
-		SearchAlg<Tiles> *search = NULL;
-		if (strcmp(argv[1], "idastar") == 0)
-			search = new Idastar<Tiles>(tiles);
-		else if (strcmp(argv[1], "astar") == 0)
-			search = new Astar<Tiles>(tiles);
-		else if (strcmp(argv[1], "pastar") == 0) {
-			if (argc == 4) {
-				search = new Pastar<Tiles>(tiles, std::stoi(argv[3]));
-			} else {
-				search = new Pastar<Tiles>(tiles);
+		if (strcmp(argv[1], "24") != 0) {
+			for (int i = 0; argv[2][i] != '\0'; ++i) {
+				pnum *= 10;
+				pnum += argv[2][i] - '0';
 			}
-		} else if (strcmp(argv[1], "hdastar") == 0) {
-			if (argc >= 5) {
-				search = new HDAstar<Tiles, Zobrist<16>  >(tiles, std::stoi(argv[3]), std::stoi(argv[4]),
-						std::stoi(argv[5]), std::stoi(argv[6]));
-			} else {
-				search = new HDAstar<Tiles, Zobrist<16> >(tiles, std::stoi(argv[3])); // Completely Asynchronous
-			}
-		} else if (strcmp(argv[1], "hdastar_trivial") == 0) {
-			if (argc >= 5) {
-				search = new HDAstar<Tiles, TrivialHash<16> >(tiles, std::stoi(argv[3]), std::stoi(argv[4]), std::stoi(argv[5]));
-			} else {
-				search = new HDAstar<Tiles, TrivialHash<16> >(tiles, std::stoi(argv[3])); // Completely Asynchronous
-			}
-		} else if (strcmp(argv[1], "hdastar_random") == 0) {
-			if (argc >= 5) {
-				search = new HDAstar<Tiles, RandomHash<16> >(tiles, std::stoi(argv[3]), std::stoi(argv[4]), std::stoi(argv[5]));
-			} else {
-				search = new HDAstar<Tiles, RandomHash<16> >(tiles, std::stoi(argv[3])); // Completely Asynchronous
-			}
-		} else if (strcmp(argv[1], "hdastar_overrun") == 0) {
-			if (argc >= 5) {
-				search = new HDAstar<Tiles, Zobrist<16> >(tiles, std::stoi(argv[3]), std::stoi(argv[4]),
-						std::stoi(argv[5]), std::stoi(argv[6]), 1);
-			} else {
-				search = new HDAstar<Tiles, Zobrist<16> >(tiles, std::stoi(argv[3])); // Completely Asynchronous
-			}
-		} else if (strcmp(argv[1], "oshdastar") == 0) {
-			if (argc == 6) {
-				search = new OSHDAstar<Tiles, Zobrist<16> >(tiles, std::stoi(argv[3]), std::stoi(argv[4]), std::stoi(argv[5]));
-			} else {
-				search = new OSHDAstar<Tiles, Zobrist<16> >(tiles, std::stoi(argv[3]));
-			}
-		} else
-			throw Fatal("Unknown algorithm: %s", argv[1]);
+			Tiles tiles(stdin, pnum);
+			SearchAlg<Tiles> *search = NULL;
 
-		Tiles::State init = tiles.initial();
+			if (strcmp(argv[1], "idastar") == 0)
+				search = new Idastar<Tiles>(tiles);
+			else if (strcmp(argv[1], "astar") == 0)
+				search = new Astar<Tiles>(tiles);
+			else if (strcmp(argv[1], "pastar") == 0) {
+				if (argc == 4) {
+					search = new Pastar<Tiles>(tiles, std::stoi(argv[3]));
+				} else {
+					search = new Pastar<Tiles>(tiles);
+				}
+			} else if (strcmp(argv[1], "hdastar") == 0) {
+				if (argc >= 5) {
+					search = new HDAstar<Tiles, Zobrist<16> >(tiles,
+							std::stoi(argv[3]), std::stoi(argv[4]),
+							std::stoi(argv[5]), std::stoi(argv[6]));
+				} else {
+					search = new HDAstar<Tiles, Zobrist<16> >(tiles,
+							std::stoi(argv[3])); // Completely Asynchronous
+				}
+			} else if (strcmp(argv[1], "hdastar_trivial") == 0) {
+				if (argc >= 5) {
+					search = new HDAstar<Tiles, TrivialHash<16> >(tiles,
+							std::stoi(argv[3]), std::stoi(argv[4]),
+							std::stoi(argv[5]));
+				} else {
+					search = new HDAstar<Tiles, TrivialHash<16> >(tiles,
+							std::stoi(argv[3])); // Completely Asynchronous
+				}
+			} else if (strcmp(argv[1], "hdastar_random") == 0) {
+				if (argc >= 5) {
+					search = new HDAstar<Tiles, RandomHash<16> >(tiles,
+							std::stoi(argv[3]), std::stoi(argv[4]),
+							std::stoi(argv[5]));
+				} else {
+					search = new HDAstar<Tiles, RandomHash<16> >(tiles,
+							std::stoi(argv[3])); // Completely Asynchronous
+				}
+			} else if (strcmp(argv[1], "hdastar_overrun") == 0) {
+				if (argc >= 5) {
+					search = new HDAstar<Tiles, Zobrist<16> >(tiles,
+							std::stoi(argv[3]), std::stoi(argv[4]),
+							std::stoi(argv[5]), std::stoi(argv[6]), 1);
+				} else {
+					search = new HDAstar<Tiles, Zobrist<16> >(tiles,
+							std::stoi(argv[3])); // Completely Asynchronous
+				}
+			} else if (strcmp(argv[1], "oshdastar") == 0) {
+				if (argc == 6) {
+					search = new OSHDAstar<Tiles, Zobrist<16> >(tiles,
+							std::stoi(argv[3]), std::stoi(argv[4]),
+							std::stoi(argv[5]));
+				} else {
+					search = new OSHDAstar<Tiles, Zobrist<16> >(tiles,
+							std::stoi(argv[3]));
+				}
+			} else
+				throw Fatal("Unknown algorithm: %s", argv[1]);
 
-		dfheader(stdout);
-		dfpair(stdout, "algorithm", "%s", argv[1]);
-		printf("#tiles	");
-		for (int i = 0; i < 16; i++) {
-			printf("%d ", init.tiles[i]);
-		}
-		printf("\n");
+			Tiles::State init = tiles.initial();
 
-		dfpair(stdout, "problem number", "%02d", pnum);
-		if (argc > 3 && strcmp(argv[3], "")) {
-			dfpair(stdout, "thread number", "%02d", std::stoi(argv[3]));
-		}
-		if (argc == 7) {
-			dfpair(stdout, "income buffer threshold", "%d", std::stoi(argv[4]));
-			dfpair(stdout, "outgo buffer threshold", "%d", std::stoi(argv[5]));
-			dfpair(stdout, "abstraction", "%d", std::stoi(argv[6]));
-		} else if (argc == 5){
-			dfpair(stdout, "outsourcing f diff threshold", "%d", std::stoi(argv[4]));
-		}
-		dfpair(stdout, "initial heuristic", "%d", tiles.h(init));
-		double wall0 = walltime(), cpu0 = cputime();
-		std::vector<Tiles::State> path = search->search(init);
-
-		double wtime = search->wtime - wall0, ctime = search->ctime - cpu0;
-		sleep(2);
-		dfpair(stdout, "total wall time", "%g", wtime);
-		dfpair(stdout, "total cpu time", "%g", ctime);
-		dfpair(stdout, "total nodes expanded", "%lu", search->expd);
-		dfpair(stdout, "total nodes generated", "%lu", search->gend);
-		dfpair(stdout, "solution length", "%u", (unsigned int) path.size());
-
-		assert(path.begin() != path.end());
-		for (auto iter = path.end() - 1; iter != path.begin() - 1; --iter) {
-			for (int i = 0; i < 16; ++i) {
-				printf("%2d ", iter->tiles[i]);
+			dfheader(stdout);
+			dfpair(stdout, "algorithm", "%s", argv[1]);
+			printf("#tiles	");
+			for (int i = 0; i < 16; i++) {
+				printf("%d ", init.tiles[i]);
 			}
 			printf("\n");
-		}
 
-		dffooter(stdout);
+			dfpair(stdout, "problem number", "%02d", pnum);
+			if (argc > 3 && strcmp(argv[3], "")) {
+				dfpair(stdout, "thread number", "%02d", std::stoi(argv[3]));
+			}
+			if (argc == 7) {
+				dfpair(stdout, "income buffer threshold", "%d",
+						std::stoi(argv[4]));
+				dfpair(stdout, "outgo buffer threshold", "%d",
+						std::stoi(argv[5]));
+				dfpair(stdout, "abstraction", "%d", std::stoi(argv[6]));
+			} else if (argc == 5) {
+				dfpair(stdout, "outsourcing f diff threshold", "%d",
+						std::stoi(argv[4]));
+			}
+			dfpair(stdout, "initial heuristic", "%d", tiles.h(init));
+			double wall0 = walltime(), cpu0 = cputime();
+			std::vector<Tiles::State> path = search->search(init);
+
+			double wtime = search->wtime - wall0, ctime = search->ctime - cpu0;
+			sleep(2);
+			dfpair(stdout, "total wall time", "%g", wtime);
+			dfpair(stdout, "total cpu time", "%g", ctime);
+			dfpair(stdout, "total nodes expanded", "%lu", search->expd);
+			dfpair(stdout, "total nodes generated", "%lu", search->gend);
+			dfpair(stdout, "solution length", "%u", (unsigned int) path.size());
+
+			assert(path.begin() != path.end());
+			for (auto iter = path.end() - 1; iter != path.begin() - 1; --iter) {
+				for (int i = 0; i < 16; ++i) {
+					printf("%2d ", iter->tiles[i]);
+				}
+				printf("\n");
+			}
+
+			dffooter(stdout);
+		} else { // 24 puzzle
+			printf("24 Puzzle\n");
+			argv++;
+			argc--;
+			// 15 Puzzle:  14 1 9 6 4 8 12 5 7 2 3 0 10 11 13 15
+			// 24 Puzzle:
+			// 1 2 0 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25
+			pnum = 1;
+			Tiles24 tiles(stdin, pnum);
+			SearchAlg<Tiles24> *search = NULL;
+			if (strcmp(argv[1], "astar") == 0) {
+				search = new Astar<Tiles24>(tiles);
+			} else if (strcmp(argv[1], "hdastar") == 0) {
+				search = new HDAstar<Tiles24, Zobrist<25> >(tiles,
+						std::stoi(argv[2]));
+			} else {
+				throw Fatal("Unknown algorithm: %s", argv[1]);
+			}
+
+			Tiles24::State init = tiles.initial();
+			dfheader(stdout);
+			dfpair(stdout, "algorithm", "%s", argv[1]);
+			printf("#tiles	");
+			for (int i = 0; i < 25; i++) {
+				printf("%d ", init.tiles[i]);
+			}
+			printf("\n");
+
+			dfpair(stdout, "initial heuristic", "%d", tiles.h(init));
+			double wall0 = walltime(), cpu0 = cputime();
+			double wtime = search->wtime - wall0, ctime = search->ctime - cpu0;
+
+			// HERE!
+			std::vector<Tiles24::State> path = search->search(init);
+
+			dfpair(stdout, "total wall time", "%g", wtime);
+			dfpair(stdout, "total cpu time", "%g", ctime);
+			dfpair(stdout, "total nodes expanded", "%lu", search->expd);
+			dfpair(stdout, "total nodes generated", "%lu", search->gend);
+			dfpair(stdout, "solution length", "%u", (unsigned int) path.size());
+		}
 	} catch (const Fatal &f) {
 		fputs(f.msg, stderr);
 		fputc('\n', stderr);

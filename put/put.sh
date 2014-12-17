@@ -7,19 +7,21 @@ usage(){
 put.sh is a command to throw job for the lucy server.
 
 Usage:
-  $(basename ${0}) <algorithm> <problem number> <thread number>
+  $(basename ${0}) <instances name> <algorithm> <problem number> <thread number>
 EOF
 
 }
 
 time=`date +%m%d%H%M%S`
-algorithm=$1
-problem_size=$2
-problem_type=$3
-thread_number=$4
-parameter1=$5 # OS threshold,   hdastar income buffer size
-parameter2=$6 # OS abstraction, hdastar outgo buffer size
-parameter3=$7 # OS N/A,         abstraction type
+#problem_type=$1
+#domain_name=$2
+#algorithm=$3
+#problem_size=$4
+#thread_number=$5
+#parameter1=$6 # OS threshold,   hdastar income buffer size
+#parameter2=$7 # OS abstraction, hdastar outgo buffer size
+#parameter3=$8 # OS N/A,         abstraction type
+
 
 if [ $# -lt 4 ]
 then
@@ -28,14 +30,16 @@ then
 fi
 
 echo -n "Enter comment for the job->"
-read text
+read comment
 
 
-SCRIPT="cd /home/yuu/workspace/ethan ; ./job_david.sh $time $algorithm $problem_size $problem_type $thread_number $parameter1 $parameter2 $parameter3 $text"
+#SCRIPT="cd /home/yuu/workspace/ethan ; ./job_david.sh $time $algorithm $problem_size $problem_type $thread_number $parameter1 $parameter2 $parameter3 $text"
+SCRIPT="cd /home/yuu/workspace/ethan ; ./job_david.sh $time $comment $@"
 
 cd ..
 git stage src/*.hpp src/main.cc put/*.sh see/*.sh
-git commit -m "Experiment: $time $algorithm $problem_type $thread_number $parameter1 $parameter2 $parameter3 $text"
+#git commit -m "Experiment: $time $algorithm $problem_type $thread_number $parameter1 $parameter2 $parameter3 $text"
+git commit -m "Experiment: $time $@ $text"
 
 cd src
 touch main.cc

@@ -6,5 +6,6 @@
 #
 
 cd $PBS_O_WORKDIR
-./tiles$time $algname $PBS_ARRAYID $thread_number $param1 $param2 $param3 < $problem_type
+#./tiles$time $algname $PBS_ARRAYID $thread_number $param1 $param2 $param3 < $problem_type
 
+./tiles$time $domain_name $algname $PBS_ARRAYID $thread_number $param1 $param2 $param3 < $problem_type

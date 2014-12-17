@@ -7,19 +7,16 @@
 cd /home/yuu/workspace/ethan
 
 time=$1
-algname=$2
-problem_size=$3
-problem_type=$4
-thread_number=$5
-param1=$6
-param2=$7
-if [ $# -eq 8 ]
-then
-    comment=$8
-else 
-    param3=$8
-    comment=$9
-fi
+comment=$2
+problem_type=$3
+
+domain_name=$4
+algname=$5
+problem_size=$6
+thread_number=$7
+param1=$8
+param2=$9
+param3=$8
 
 mem="32gbmem"
 
@@ -35,13 +32,10 @@ then
     paramname1="incomebufsize"
     paramname2=".outgobufsize"
     paramname3=".abstraction"
-else
-    paramname1="osdiff"
-    paramname2=".abstraction"
 fi
 
 
-JOB_ARRAY_ID=`qsub -t 1-$problem_size -l nodes=1:ppn=8,walltime=01:20:00 -N $algname.${problem_type}.${thread_number}threads.${mem}.${paramname1}${param1}${paramname2}${param2}${paramname3}${param3}.${time} -j oe -v time=$time,algname=$algname,thread_number=$thread_number,problem_type=$problem_type,param1=$param1,param2=$param2,param3=$param3 ./run.sh`
+JOB_ARRAY_ID=`qsub -t 1-$problem_size -l nodes=1:ppn=8,walltime=01:20:00 -N $algname.${problem_type}.${thread_number}threads.${mem}.${paramname1}${param1}${paramname2}${param2}${paramname3}${param3}.${time} -j oe -v time=$time,domain_name=$domain_name,algname=$algname,thread_number=$thread_number,problem_type=$problem_type,param1=$param1,param2=$param2,param3=$param3 ./run.sh`
 
 JOB_NUMBER=`echo $JOB_ARRAY_ID | awk -F "." '{print $1}'` 
 

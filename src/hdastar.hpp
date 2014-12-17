@@ -345,7 +345,7 @@ public:
 						continue;
 					}
 					// Node access here is unnecessary duplicates.
-					dbgprintf("Duplicated\n");
+					printf("Duplicated\n");
 				}
 			}
 #ifdef ANALYZE_LAPSE
@@ -437,11 +437,12 @@ public:
 				Edge<D> e = this->dom.apply(state, op);
 
 				Node* next = wrap(state, n, e.cost, e.pop, nodes);
-				dbgprintf("mv blank op = %d %d %d \n", moving_tile, blank, op);
+//				printf("mv blank op = %d %d %d \n", moving_tile, blank, op);
+				print_state(state);
 				next->zbr = z.inc_hash(n->zbr, moving_tile, blank, op,
 						state.tiles);
 				unsigned long zbr = next->zbr; // % tnum;
-				dbgprintf("zbr = %d\n", zbr);
+				printf("zbr = %d\n", zbr);
 
 				// If the node belongs to itself, just push to this open list.
 				if (zbr == id) {
@@ -662,7 +663,7 @@ public:
 	}
 
 	void print_state(typename D::State state) {
-		for (int i = 0; i < 16; ++i) {
+		for (int i = 0; i < D::Ntiles; ++i) {
 			printf("%d ", state.tiles[i]);
 		}
 		printf("\n");

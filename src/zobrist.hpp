@@ -75,6 +75,8 @@ private:
 				}
 			}
 		}
+
+//		dump_table();
 	}
 
 	void single() {
@@ -150,6 +152,14 @@ private:
 
 	int random() {
 		return dis(gen);
+	}
+
+	void dump_table() {
+		for (int i = 0; i < size; ++i) {
+			for (int j = 0; j < size; ++j) {
+				printf("(%d, %d) = %d\n", i, j, zbr[i][j]);
+			}
+		}
 	}
 
 	// Currently hard coding, set to 16.
