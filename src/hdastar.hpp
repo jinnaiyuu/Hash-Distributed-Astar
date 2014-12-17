@@ -345,7 +345,7 @@ public:
 						continue;
 					}
 					// Node access here is unnecessary duplicates.
-					printf("Duplicated\n");
+//					printf("Duplicated\n");
 				}
 			}
 #ifdef ANALYZE_LAPSE
@@ -637,7 +637,8 @@ public:
 	}
 
 	static void* thread_helper(void* arg) {
-		return static_cast<HDAstar*>(arg)->thread_search<NaiveHeap<Node> >(arg);
+		return static_cast<HDAstar*>(arg)->thread_search<Heap<Node> >(arg);
+//		return static_cast<HDAstar*>(arg)->thread_search<NaiveHeap<Node> >(arg);
 	}
 
 	inline Node *wrap(typename D::State &s, Node *p, int c, int pop,
