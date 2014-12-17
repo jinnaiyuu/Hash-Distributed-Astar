@@ -193,14 +193,17 @@ int main(int argc, const char *argv[]) {
 			// 15 Puzzle:  14 1 9 6 4 8 12 5 7 2 3 0 10 11 13 15
 			// 24 Puzzle:
 			// 1 2 0 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25
-			pnum = 1;
+			for (int i = 0; argv[2][i] != '\0'; ++i) {
+				pnum *= 10;
+				pnum += argv[2][i] - '0';
+			}
 			Tiles24 tiles(stdin, pnum);
 			SearchAlg<Tiles24> *search = NULL;
 			if (strcmp(argv[1], "astar") == 0) {
 				search = new Astar<Tiles24>(tiles);
 			} else if (strcmp(argv[1], "hdastar") == 0) {
 				search = new HDAstar<Tiles24, Zobrist<25> >(tiles,
-						std::stoi(argv[2]));
+						std::stoi(argv[3]));
 			} else {
 				throw Fatal("Unknown algorithm: %s", argv[1]);
 			}
