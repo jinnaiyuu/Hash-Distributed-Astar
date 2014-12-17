@@ -216,10 +216,10 @@ int main(int argc, const char *argv[]) {
 
 			dfpair(stdout, "initial heuristic", "%d", tiles.h(init));
 			double wall0 = walltime(), cpu0 = cputime();
-			double wtime = search->wtime - wall0, ctime = search->ctime - cpu0;
-
 			// HERE!
 			std::vector<Tiles24::State> path = search->search(init);
+
+			double wtime = walltime() - wall0, ctime = cputime() - cpu0;
 
 			dfpair(stdout, "total wall time", "%g", wtime);
 			dfpair(stdout, "total cpu time", "%g", ctime);
