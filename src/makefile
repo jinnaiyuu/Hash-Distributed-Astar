@@ -1,5 +1,5 @@
 CXX=clang++
-CXXFLAGS=-g -Wall -static -pthread -std=c++11 -O3
+CXXFLAGS=-g -Wall -Wno-unused-value -static -pthread -std=c++11 -O3
 
 all: tiles
 

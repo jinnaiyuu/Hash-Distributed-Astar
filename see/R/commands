@@ -1,0 +1,1563 @@
+# 2014/06/17
+
+# DATA INPUT
+
+one<-read.csv("hdastar.difficult_instances.1threads.32gbmem.incomebufsize1000000.outgobufsize1000000.abstraction0.1108214642.o79", sep=" ")
+two<-read.csv("hdastar.difficult_instances.2threads.32gbmem.incomebufsize1000000.outgobufsize1000000.abstraction0.1108214922.o80", sep=" ")
+four<-read.csv("hdastar.difficult_instances.4threads.32gbmem.incomebufsize1000000.outgobufsize1000000.abstraction0.1108174717.o76", sep=" ")
+six<-read.csv("hdastar.difficult_instances.6threads.32gbmem.incomebufsize1000000.outgobufsize1000000.abstraction0.1108214951.o81", sep=" ")
+eight<-read.csv("hdastar.difficult_instances.8threads.32gbmem.incomebufsize1000000.outgobufsize1000000.abstraction0.1108174649.o75", sep=" ")
+
+one.walltime<-one[,2]
+one.solution<-one[,5]
+one.expd<-one[,3]
+one.gend<-one[,4]
+one.expdbalance<-one[,9]
+one.gendbalance<-one[,10]
+one.expdstddev<-one[,11]
+one.gendstddev<-one[,12]
+one.duplicate<-one[,8]
+one.incomebufsize<-one[,6]
+one.outgobufsize<-one[,7]
+one.incomeforce<-one[,14]
+one.outgoforce<-one[,15]
+one.outsource<-one[,13]
+
+one.walltime.ratio<-rep(c(1),each=100)
+one.expd.ratio<-rep(c(1),each=100)
+one.gend.ratio<-rep(c(1),each=100)
+one.Rr<-one.duplicate / one.expd
+
+
+two.walltime<-two[,2]
+two.solution<-two[,5]
+two.expd<-two[,3]
+two.gend<-two[,4]
+two.expdbalance<-two[,9]
+two.gendbalance<-two[,10]
+two.expdstddev<-two[,11]
+two.gendstddev<-two[,12]
+two.duplicate<-two[,8]
+two.incomebufsize<-two[,6]
+two.outgobufsize<-two[,7]
+two.incomeforce<-two[,14]
+two.outgoforce<-two[,15]
+two.outsource<-two[,13]
+
+two.walltime.ratio<-one.walltime / two.walltime
+two.expd.ratio<-two.expd / one.expd
+two.gend.ratio<-two.gend / one.gend
+two.Rr<-two.duplicate / two.expd
+
+
+four.walltime<-four[,2]
+four.solution<-four[,5]
+four.expd<-four[,3]
+four.gend<-four[,4]
+four.expdbalance<-four[,9]
+four.gendbalance<-four[,10]
+four.expdstddev<-four[,11]
+four.gendstddev<-four[,12]
+four.duplicate<-four[,8]
+four.incomebufsize<-four[,6]
+four.outgobufsize<-four[,7]
+four.incomeforce<-four[,14]
+four.outgoforce<-four[,15]
+four.outsource<-four[,13]
+
+four.walltime.ratio<-one.walltime / four.walltime
+four.expd.ratio<-four.expd / one.expd
+four.gend.ratio<-four.gend / one.gend
+four.Rr<-four.duplicate / four.expd
+
+
+six.walltime<-six[,2]
+six.solution<-six[,5]
+six.expd<-six[,3]
+six.gend<-six[,4]
+six.expdbalance<-six[,9]
+six.gendbalance<-six[,10]
+six.expdstddev<-six[,11]
+six.gendstddev<-six[,12]
+six.duplicate<-six[,8]
+six.incomebufsize<-six[,6]
+six.outgobufsize<-six[,7]
+six.incomeforce<-six[,14]
+six.outgoforce<-six[,15]
+six.outsource<-six[,13]
+
+six.walltime.ratio<-one.walltime / six.walltime
+six.expd.ratio<-six.expd / one.expd
+six.gend.ratio<-six.gend / one.gend
+six.Rr<-six.duplicate / six.expd
+
+
+eight.walltime<-eight[,2]
+eight.solution<-eight[,5]
+eight.expd<-eight[,3]
+eight.gend<-eight[,4]
+eight.expdbalance<-eight[,9]
+eight.gendbalance<-eight[,10]
+eight.expdstddev<-eight[,11]
+eight.gendstddev<-eight[,12]
+eight.duplicate<-eight[,8]
+eight.incomebufsize<-eight[,6]
+eight.outgobufsize<-eight[,7]
+eight.incomeforce<-eight[,14]
+eight.outgoforce<-eight[,15]
+eight.outsource<-eight[,13]
+
+eight.walltime.ratio<-one.walltime / eight.walltime
+eight.expd.ratio<-eight.expd / one.expd
+eight.gend.ratio<-eight.gend / one.gend
+eight.Rr<-eight.duplicate / eight.expd
+
+
+one.bind<-cbind(one.walltime,one.walltime.ratio,one.solution,one.expd,one.gend,one.expd.ratio,one.gend.ratio,one.expdbalance,one.gendbalance,one.expdstddev,one.gendstddev,one.Rr,one.incomebufsize,one.outgobufsize)
+one.labels<-c("walltime","walltime.ratio","solution","expd","gend","expd.ratio","gend.ratio","expdbalance","gendbalance","expdstddev","gendstddev","Rr","incomebufsize","outgobufsize")
+
+two.bind<-cbind(two.walltime,two.walltime.ratio,two.solution,two.expd,two.gend,two.expd.ratio,two.gend.ratio,two.expdbalance,two.gendbalance,two.expdstddev,two.gendstddev,two.Rr,two.incomebufsize,two.outgobufsize)
+
+four.bind<-cbind(four.walltime,four.walltime.ratio,four.solution,four.expd,four.gend,four.expd.ratio,four.gend.ratio,four.expdbalance,four.gendbalance,four.expdstddev,four.gendstddev,four.Rr,four.incomebufsize,four.outgobufsize)
+
+six.bind<-cbind(six.walltime,six.walltime.ratio,six.solution,six.expd,six.gend,six.expd.ratio,six.gend.ratio,six.expdbalance,six.gendbalance,six.expdstddev,six.gendstddev,six.Rr,six.incomebufsize,six.outgobufsize)
+
+eight.bind<-cbind(eight.walltime,eight.walltime.ratio,eight.solution,eight.expd,eight.gend,eight.expd.ratio,eight.gend.ratio,eight.expdbalance,eight.gendbalance,eight.expdstddev,eight.gendstddev,eight.Rr,eight.incomebufsize,eight.outgobufsize)
+
+pairs(one.bind, one.labels)
+pairs(two.bind, one.labels)
+pairs(four.bind, one.labels)
+pairs(six.bind, one.labels)
+pairs(eight.bind, one.labels)
+
+
+pdf("Rplot.pdf")
+plot()
+dev.off()
+
+
+cars<-read.csv("cars.csv")
+model<-cars[,1][not.e]	
+price<-cars[,2][not.e]	
+fourspd<-cars[,3][not.e]
+sixover<-cars[,4][not.e]	
+cvt<-cars[,5][not.e]	
+disp<-cars[,6][not.e]	
+hp<-cars[,7][not.e]	
+awd<-cars[,8][not.e]	
+fourwd_dummy<-cars[,9][not.e]	
+rear<-cars[,10][not.e]	
+suv<-cars[,11][not.e]	
+pickup<-cars[,12][not.e]	
+minivan<-cars[,13][not.e]	
+sports<-cars[,14][not.e]
+luxuary<-cars[,15][not.e]	
+weight<-cars[,16][not.e]	
+length<-cars[,17][not.e]	
+mpg<-cars[,18][not.e]	
+reliability<-cars[,19][not.e]	
+electric<-cars[,20][not.e]	
+hybrid<-cars[,21][not.e]
+reliability.jittered<-reliability+runif(260,min=-0.3,max=0.3)
+
+# ANALYSIS 0
+### Scattered plot matrix
+
+auto<-cbind(price,fourspd,sixover,cvt,disp,hp,awd,fourwd_dummy,rear,suv,pickup,minivan,sports,weight,length,mpg,reliability.jittered,electric,hybrid)
+auto.labels<-c("price","fourspd","sixover","cvt","disp","hp","awd","fourwd_dummy","rear","suv","pickup","minivan","sports","weight","length","mpg","reliability.jittered","electric","hybrid")
+
+pairs(auto, auto.labels)
+
+// scatter_plots.png
+
+# ANALYSIS 1
+
+# Analysis 1-1 hp - price adjusted for displacement
+
+ls.print(lsfit(cbind(hp, disp), price))
+
+//            Estimate   Std.Err t-value Pr(>|t|)
+//Intercept  6047.2466 2009.0641  3.0100   0.0029
+//hp          178.5863   17.7547 10.0585   0.0000
+//disp      -4110.7432 1254.4509 -3.2769   0.0012
+
+
+hp.on.disp<-lsfit(disp,hp)
+hp.adjusted.for.disp<-hp.on.disp$residuals
+logprice.on.disp<-lsfit(disp,log(price))
+logprice.adjusted.for.disp<-logprice.on.disp$residuals
+
+plot(hp.adjusted.for.disp, logprice.adjusted.for.disp, xlab="horse power adjusted for displacement",ylab="log of price adjusted for displacement")
+identify(hp.adjusted.for.disp, logprice.adjusted.for.disp,model)
+
+// hp-logprice_ad_disp.png
+
+
+# Analysis 1-2 weight, price adjusted for length
+
+ls.print(lsfit(cbind(weight, length), price))
+
+//            Estimate   Std.Err t-value Pr(>|t|)
+//Intercept -5941.2982 9604.4177 -0.6186   0.5367
+//weight       12.2940    1.5318  8.0259   0.0000
+//length      -21.8166   73.1939 -0.2981   0.7659
+
+weight.adjusted.for.length<-lsfit(length,weight)$residuals
+logprice.adjusted.for.length<-lsfit(length,log(price))$residuals
+
+plot(weight.adjusted.for.length, logprice.adjusted.for.length, xlab="weight adjusted for length",ylab="log price adjusted for length")
+identify(weight.adjusted.for.length, logprice.adjusted.for.length,model)
+
+// weight-logprice_ad_length.png
+
+
+# Analysis 1-3 hp, weight on logprice adjusted for disp & length
+
+ls.print(lsfit(cbind(weight.adjusted.for.length, hp.adjusted.for.disp), log(price)))
+
+// DIDNT SAVE IT
+
+# Analysis 1-4 hp to logprice adjusted for disp & pickup
+
+hp.adjusted.for.disp.pickup<-lsfit(cbind(disp,pickup),hp)$residuals
+logprice.adjusted.for.disp.pickup<-lsfit(cbind(disp,pickup),log(price))$residuals
+
+plot(hp.adjusted.for.disp.pickup, logprice.adjusted.for.disp.pickup)
+identify(hp.adjusted.for.disp.pickup, logprice.adjusted.for.disp.pickup, model)
+
+
+# Analysis 1-5 hp to logprice adjusted for disp & Ford
+
+hp.adjusted.for.disp.ford<-lsfit(cbind(disp,company=="Ford"),hp)$residuals
+logprice.adjusted.for.disp.ford<-lsfit(cbind(disp,company=="Ford"),log(price))$residuals
+
+plot(hp.adjusted.for.disp.ford, logprice.adjusted.for.disp.ford, xlab="horse power adjusted for displacement and Ford",ylab="horse power adjusted for displacement and Ford")
+
+
+auto<-cbind(auto, company)
+auto.labels<-cbind(auto.labels, "company")
+
+plot(company, log(price))
+
+company.adjusted.for.hp.weight<-lsfit(cbind(hp,weight),hp)$residuals
+logprice.adjusted.for.hp.weight<-lsfit(cbind(hp,weight),log(price))$residuals
+
+plot(company.adjusted.for.hp.weight, logprice.adjusted.for.hp.weight, xlab="company adjusted for hp and weight",ylab="log price adjusted for hp and weight")
+identify(company.adjusted.for.hp.weight, logprice.adjusted.for.hp.weight, company)
+identify(company.adjusted.for.hp.weight, logprice.adjusted.for.hp.weight, model)
+
+hist(price)
+hist(log(price))
+hist(sqrt(price))
+
+### Analysis 1-6 pickup to logprice adjusted for hp & weight
+
+pickup.adjusted.for.hp.weight<-lsfit(cbind(hp,weight),pickup)$residuals
+logprice.adjusted.for.hp.weight<-lsfit(cbind(hp,weight),log(price))$residuals
+
+plot(pickup.adjusted.for.hp.weight, logprice.adjusted.for.hp.weight)
+identify(pickup.adjusted.for.hp.weight, logprice.adjusted.for.hp.weight, model)
+
+### Analysis 1-7 weight to logprice adjusted for hp
+
+weight.adjusted.for.hp<-lsfit(hp,weight)$residuals
+logprice.adjusted.for.hp<-lsfit(hp,log(price))$residuals
+
+plot(weight.adjusted.for.hp, logprice.adjusted.for.hp)
+identify(weight.adjusted.for.hp, logprice.adjusted.for.hp, model)
+
+
+
+##############
+
+# ANALYSIS 2
+
+c<-(not.e & cars[,2]<60000)
+
+cmodel<-cars[,1][c]	
+cprice<-cars[,2][c]
+cfourspd<-cars[,3][c]
+csixover<-cars[,4][c]
+ccvt<-cars[,5][c]
+cdisp<-cars[,6][c]
+chp<-cars[,7][c]	
+cawd<-cars[,8][c]
+cfourwd_dummy<-cars[,9][c]
+crear<-cars[,10][c]
+csuv<-cars[,11][c]
+cpickup<-cars[,12][c]	
+cminivan<-cars[,13][c]
+csports<-cars[,14][c]
+cluxuary<-cars[,15][c]	
+cweight<-cars[,16][c]	
+clength<-cars[,17][c]	
+cmpg<-cars[,18][c]
+creliability<-cars[,19][c]
+celectric<-cars[,20][c]	
+chybrid<-cars[,21][c]
+ccompany<-company[cars[,2]<60000]
+creliability.jittered<-creliability+runif(248,min=-0.3,max=0.3)
+
+auto<-cbind(cprice,cfourspd,csixover,ccvt,cdisp,chp,cawd,cfourwd_dummy,crear,csuv,cpickup,cminivan,csports,cweight,clength,cmpg,creliability.jittered,celectric,chybrid)
+auto.labels<-c("price","fourspd","sixover","cvt","disp","hp","awd","fourwd_dummy","rear","suv","pickup","minivan","sports","weight","length","mpg","reliability.jittered","electric","hybrid")
+pairs(auto, auto.labels)
+
+
+# Analysis 2-1 chp vs. cdisp
+
+ls.print(lsfit(cbind(chp, cdisp), log(cprice)))
+
+//          Estimate Std.Err  t-value Pr(>|t|)
+//Intercept   9.6162  0.0396 242.9521   0.0000
+//chp         0.0036  0.0004   9.0655   0.0000
+//cdisp      -0.0554  0.0287  -1.9331   0.0548
+// -> chp might be useful
+
+
+# Analysis 2-2 weight vs. length
+
+ls.print(lsfit(cbind(cweight, clength), log(cprice)))
+
+//          Estimate Std.Err t-value Pr(>|t|)
+//Intercept   9.1800  0.1666 55.0869    0.000
+//cweight     0.0003  0.0000  9.3865    0.000
+//clength    -0.0005  0.0014 -0.3684    0.713
+// -> cweight might be useful
+
+
+# Analysis 2-3 chp + cweight
+
+cweight.adjusted.for.chp<-lsfit(chp,cweight)$residuals
+logcprice.adjusted.for.chp<-lsfit(chp,log(cprice))$residuals
+
+plot(cweight.adjusted.for.chp, logcprice.adjusted.for.chp)
+identify(cweight.adjusted.for.chp, logcprice.adjusted.for.chp, cmodel)
+
+// -> great idea to combine chp + cweight
+
+
+# Analysis 2-4 chp + cweight + cpickup
+
+cpickup.adjusted.for.chp.cweight<-lsfit(cbind(chp,cweight),cpickup)$residuals
+logcprice.adjusted.for.chp.cweight<-lsfit(cbind(chp,cweight),log(cprice))$residuals
+
+plot(cpickup.adjusted.for.chp.cweight, logcprice.adjusted.for.chp.cweight)
+identify(cpickup.adjusted.for.chp.cweight, logcprice.adjusted.for.chp.cweight, cmodel)
+
+// -> might be one of the models
+
+
+# Analysis 2-5 chp + cweight + chybrid
+
+chybrid.adjusted.for.chp.cweight<-lsfit(cbind(chp,cweight),chybrid)$residuals
+logcprice.adjusted.for.chp.cweight<-lsfit(cbind(chp,cweight),log(cprice))$residuals
+
+plot(chybrid.adjusted.for.chp.cweight, logcprice.adjusted.for.chp.cweight)
+identify(chybrid.adjusted.for.chp.cweight, logcprice.adjusted.for.chp.cweight, cmodel)
+
+// -> not so great
+
+
+# Analysis 2-5-1 chp +cweight + cpickup + chybrid
+
+chybrid.adjusted.for.chp.cweight.cpickup<-lsfit(cbind(chp,cweight,cpickup),chybrid)$residuals
+logcprice.adjusted.for.chp.cweight.cpickup<-lsfit(cbind(chp,cweight,cpickup),log(cprice))$residuals
+
+plot(chybrid.adjusted.for.chp.cweight.cpickup, logcprice.adjusted.for.chp.cweight.cpickup)
+identify(chybrid.adjusted.for.chp.cweight.cpickup, logcprice.adjusted.for.chp.cweight.cpickup, cmodel)
+
+
+
+# Analysis 2-6 chp + cweight + cmpg
+
+cmpg.adjusted.for.chp.cweight<-lsfit(cbind(chp,cweight),cmpg)$residuals
+logcprice.adjusted.for.chp.cweight<-lsfit(cbind(chp,cweight),log(cprice))$residuals
+
+plot(cmpg.adjusted.for.chp.cweight, logcprice.adjusted.for.chp.cweight)
+identify(cmpg.adjusted.for.chp.cweight, logcprice.adjusted.for.chp.cweight, cmodel)
+
+// -> not the greatest.
+
+
+# Analysis 2-6-1 chp + cweight + cpickup + cmpg
+
+cmpg.adjusted.for.chp.cweight.cpickup<-lsfit(cbind(chp,cweight,cpickup),cmpg)$residuals
+logcprice.adjusted.for.chp.cweight.cpickup<-lsfit(cbind(chp,cweight,cpickup),log(cprice))$residuals
+
+plot(cmpg.adjusted.for.chp.cweight.cpickup, logcprice.adjusted.for.chp.cweight.cpickup)
+identify(cmpg.adjusted.for.chp.cweight.cpickup, logcprice.adjusted.for.chp.cweight.cpickup, cmodel)
+
+// -> lol what happened?
+
+
+
+# Analysis 2-7 chp + cweight + cpickup + ccvt
+
+ccvt.adjusted.for.chp.cweight.cpickup<-lsfit(cbind(chp,cweight,cpickup),ccvt)$residuals
+logcprice.adjusted.for.chp.cweight.cpickup<-lsfit(cbind(chp,cweight,cpickup),log(cprice))$residuals
+
+plot(ccvt.adjusted.for.chp.cweight.cpickup, logcprice.adjusted.for.chp.cweight.cpickup)
+identify(ccvt.adjusted.for.chp.cweight.cpickup, logcprice.adjusted.for.chp.cweight.cpickup, cmodel)
+
+// -> nothing interesting.
+
+### 
+
+
+# Analysis 2-8 chp + cmpg
+
+ls.print(lsfit(cbind(cweight, clength, cmpg), log(cprice)))
+
+//          Estimate Std.Err t-value Pr(>|t|)
+//Intercept   9.1675  0.2311 39.6631   0.0000
+//cweight     0.0004  0.0000  9.9190   0.0000
+//clength    -0.0009  0.0016 -0.5706   0.5688
+//cmpg        0.0017  0.0023  0.7352   0.4629
+
+
+cmpg.adjusted.for.chp<-lsfit(chp,cmpg)$residuals
+logcprice.adjusted.for.chp<-lsfit(chp,log(cprice))$residuals
+
+plot(cmpg.adjusted.for.chp, logcprice.adjusted.for.chp)
+identify(cmpg.adjusted.for.chp, logcprice.adjusted.for.chp, cmodel)
+
+plot(cmpg.adjusted.for.chp, logcprice.adjusted.for.chp, xlim=c(-20,20), ylim=c(-1,1))
+
+
+// stupid x = 1 line because of hybrids
+
+
+# Analysis 2-8-1 chp + cmpg + clength
+
+clength.adjusted.for.chp.cmpg<-lsfit(cbind(chp,cmpg), clength)$residuals
+logcprice.adjusted.for.chp.cmpg<-lsfit(cbind(chp, cmpg),log(cprice))$residuals
+
+plot(clength.adjusted.for.chp.cmpg, logcprice.adjusted.for.chp.cmpg)
+identify(clength.adjusted.for.chp.cmpg, logcprice.adjusted.for.chp.cmpg, cmodel)
+
+
+# Analysis 2-9 chp + cmpg + clength + cpickup
+
+cpickup.adjusted.for.chp.cmpg.clength<-lsfit(cbind(chp,cmpg,clength), cpickup)$residuals
+logcprice.adjusted.for.chp.cmpg.clength<-lsfit(cbind(chp, cmpg, clength),log(cprice))$residuals
+
+plot(cpickup.adjusted.for.chp.cmpg.clength, logcprice.adjusted.for.chp.cmpg.clength)
+identify(cpickup.adjusted.for.chp.cmpg.clength, logcprice.adjusted.for.chp.cmpg.clength, cmodel)
+
+
+# Analysis 2-10 chp + cweight + creliability.jittered
+
+creliability.jittered.adjusted.for.chp.cweight<-lsfit(cbind(chp,cweight),creliability.jittered)$residuals
+logcprice.adjusted.for.chp.cweight<-lsfit(cbind(chp,cweight),log(cprice))$residuals
+
+plot(creliability.jittered.adjusted.for.chp.cweight, logcprice.adjusted.for.chp.cweight)
+identify(creliability.jittered.adjusted.for.chp.cweight, logcprice.adjusted.for.chp.cweight, cmodel)
+
+// -> might be something but not sure
+
+
+# Analysis 2-10-1 chp + cweight + creliability
+
+creliability.adjusted.for.chp.cweight<-lsfit(cbind(chp,cweight),creliability)$residuals
+logcprice.adjusted.for.chp.cweight<-lsfit(cbind(chp,cweight),log(cprice))$residuals
+
+plot(creliability.adjusted.for.chp.cweight, logcprice.adjusted.for.chp.cweight)
+identify(creliability.adjusted.for.chp.cweight, logcprice.adjusted.for.chp.cweight, cmodel)
+
+// -> 2-10 is better
+
+
+# Analysis 2-11 chp + cweight + cminivan
+
+cminivan.adjusted.for.chp.cweight<-lsfit(cbind(chp,cweight),cminivan)$residuals
+logcprice.adjusted.for.chp.cweight<-lsfit(cbind(chp,cweight),log(cprice))$residuals
+
+plot(cminivan.adjusted.for.chp.cweight, logcprice.adjusted.for.chp.cweight)
+identify(cminivan.adjusted.for.chp.cweight, logcprice.adjusted.for.chp.cweight, cmodel)
+
+// -> nothing to be explained
+
+
+# Analysis 2-12 chp + cweight + cpickup + cluxuary
+
+cluxuary.adjusted.for.chp.cweight.cpickup<-lsfit(cbind(chp,cweight,cpickup),cluxuary)$residuals
+logcprice.adjusted.for.chp.cweight.cpickup<-lsfit(cbind(chp,cweight,cpickup),log(cprice))$residuals
+
+plot(cluxuary.adjusted.for.chp.cweight.cpickup, logcprice.adjusted.for.chp.cweight.cpickup)
+identify(cluxuary.adjusted.for.chp.cweight.cpickup, logcprice.adjusted.for.chp.cweight.cpickup, cmodel)
+
+
+#######################
+# Analysis 2-13 chp + cweight + cpickup + cluxuary + chybrid
+
+chybrid.adjusted.for.chp.cweight.cpickup.cluxuary<-lsfit(cbind(chp,cweight,cpickup,cluxuary),chybrid)$residuals
+logcprice.adjusted.for.chp.cweight.cpickup.cluxuary<-lsfit(cbind(chp,cweight,cpickup,cluxuary),log(cprice))$residuals
+
+plot(chybrid.adjusted.for.chp.cweight.cpickup.cluxuary, logcprice.adjusted.for.chp.cweight.cpickup.cluxuary)
+identify(chybrid.adjusted.for.chp.cweight.cpickup.cluxuary, logcprice.adjusted.for.chp.cweight.cpickup, cmodel)
+
+ls.print(lsfit(cbind(chp, cweight, cpickup, cluxuary, chybrid), log(cprice)))
+
+// -> might be the best data for now
+
+
+# Analysis 2-14 chp + cmpg + cpickup
+
+cpickup.adjusted.for.chp.cmpg<-lsfit(cbind(chp,cmpg), clength)$residuals
+logcprice.adjusted.for.chp.cmpg<-lsfit(cbind(chp, cmpg),log(cprice))$residuals
+
+plot(clength.adjusted.for.chp.cmpg, logcprice.adjusted.for.chp.cmpg)
+identify(clength.adjusted.for.chp.cmpg, logcprice.adjusted.for.chp.cmpg, cmodel)
+
+ls.print(lsfit(cbind(chp, cweight, cpickup), log(cprice)))
+
+
+# Analysis 2-15 chp + cmpg + chybrid
+
+chybrid.adjusted.for.chp.cmpg<-lsfit(cbind(chp,cmpg), chybrid)$residuals
+logcprice.adjusted.for.chp.cmpg<-lsfit(cbind(chp, cmpg),log(cprice))$residuals
+
+plot(chybrid.adjusted.for.chp.cmpg, logcprice.adjusted.for.chp.cmpg)
+identify(chybrid.adjusted.for.chp.cmpg, logcprice.adjusted.for.chp.cmpg, cmodel)
+
+
+# Analysis 2-16 chp + cweight + cpickup + cawd
+
+cawd.adjusted.for.chp.cweight.cpickup<-lsfit(cbind(chp,cweight,cpickup),cawd)$residuals
+logcprice.adjusted.for.chp.cweight.cpickup<-lsfit(cbind(chp,cweight,cpickup),log(cprice))$residuals
+
+plot(cawd.adjusted.for.chp.cweight.cpickup, logcprice.adjusted.for.chp.cweight.cpickup)
+identify(cawd.adjusted.for.chp.cweight.cpickup, logcprice.adjusted.for.chp.cweight.cpickup, cmodel)
+
+ls.print(lsfit(cbind(chp, cweight, cpickup, cawd), log(cprice)))
+
+
+# Analysis 2-17  chp + cweight + cpickup + cawd + cluxuary
+
+ls.print(lsfit(cbind(chp, cweight, cpickup, cawd, cluxuary), log(cprice)))
+
+//          Estimate Std.Err  t-value Pr(>|t|)
+//Intercept   9.2593  0.0536 172.6636   0.0000
+//chp         0.0017  0.0002   8.3983   0.0000
+//cweight     0.0002  0.0000   7.8964   0.0000
+//cpickup    -0.2131  0.0573  -3.7211   0.0002
+//cawd        0.0350  0.0231   1.5190   0.1301
+//cluxuary    0.3042  0.0258  11.7908   0.0000
+
+
+
+cluxuary.adjusted.for.chp.cweight.cpickup.cawd<-lsfit(cbind(chp,cweight,cpickup,cawd),cluxuary)$residuals
+logcprice.adjusted.for.chp.cweight.cpickup.cawd<-lsfit(cbind(chp,cweight,cpickup,cawd),log(cprice))$residuals
+
+plot(cluxuary.adjusted.for.chp.cweight.cpickup.cawd, logcprice.adjusted.for.chp.cweight.cpickup.cawd)
+identify(cluxuary.adjusted.for.chp.cweight.cpickup.cawd, logcprice.adjusted.for.chp.cweight.cpickup.cawd, cmodel)
+
+// not the worst
+
+
+# Analysis 2-18 chp + cweight + ccvt
+
+ccvt.adjusted.for.chp.cweight<-lsfit(cbind(chp,cweight),ccvt)$residuals
+logcprice.adjusted.for.chp.cweight<-lsfit(cbind(chp,cweight),log(cprice))$residuals
+
+plot(ccvt.adjusted.for.chp.cweight, logcprice.adjusted.for.chp.cweight)
+identify(ccvt.adjusted.for.chp.cweight, logcprice.adjusted.for.chp.cweight, cmodel)
+
+// -> not so good.
+
+# Analysis 2-18-1 chp + cweight + ccvt + csixover
+
+csixover.adjusted.for.chp.cweight.ccvt<-lsfit(cbind(chp,cweight,ccvt),csixover)$residuals
+logcprice.adjusted.for.chp.cweight.ccvt<-lsfit(cbind(chp,cweight,ccvt),log(cprice))$residuals
+
+plot(csixover.adjusted.for.chp.cweight.ccvt, logcprice.adjusted.for.chp.cweight.ccvt)
+identify(csixover.adjusted.for.chp.cweight.ccvt, logcprice.adjusted.for.chp.cweight.ccvt, cmodel)
+
+ls.print(lsfit(cbind(chp, cweight, cpickup, ccvt, csixover), log(cprice)))
+
+//R-Square=0.6767
+//
+//          Estimate Std.Err  t-value Pr(>|t|)
+//Intercept   9.1019  0.0711 128.0881   0.0000
+//chp         0.0020  0.0003   7.6399   0.0000
+//cweight     0.0002  0.0000   7.4889   0.0000
+//cpickup    -0.3301  0.0719  -4.5920   0.0000
+//ccvt        0.0964  0.0478   2.0177   0.0447
+//csixover    0.0990  0.0392   2.5243   0.0122
+
+
+
+// -> might be something
+
+# Analysis 2-19 chp + cweight + cpickup + csports
+
+csports.adjusted.for.chp.cweight.cpickup<-lsfit(cbind(chp,cweight,cpickup),csports)$residuals
+logcprice.adjusted.for.chp.cweight.cpickup<-lsfit(cbind(chp,cweight,cpickup),log(cprice))$residuals
+
+plot(csports.adjusted.for.chp.cweight.cpickup, logcprice.adjusted.for.chp.cweight.cpickup)
+identify(csports.adjusted.for.chp.cweight.cpickup, logcprice.adjusted.for.chp.cweight.cpickup, cmodel)
+
+ls.print(lsfit(cbind(chp, cweight, cpickup, csports), log(cprice)))
+
+//          Estimate Std.Err  t-value Pr(>|t|)
+//Intercept   9.1159  0.0710 128.4714   0.0000
+//chp         0.0019  0.0003   6.6025   0.0000
+//cweight     0.0002  0.0000   7.6165   0.0000
+//cpickup    -0.3745  0.0698  -5.3688   0.0000
+//csports     0.0824  0.0435   1.8957   0.0592
+
+// -> Good.
+
+
+# Analysis 2-20 chp + cweight + cpickup + ccompany=="Porsche"
+
+ls.print(lsfit(cbind(chp, cweight, cpickup, ccompany=="Porsche"), log(cprice)))
+
+cporsche.adjusted.for.chp.cweight.cpickup<-lsfit(cbind(chp,cweight,cpickup),ccompany=="Porsche")$residuals
+logcprice.adjusted.for.chp.cweight.cpickup<-lsfit(cbind(chp,cweight,cpickup),log(cprice))$residuals
+
+plot(cporsche.adjusted.for.chp.cweight.cpickup, logcprice.adjusted.for.chp.cweight.cpickup)
+identify(cporsche.adjusted.for.chp.cweight.cpickup, logcprice.adjusted.for.chp.cweight.cpickup, cmodel)
+
+
+# Analysis 2-21 chp + cweight + cpickup + ccompany=="Ford"
+
+ls.print(lsfit(cbind(chp, cweight, cpickup, ccompany=="Ford"), log(cprice)))
+
+cford.adjusted.for.chp.cweight.cpickup<-lsfit(cbind(chp,cweight,cpickup),ccompany=="Ford")$residuals
+logcprice.adjusted.for.chp.cweight.cpickup<-lsfit(cbind(chp,cweight,cpickup),log(cprice))$residuals
+
+plot(cford.adjusted.for.chp.cweight.cpickup, logcprice.adjusted.for.chp.cweight.cpickup)
+identify(cford.adjusted.for.chp.cweight.cpickup, logcprice.adjusted.for.chp.cweight.cpickup, cmodel)
+
+
+# Analysis 2-22 chp + cweight + cpickup + ccompany
+
+ls.print(lsfit(cbind(chp, cweight, cpickup, ccompany), log(cprice)))
+
+ccompany.adjusted.for.chp.cweight.cpickup<-lsfit(cbind(chp,cweight,cpickup),ccompany)$residuals
+logcprice.adjusted.for.chp.cweight.cpickup<-lsfit(cbind(chp,cweight,cpickup),log(cprice))$residuals
+
+plot(ccompany.adjusted.for.chp.cweight.cpickup, logcprice.adjusted.for.chp.cweight.cpickup)
+identify(ccompany.adjusted.for.chp.cweight.cpickup, logcprice.adjusted.for.chp.cweight.cpickup, cmodel)
+
+// -> ERROR
+
+# Analysis 2-22 cweigth, clength, cmpg, log(cweight)
+
+ls.print(lsfit(cbind(cweight, clength, cmpg, log(cweight)), log(cprice)))
+
+//R-Square=0.6461
+//          Estimate Std.Err t-value Pr(>|t|)
+//Intercept -18.5368  3.2211 -5.7548   0.0000
+//cweight    -0.0006  0.0001 -5.2096   0.0000
+//clength    -0.0056  0.0015 -3.8265   0.0002
+//cmpg        0.0025  0.0020  1.2322   0.2191
+//logweight   3.9202  0.4549  8.6180   0.0000
+
+# Analysis 2-23 chp + logcweight
+
+logcweight.adjusted.for.chp<-lsfit(chp,log(cweight))$residuals
+logcprice.adjusted.for.chp<-lsfit(chp,log(cprice))$residuals
+
+plot(logcweight.adjusted.for.chp, logcprice.adjusted.for.chp)
+identify(logcweight.adjusted.for.chp, logcprice.adjusted.for.chp, cmodel)
+
+// -> might be another solution
+
+# Analysis 2-24 chp + logcpweight + cpickup
+
+cpickup.adjusted.for.chp.logcweight<-lsfit(cbind(chp,log(cweight)),cpickup)$residuals
+logcprice.adjusted.for.chp.logcweight<-lsfit(cbind(chp,log(cweight)),log(cprice))$residuals
+
+plot(cpickup.adjusted.for.chp.logcweight, logcprice.adjusted.for.chp.logcweight)
+identify(cpickup.adjusted.for.chp.logcweight, logcprice.adjusted.for.chp.logcweight, cmodel)
+
+// -> sounds good. Still need to explain expensive cars
+
+# Analysis 2-25 chp + logcweight + cpickup + cluxuary
+
+cluxuary.adjusted.for.chp.logcweight.cpickup<-lsfit(cbind(chp,log(cweight),cpickup),cluxuary)$residuals
+logcprice.adjusted.for.chp.logcweight.cpickup<-lsfit(cbind(chp,log(cweight),cpickup),log(cprice))$residuals
+
+plot(cluxuary.adjusted.for.chp.logcweight.cpickup, logcprice.adjusted.for.chp.logcweight.cpickup)
+identify(cluxuary.adjusted.for.chp.logcweight.cpickup, logcprice.adjusted.for.chp.logcweight.cpickup, cmodel)
+
+# Analysis 2-25 chp + logcweight + cpickup + csports
+
+csports.adjusted.for.chp.logcweight.cpickup<-lsfit(cbind(chp,log(cweight),cpickup),csports)$residuals
+logcprice.adjusted.for.chp.logcweight.cpickup<-lsfit(cbind(chp,log(cweight),cpickup),log(cprice))$residuals
+
+plot(csports.adjusted.for.chp.logcweight.cpickup, logcprice.adjusted.for.chp.logcweight.cpickup)
+identify(csports.adjusted.for.chp.logcweight.cpickup, logcprice.adjusted.for.chp.logcweight.cpickup, cmodel)
+
+ls.print(lsfit(cbind(chp, log(cweight), cpickup, csports), log(cprice)))
+
+//R-Square=0.6965
+//          Estimate Std.Err t-value Pr(>|t|)
+//Intercept   1.9597  0.8421  2.3271   0.0208
+//chp         0.0015  0.0003  5.1208   0.0000
+//logcweight  0.9856  0.1090  9.0396   0.0000
+//cpickup    -0.3487  0.0664 -5.2489   0.0000
+//csports     0.1141  0.0424  2.6905   0.0076
+
+
+// -> hmmmmmmmm not so bad....
+
+
+
+
+
+
+
+
+#####
+# ANALYSIS 3  Cp Plot
+# 
+# Model 1: hp + weight + pickup + luxuary + hybrid (p = 6)
+#Residual Standard Error=0.1559
+#R-Square=0.8077
+#F-statistic (df=5, 242)=203.302
+#p-value=0
+#
+#          Estimate Std.Err  t-value Pr(>|t|)
+#Intercept   9.2266  0.0518 178.0945    0e+00
+#chp         0.0018  0.0002   9.0653    0e+00
+#cweight     0.0002  0.0000   8.5332    0e+00
+#cpickup    -0.2246  0.0549  -4.0944    1e-04
+#cluxuary    0.3034  0.0247  12.2671    0e+00
+#chybrid     0.1495  0.0371   4.0324    1e-04
+# 
+#
+# Model 2: hp + weight + pickup + awd + luxuary    (p = 6)
+#Residual Standard Error=0.1603
+#R-Square=0.7967
+#F-statistic (df=5, 242)=189.7036
+#p-value=0
+#
+#          Estimate Std.Err  t-value Pr(>|t|)
+#Intercept   9.2593  0.0536 172.6636   0.0000
+#chp         0.0017  0.0002   8.3983   0.0000
+#cweight     0.0002  0.0000   7.8964   0.0000
+#cpickup    -0.2131  0.0573  -3.7211   0.0002
+#cawd        0.0350  0.0231   1.5190   0.1301
+#cluxuary    0.3042  0.0258  11.7908   0.0000
+#
+#
+# Model 3: hp + log(weight) + pickup + sports       (p = 5)
+#Residual Standard Error=0.1955
+#R-Square=0.6965
+#F-statistic (df=4, 243)=139.4475
+#p-value=0
+#
+#          Estimate Std.Err t-value Pr(>|t|)
+#Intercept   1.9597  0.8421  2.3271   0.0208
+#chp         0.0015  0.0003  5.1208   0.0000
+#logcweight  0.9856  0.1090  9.0396   0.0000
+#cpickup    -0.3487  0.0664 -5.2489   0.0000
+#csports     0.1141  0.0424  2.6905   0.0076
+#
+#
+# Whole Model:
+# 	hp + weight + log(weight) + pickup + luxuary + hybrid + awd + sports
+#						   (p = 9)
+#Residual Standard Error=0.1457
+#R-Square=0.8342
+#F-statistic (df=8, 239)=150.2977
+#p-value=0
+#
+#          Estimate Std.Err t-value Pr(>|t|)
+#Intercept  -2.0750  2.4350 -0.8522   0.3950
+#chp         0.0012  0.0002  5.5840   0.0000
+#cweight    -0.0002  0.0001 -2.2769   0.0237
+#logcweight  1.5602  0.3373  4.6261   0.0000
+#cpickup    -0.1576  0.0527 -2.9879   0.0031
+#cluxuary    0.2839  0.0236 12.0045   0.0000
+#chybrid     0.1491  0.0359  4.1541   0.0000
+#cawd        0.0280  0.0227  1.2357   0.2178
+#csports     0.1213  0.0318  3.8162   0.0002
+
+
+
+
+
+# 3-1 unbiased sigma square hat
+
+unbiased.sigma.square.hat<-sum(lsfit(cbind(chp,cweight,log(cweight), cpickup, cluxuary, chybrid, cawd, csports),log(cprice))$residuals^2)/(length(cprice) - 9)
+
+
+# 3-2 Calc Cp value for models
+# Model 1
+
+rss.1<-sum(lsfit(cbind(chp, cweight, cpickup, cluxuary, chybrid), log(cprice))$residuals^2)
+Cp.1<-(rss.1/unbiased.sigma.square.hat - (length(cprice) - 2 * 6))
+
+
+# Model 2
+
+rss.2<-sum(lsfit(cbind(chp, cweight, cpickup, cawd, cluxuary), log(cprice))$residuals^2)
+Cp.2<-(rss.2/unbiased.sigma.square.hat - (length(cprice) - 2 * 6))
+
+# Model 3
+
+rss.3<-sum(lsfit(cbind(chp, log(cweight), cpickup, csports), log(cprice))$residuals^2)
+Cp.3<-(rss.3/unbiased.sigma.square.hat - (length(cprice) - 2 * 5))
+
+# Whole Model
+
+rss.whole<-sum(lsfit(cbind(chp, cweight, log(cweight), cpickup, cluxuary, chybrid, cawd, csports), log(cprice))$residuals^2)
+Cp.whole<-(rss.whole/unbiased.sigma.square.hat - (length(cprice) - 2 * 9))
+
+
+# 3-3 Plot
+
+Cp.criteria<-c(Cp.1,Cp.2,Cp.3,Cp.whole)
+Cp.labels<-c("1","2","3","whole")
+number.of.variables<-c(6,6,5,9)
+
+plot(number.of.variables, Cp.criteria, type="n", xlab="number of variables p (inc. constant)", ylab="Cp values")
+text(number.of.variables, Cp.criteria, Cp.labels)
+identify(number.of.variables, Cp.criteria, Cp.criteria)
+
+
+// -> SO FAR MODEL 1 would be the best
+
+
+######
+# ANALYSIS 4 Q-Q PLOT
+#
+
+
+# Analyze Model 1: hp + weight + pickup + luxuary + hybrid (p = 6)
+# 
+
+par(mfrow=c(2,1))
+ls.out<-lsfit(cbind(chp, cweight, cpickup, cluxuary, chybrid), log(cprice))
+logcprice.model1<-log(cprice) - ls.out$residuals
+plot(logcprice.model1[-(1:248)[max(cweight)==cweight]],
+	log(cprice)[-(1:248)[max(cweight)==cweight]],
+	xlab="fitted log price (model1)",
+	ylab="observed log price")
+text(logcprice.model1[(1:248)[max(cweight)==cweight]],
+	log(cprice)[(1:248)[max(cweight)==cweight]])
+abline(0,1)
+
+identify(logcprice.model1[-(1:248)[max(cweight)==cweight]],
+	log(cprice)[-(1:248)[max(cweight)==cweight]],
+	cmodel)
+
+qqplot(logcprice.model1, log(cprice))
+
+qqplot(logcprice.model1, sqrt(cprice))
+
+// -> needs more explains in general
+
+# Hockey Stick
+#  LOW < 9.9681 < MID < 10.83 < HIGH
+
+
+# Analyze Whole model: hp + weight + log(weight) + pickup + luxuary + hybrid + awd + sports
+
+ls.out<-lsfit(cbind(chp, cweight, log(cweight), cpickup, cluxuary, chybrid, cawd, csports), log(cprice))
+logcprice.wmodel<-log(cprice) - ls.out$residuals
+plot(logcprice.wmodel[-(1:248)[max(cweight)==cweight]],
+	log(cprice)[-(1:248)[max(cweight)==cweight]],
+	xlab="fitted log price (whole model)",
+	ylab="observed log price")
+text(logcprice.wmodel[(1:248)[max(cweight)==cweight]],
+	log(cprice)[(1:248)[max(cweight)==cweight]])
+abline(0,1)
+
+identify(logcprice.wmodel[-(1:248)[max(cweight)==cweight]],
+	log(cprice)[-(1:248)[max(cweight)==cweight]],
+	cmodel)
+
+//qqplot(logcprice.wmodel, log(cprice))
+abline(0,1)
+
+// -> looks more coordinated, but needs more.
+
+
+######
+# ANALYSIS 5 Box Plot 
+# 
+# Check whether the residuals are split unordered
+# Analyze Model 1: hp + weight + pickup + luxuary + hybrid (p = 6)
+# 
+
+# Model 1: hp + weight + pickup + luxuary + hybrid (p = 6)
+
+plot.strip.n.boxplots(logcprice.model1, log(cprice)-logcprice.model1, 5, xlab="predicted price", ylab="residuals of price")
+
+plot.strip.n.boxplots(logcprice.model1, lsfit(logcprice.model1, log(cprice))$residuals, 5, xlab="predicted price", ylab="residuals of price")
+
+
+// -> Not impressive at all. Low and high price needs more to explained.
+
+# Analyze Whole Model: hp + weight + log(weight) + pickup + luxuary + hybrid + awd + sports (p = 9)
+
+plot.strip.n.boxplots(logcprice.wmodel, log(cprice)-logcprice.wmodel, 5, xlab="predicted price", ylab="residuals of price")
+
+plot.strip.n.boxplots(logcprice.wmodel, lsfit(logcprice.wmodel,log(cprice))$residuals, 5, xlab="predicted price", ylab="residuals of price")
+
+
+
+######
+# TODO: qqplot, box plot 
+
+
+
+######
+# ANALYSIS 6 Cheapest for each Company
+
+cheapest.model.for.each.company <- function(model, price, company) {
+	ret <- list()
+	nx <- length(price);
+
+	for (i in 1:nx) {
+		ret[i] = TRUE
+		for (j in 1:nx) {
+			if (price[i] > price[j] && company[i] == company[j]) {
+				ret[i] = FALSE
+				break
+			}
+		}
+		if(ret[i] == TRUE) {
+			cat("CHEAPEST: ", model[i])
+		}	
+	}
+	ret
+}
+
+most.expensive.model.for.each.company <- function(model, price, company) {
+	ret <- list()
+	nx <- length(price);
+
+	for (i in 1:nx) {
+		ret[i] = TRUE
+		for (j in 1:nx) {
+			if (price[i] < price[j] && company[i] == company[j]) {
+				ret[i] = FALSE
+				break
+			}
+		}
+		if(ret[i] == TRUE) {
+			cat("EXPENSIVE: ", model[i])
+		}	
+	}
+	ret
+}
+
+cmodel[ccheapest.less.than.30000]
+
+# Analysis 6-1 chp + cweight + cpickup + cluxuary + chybrid + ccheapest
+
+ls.print(lsfit(cbind(chp, cweight, cpickup, cluxuary, chybrid, ccheapest), log(cprice)))
+
+
+//R-Square=0.8241
+//                          Estimate Std.Err  t-value Pr(>|t|)
+//Intercept                   9.3157  0.0531 175.5154    0e+00
+//chp                         0.0017  0.0002   8.6594    0e+00
+//cweight                     0.0002  0.0000   8.2222    0e+00
+//cpickup                    -0.2099  0.0527  -3.9857    1e-04
+//cluxuary                    0.3063  0.0237  12.9194    0e+00
+//chybrid                     0.1256  0.0359   3.5005    6e-04
+//ccheapest.less.than.30000  -0.1825  0.0385  -4.7459    0e+00
+
+ccheapest.adjusted.for.chp.cweight.cpickup.cluxuary.chybrid<-lsfit(cbind(chp,cweight,cpickup,cluxuary, chybrid),ccheapest)$residuals
+logcprice.adjusted.for.chp.cweight.cpickup.cluxuary.chybrid<-lsfit(cbind(chp,cweight,cpickup,cluxuary, chybrid),log(cprice))$residuals
+
+plot(ccheapest.adjusted.for.chp.cweight.cpickup.cluxuary.chybrid, logcprice.adjusted.for.chp.cweight.cpickup.cluxuary.chybrid)
+identify(ccheapest.adjusted.for.chp.cweight.cpickup.cluxuary.chybrid, logcprice.adjusted.for.chp.cweight.cpickup.cluxuary.chybrid, cmodel)
+
+# Analysis 6-1-2
+
+ls.out<-lsfit(cbind(chp, cweight, cpickup, cluxuary, chybrid, ccheapest), log(cprice))
+logcprice.model4<-log(cprice) - ls.out$residuals
+plot(logcprice.model4[-(1:248)[max(cweight)==cweight]],
+	log(cprice)[-(1:248)[max(cweight)==cweight]],
+	xlab="fitted log price (model1)",
+	ylab="observed log price")
+text(logcprice.model4[(1:248)[max(cweight)==cweight]],
+	log(cprice)[(1:248)[max(cweight)==cweight]])
+abline(0,1)
+
+identify(logcprice.model4[-(1:248)[max(cweight)==cweight]],
+	log(cprice)[-(1:248)[max(cweight)==cweight]],
+	cmodel)
+
+qqplot(logcprice.model4, log(cprice))
+
+plot.strip.n.boxplots(logcprice.model4, lsfit(logcprice.model4,log(cprice))$residuals, 5, xlab="predicted price", ylab="residuals of price")
+
+# Analysis 6-2  chp + cweight + cpickup + cluxuary + chybrid + cheapesto
+
+ls.print(lsfit(cbind(chp, cweight, cpickup, cluxuary, chybrid, cheapesto), log(cprice)))
+
+//R-Square=0.8184
+//          Estimate Std.Err  t-value Pr(>|t|)
+//Intercept   9.2887  0.0531 174.9729    0e+00
+//chp         0.0018  0.0002   8.8789    0e+00
+//cweight     0.0002  0.0000   8.1944    0e+00
+//cpickup    -0.2019  0.0538  -3.7564    2e-04
+//cluxuary    0.3278  0.0249  13.1421    0e+00
+//chybrid     0.1390  0.0362   3.8399    2e-04
+//cheapesto  -0.1136  0.0302  -3.7640    2e-04
+
+
+cheapesto.adjusted.for.chp.cweight.cpickup.cluxuary.chybrid<-lsfit(cbind(chp,cweight,cpickup,cluxuary, chybrid),cheapesto)$residuals
+logcprice.adjusted.for.chp.cweight.cpickup.cluxuary.chybrid<-lsfit(cbind(chp,cweight,cpickup,cluxuary, chybrid),log(cprice))$residuals
+
+plot(cheapesto.adjusted.for.chp.cweight.cpickup.cluxuary.chybrid, logcprice.adjusted.for.chp.cweight.cpickup.cluxuary.chybrid)
+identify(cheapesto.adjusted.for.chp.cweight.cpickup.cluxuary.chybrid, logcprice.adjusted.for.chp.cweight.cpickup.cluxuary.chybrid, cmodel)
+
+# Analysis 6-2-2
+
+ls.out<-lsfit(cbind(chp, cweight, cpickup, cluxuary, chybrid, cheapesto), log(cprice))
+logcprice.model5<-log(cprice) - ls.out$residuals
+plot(logcprice.model5[-(1:248)[max(cweight)==cweight]],
+	log(cprice)[-(1:248)[max(cweight)==cweight]],
+	xlab="fitted log price (model5)",
+	ylab="observed log price")
+text(logcprice.model5[(1:248)[max(cweight)==cweight]],
+	log(cprice)[(1:248)[max(cweight)==cweight]])
+abline(0,1)
+
+identify(logcprice.model5[-(1:248)[max(cweight)==cweight]],
+	log(cprice)[-(1:248)[max(cweight)==cweight]],
+	cmodel)
+
+qqplot(logcprice.model5, log(cprice))
+
+plot.strip.n.boxplots(logcprice.model5, lsfit(logcprice.model5,log(cprice))$residuals, 5, xlab="predicted price", ylab="residuals of price")
+
+// -> Analysis 6-1 is better.
+
+
+# Analysis 6-3 chp + cweight + cpickup + cluxuary + chybrid + ccheapest + cexpensive
+
+ls.print(lsfit(cbind(chp, cweight, cpickup, cluxuary, chybrid, ccheapest, cexpensive), log(cprice)))
+
+//R-Square=0.8337
+//           Estimate Std.Err  t-value Pr(>|t|)
+//Intercept    9.3757  0.0542 173.0355    0e+00
+//chp          0.0017  0.0002   8.8567    0e+00
+//cweight      0.0001  0.0000   7.1840    0e+00
+//cpickup     -0.1961  0.0514  -3.8119    2e-04
+//cluxuary     0.2952  0.0233  12.6769    0e+00
+//chybrid      0.1244  0.0350   3.5584    4e-04
+//ccheapest   -0.1872  0.0375  -4.9929    0e+00
+//cexpensive   0.1164  0.0313   3.7166    3e-04
+
+
+cexpensive.adjusted.for.chp.cweight.cpickup.cluxuary.chybrid.ccheapest<-lsfit(cbind(chp,cweight,cpickup,cluxuary, chybrid,ccheapest),cexpensive)$residuals
+logcprice.adjusted.for.chp.cweight.cpickup.cluxuary.chybrid.ccheapest<-lsfit(cbind(chp,cweight,cpickup,cluxuary, chybrid,ccheapest),log(cprice))$residuals
+
+plot(cexpensive.adjusted.for.chp.cweight.cpickup.cluxuary.chybrid.ccheapest, logcprice.adjusted.for.chp.cweight.cpickup.cluxuary.chybrid.ccheapest)
+identify(cexpensive.adjusted.for.chp.cweight.cpickup.cluxuary.chybrid.ccheapest, logcprice.adjusted.for.chp.cweight.cpickup.cluxuary.chybrid.ccheapest, cmodel)
+
+# Analysis 6-3-2
+
+ls.out<-lsfit(cbind(chp, cweight, cpickup, cluxuary, chybrid, ccheapest, cexpensive), log(cprice))
+logcprice.model6<-log(cprice) - ls.out$residuals
+plot(logcprice.model6[-(1:248)[max(cweight)==cweight]],
+	log(cprice)[-(1:248)[max(cweight)==cweight]],
+	xlab="fitted log price (model6)",
+	ylab="observed log price")
+text(logcprice.model6[(1:248)[max(cweight)==cweight]],
+	log(cprice)[(1:248)[max(cweight)==cweight]])
+abline(0,1)
+
+identify(logcprice.model6[-(1:248)[max(cweight)==cweight]],
+	log(cprice)[-(1:248)[max(cweight)==cweight]],
+	cmodel)
+
+qqplot(logcprice.model6, log(cprice))
+
+plot.strip.n.boxplots(logcprice.model6, lsfit(logcprice.model6,log(cprice))$residuals, 5, xlab="predicted price", ylab="residuals of price")
+
+identify(logcprice.model6, lsfit(logcprice.model6,log(cprice))$residuals, cmodel)
+
+# Analysis Whole model again : hp + weight + log(weight) + pickup + luxuary + hybrid + awd + sports + ccheapest + cexpensive
+
+ls.print(lsfit(cbind(chp, cweight, log(cweight), cpickup, cluxuary, chybrid, cawd, csports, ccheapest, cexpensive), log(cprice)))
+
+//R-Square=0.8563
+//           Estimate Std.Err t-value Pr(>|t|)
+//Intercept   -2.6909  2.4810 -1.0846   0.2792
+//chp          0.0012  0.0002  5.5772   0.0000
+//cweight     -0.0003  0.0001 -2.9234   0.0038
+//             1.6652  0.3435  4.8480   0.0000
+//cpickup     -0.1316  0.0496 -2.6536   0.0085
+//cluxuary     0.2728  0.0224 12.2005   0.0000
+//chybrid      0.1272  0.0338  3.7614   0.0002
+//cawd         0.0193  0.0213  0.9051   0.3663
+//csports      0.1054  0.0299  3.5293   0.0005
+//ccheapest   -0.1225  0.0369 -3.3173   0.0011
+//cexpensive   0.1493  0.0305  4.8877   0.0000
+
+
+
+ls.out<-lsfit(cbind(chp, cweight, log(cweight), cpickup, cluxuary, chybrid, cawd, csports, ccheapest, cexpensive), log(cprice))
+logcprice.wwmodel<-log(cprice) - ls.out$residuals
+plot(logcprice.wwmodel[-(1:248)[max(cweight)==cweight]],
+	log(cprice)[-(1:248)[max(cweight)==cweight]],
+	xlab="fitted log price (whole model)",
+	ylab="observed log price")
+text(logcprice.wwmodel[(1:248)[max(cweight)==cweight]],
+	log(cprice)[(1:248)[max(cweight)==cweight]])
+abline(0,1)
+
+identify(logcprice.wwmodel[-(1:248)[max(cweight)==cweight]],
+	log(cprice)[-(1:248)[max(cweight)==cweight]],
+	cmodel)
+
+qqplot(logcprice.wwmodel, log(cprice))
+abline(0,1)
+
+
+#############
+#
+# ANALYSIS 7 CONCLUSION
+#
+# Whole Model: hp + weight + cbrt(weight) + mpg + pickup + luxuary + hybrid + awd + sports + ccheapest + cexpensive
+# R-Square=0.8593, p = 12
+#
+###################
+# Model 1 :    hp + weight + pickup + luxuary + hybrid + cheapest
+# R-Square=0.8241, p = 7
+#
+###################
+# Model 2 :    hp + cbrt(weight) + mpg + pickup + luxuary + sports + ccheapest
+# R-Square=0.8394, p = 8
+#
+# Model 3 :    hp + cbrt(weight) + pickup + luxuary + awd + ccheapest
+# R-Square=0.8216, p = 7
+#
+# Model 4 :    hp + weight + pickup + luxuary + hybrid + sport + cheapest
+# R-Square=0.8292, p = 8
+#
+###################
+# Model 5 :    hp + cbrt(weight) + pickup + luxuary + hybrid 
+# R-Square=0.816,  p = 6
+#
+# Model 6 :    hp + weight + luxuary + cheapest + cexpensive
+# R-Square=0.8147, p = 6
+#
+# Model 7 :    hp + weight + pickup + luxuary + awd
+# R-Square=0.7851, P = 6
+#
+# Model 8 :    hp + mpg + pickup + luxuary + sports
+# R-Square=0.7414
+#
+# Model 9 :    hp + weight + pickup + luxuary + hybrid
+# R-Square=0.8184, p = 6 
+# 
+# Model 10:    hp + cbrt(weight) + pickup + luxuary + hybrid + cheapest
+# R-Square=0.8294, p = 7
+#
+# Model 11:    hp + cbrt(weight) + mpg + pickup + luxuary + sports
+# R-Square=0.8272
+# 
+# Model 12:    hp + weight + luxuary + sports + hybrid + cheapest 
+# R-Square=0.8179
+#
+# Model 13:    hp + weight + pickup + luxuary
+# R-Square=0.7948
+#
+# Model 14:    hp + cbrt(weight) + pickup + luxuary + hybrid + sports
+# R-Square=0.8242
+#
+# Model 15:    hp + weight + mpg + pickup + luxuary + sports + ccheapest
+# R-Square=0.8315
+#
+# Model 16:    hp + weight + mpg + pickup + luxuary + sports + cheapest
+# R-Square=0.8315
+#
+
+# Whole Model 
+ls.print(lsfit(cbind(chp, cweight, log(cweight), cmpg, cpickup, cluxuary, chybrid, cawd, csports, ccheapest, cexpensive), log(cprice)))
+ls.print(lsfit(cbind(chp, cweight, cweight^(1/3), cmpg, cpickup, cluxuary, chybrid, cawd, csports, ccheapest, cexpensive), log(cprice)))
+# Model 1
+ls.print(lsfit(cbind(chp, cweight, cpickup, cluxuary, chybrid, ccheapest), log(cprice)))
+# Model 2
+ls.print(lsfit(cbind(chp, cbrt(cweight), cmpg, cpickup, cluxuary,   csports, ccheapest), log(cprice)))
+# Model 3
+ls.print(lsfit(cbind(chp, cbrt(cweight), cpickup, cluxuary, cawd, ccheapest), log(cprice)))
+# Model 4
+ls.print(lsfit(cbind(chp, cweight, cpickup, cluxuary, chybrid, csports, ccheapest), log(cprice)))
+# Model 5
+ls.print(lsfit(cbind(chp, cbrt(cweight), cpickup, cluxuary, chybrid), log(cprice)))
+# Model 6
+ls.print(lsfit(cbind(chp, cweight, cluxuary, ccheapest, cexpensive), log(cprice)))
+# Model 7
+ls.print(lsfit(cbind(chp, cweight, cluxuary, cawd), log(cprice)))
+# Model 8
+ls.print(lsfit(cbind(chp, cmpg, cpickup, cluxuary, csports), log(cprice)))
+# Model 9
+ls.print(lsfit(cbind(chp, cweight, cpickup, cluxuary, chybrid), log(cprice)))
+# Model 10
+ls.print(lsfit(cbind(chp, cbrt(cweight), cpickup, cluxuary, chybrid, ccheapest), log(cprice)))
+# Model 11
+ls.print(lsfit(cbind(chp, cbrt(cweight), cmpg, cpickup, cluxuary,csports), log(cprice)))
+# Model 12
+ls.print(lsfit(cbind(chp, cweight,cluxuary, csports, chybrid, ccheapest), log(cprice)))
+# Model 13
+ls.print(lsfit(cbind(chp, cweight, cpickup, cluxuary), log(cprice)))
+# Model 14
+ls.print(lsfit(cbind(chp, cbrt(cweight), cpickup, cluxuary, chybrid, csports), log(cprice)))
+# Model 15
+ls.print(lsfit(cbind(chp, cweight, cmpg, cpickup, cluxuary,csports, ccheapest), log(cprice)))
+# Model 16
+ls.print(lsfit(cbind(chp, cweight, cmpg, cpickup, cluxuary,csports, cheapest), log(cprice)))
+
+
+#######
+# Cp plot
+#
+
+calc.cp <- function(variables, response, num.of.vars ,unbiased.sigma.square.hat) {
+	rss<-sum(lsfit(variables, response)$residuals^2)
+	Cp<-(rss/unbiased.sigma.square.hat - (response - 2 * num.of.vars))
+	Cp
+}
+
+unbiased.sigma.square.hat<-sum(lsfit(cbind(chp,cweight,cbrt(cweight), cmpg, cpickup, cluxuary, chybrid, cawd, csports, ccheapest, cexpensive),log(cprice))$residuals^2)/(length(cprice) - 12)
+
+Cp.m1<-calc.cp(cbind(chp, cweight, cpickup, cluxuary, chybrid, ccheapest), log(cprice), 7, unbiased.sigma.square.hat)
+
+
+Cp.m1<-(sum(lsfit(cbind(chp, cweight, cpickup, cluxuary, chybrid, ccheapest), log(cprice))$residuals^2)
+/unbiased.sigma.square.hat 
+- (log(cprice) - 2 * 7))
+
+
+rss.m1<-sum(lsfit(cbind(chp, cweight, cpickup, cluxuary, chybrid, ccheapest), log(cprice))$residuals^2)
+Cp.m1<-(rss.m1/unbiased.sigma.square.hat - (length(cprice) - 2 * 7))
+
+rss.m2<-sum(lsfit(cbind(chp, cbrt(cweight), cmpg, cpickup, cluxuary,   csports, ccheapest), log(cprice))$residuals^2)
+Cp.m2<-(rss.m2/unbiased.sigma.square.hat - (length(cprice) - 2 * 8))
+
+rss.m3<-sum(lsfit(cbind(chp, cbrt(cweight), cpickup, cluxuary, cawd, ccheapest), log(cprice))$residuals^2)
+Cp.m3<-(rss.m3/unbiased.sigma.square.hat - (length(cprice) - 2 * 8))
+
+rss.m4<-sum(lsfit(cbind(chp, cweight, cpickup, cluxuary, chybrid, csports, ccheapest), log(cprice))$residuals^2)
+Cp.m4<-(rss.m4/unbiased.sigma.square.hat - (length(cprice) - 2 * 8))
+
+rss.m5<-sum(lsfit(cbind(chp, cbrt(cweight), cpickup, cluxuary, chybrid), log(cprice))$residuals^2)
+Cp.m5<-(rss.m5/unbiased.sigma.square.hat - (length(cprice) - 2 * 6))
+
+rss.m6<-sum(lsfit(cbind(chp, cweight, cluxuary, ccheapest, cexpensive), log(cprice))$residuals^2)
+Cp.m6<-(rss.m6/unbiased.sigma.square.hat - (length(cprice) - 2 * 6))
+
+rss.m7<-sum(lsfit(cbind(chp, cweight, cluxuary, cawd), log(cprice))$residuals^2)
+Cp.m7<-(rss.m7/unbiased.sigma.square.hat - (length(cprice) - 2 * 5))
+
+rss.m8<-sum(lsfit(cbind(chp, cmpg, cpickup, cluxuary, csports), log(cprice))$residuals^2)
+Cp.m8<-(rss.m8/unbiased.sigma.square.hat - (length(cprice) - 2 * 6))
+
+rss.m9<-sum(lsfit(cbind(chp, cweight, cpickup, cluxuary, chybrid), log(cprice))$residuals^2)
+Cp.m9<-(rss.m9/unbiased.sigma.square.hat - (length(cprice) - 2 * 6))
+
+rss.m10<-sum(lsfit(cbind(chp, cbrt(cweight), cpickup, cluxuary, chybrid, ccheapest), log(cprice))$residuals^2)
+Cp.m10<-(rss.m10/unbiased.sigma.square.hat - (length(cprice) - 2 * 7))
+
+rss.m11<-sum(lsfit(cbind(chp, cbrt(cweight), cmpg, cpickup, cluxuary,   csports), log(cprice))$residuals^2)
+Cp.m11<-(rss.m11/unbiased.sigma.square.hat - (length(cprice) - 2 * 7))
+
+rss.m13<-sum(lsfit(cbind(chp, cweight, cpickup, cluxuary), log(cprice))$residuals^2)
+Cp.m13<-(rss.m13/unbiased.sigma.square.hat - (length(cprice) - 2 * 5))
+
+rss.m14<-sum(lsfit(cbind(chp, cbrt(cweight), cpickup, cluxuary, chybrid, csports), log(cprice))$residuals^2)
+Cp.m14<-(rss.m14/unbiased.sigma.square.hat - (length(cprice) - 2 * 7))
+
+rss.m15<-sum(lsfit(cbind(chp, cweight, cmpg, cpickup, cluxuary,csports, ccheapest), log(cprice))$residuals^2)
+Cp.m15<-(rss.m15/unbiased.sigma.square.hat - (length(cprice) - 2 * 8))
+
+rss.m16<-sum(lsfit(cbind(chp, cbrt(cweight), cmpg, cpickup, cluxuary,csports), log(cprice))$residuals^2)
+Cp.m16<-(rss.m16/unbiased.sigma.square.hat - (length(cprice) - 2 * 7))
+
+rss.m17<-sum(lsfit(cbind(chp, cbrt(cweight), cmpg, cawd, cluxuary), log(cprice))$residuals^2)
+Cp.m17<-(rss.m17/unbiased.sigma.square.hat - (length(cprice) - 2 * 6))
+
+
+
+rss.mw<-sum(lsfit(cbind(chp, cweight, cbrt(cweight), cmpg, cpickup, cluxuary, chybrid, cawd, csports, ccheapest, cexpensive), log(cprice))$residuals^2)
+Cp.mw<-(rss.mw/unbiased.sigma.square.hat - (length(cprice) - 2 * 12))
+
+Cp.criteria<-c(Cp.m1,Cp.m2,Cp.m3,Cp.m4,Cp.m5,Cp.m6,Cp.m7,Cp.m8,Cp.m9,Cp.m10,Cp.mw)
+Cp.labels<-c("1","2","3","4","5","6","7","8","9", "10", "whole")
+number.of.variables<-c(7,8,8,8,6,6,5,6,6,7,12)
+
+plot(number.of.variables, Cp.criteria, type="n", xlab="number of variables p (inc. constant)", ylab="Cp values")
+text(number.of.variables, Cp.criteria, Cp.labels)
+identify(number.of.variables, Cp.criteria, Cp.criteria)
+
+
+# Model 10
+# Model 5
+# Model 4
+# Whole M
+
+Cp.criteria<-c(Cp.m10, Cp.m5, Cp.m4, Cp.m11, Cp.mw)
+Cp.labels<-c("Model 1","Model 2","Model 3","Model11", "whole")
+number.of.variables<-c(7,6,7,7,11)
+plot(number.of.variables, Cp.criteria, type="n", xlab="number of variables p (inc. constant)", ylab="Cp values")
+text(number.of.variables, Cp.criteria, Cp.labels)
+identify(number.of.variables, Cp.criteria, Cp.criteria)
+
+# Models without cheapest
+
+Cp.criteria<-c(Cp.m5,  Cp.m11, Cp.m6, Cp.mw)
+
+Cp.labels<-c("Model 5","Model 11", "Model 6", "whole")
+number.of.variables<-c(6,7,6,12)
+plot(number.of.variables, Cp.criteria, type="n", xlab="number of variables p (inc. constant)", ylab="Cp values")
+text(number.of.variables, Cp.criteria, Cp.labels)
+identify(number.of.variables, Cp.criteria, Cp.criteria)
+
+rss.m12<-sum(lsfit(cbind(chp, cweight,cluxuary, csports, chybrid, ccheapest), log(cprice))$residuals^2)
+Cp.m12<-(rss.m12/unbiased.sigma.square.hat - (length(cprice) - 2 * 7))
+
+
+Cp.criteria<-c(Cp.m5,  Cp.m11, Cp.m7,Cp.m6, Cp.m12,Cp.mw)
+Cp.labels<-c("Model 5","Model 11", "Model 7","Model 6","Model 12", "whole")
+number.of.variables<-c(6,7,5,6,7,12)
+plot(number.of.variables, Cp.criteria, type="n", xlab="number of variables p (inc. constant)", ylab="Cp values")
+text(number.of.variables, Cp.criteria, Cp.labels)
+identify(number.of.variables, Cp.criteria, Cp.criteria)
+
+
+#######
+#  
+# Model 1 :    hp + weight + pickup + luxuary + hybrid + cheapest
+# R-Square=0.8241, p = 7
+#
+# Model 2 :    hp + cbrt(weight) + mpg + pickup + luxuary + sports + ccheapest
+# R-Square=0.8394, p = 8
+#
+# Model 5 :    hp + cbrt(weight) + pickup + luxuary + hybrid 
+# R-Square=0.816,  p = 6
+#
+
+rss.mw<-sum(lsfit(cbind(chp, cweight, cbrt(cweight), cmpg, cpickup, cluxuary, chybrid, csports, ccheapest), log(cprice))$residuals^2)
+Cp.mw<-(rss.mw/unbiased.sigma.square.hat - (length(cprice) - 2 * 10))
+
+
+Cp.criteria<-c(Cp.m1,  Cp.m2, Cp.m5, Cp.mw)
+
+Cp.labels<-c("Model 1","Model 2", "Model 5", "whole")
+number.of.variables<-c(7,8,6,10)
+plot(number.of.variables, Cp.criteria, type="n", xlab="number of variables p (inc. constant)", ylab="Cp values")
+text(number.of.variables, Cp.criteria, Cp.labels)
+identify(number.of.variables, Cp.criteria, Cp.criteria)
+
+#######
+#  Cp.m14
+# Model 1 :    hp + cbrt(weight) + pickup + luxuary + hybrid + sports
+# R-Square=0.8241, p = 7
+#  Cp.m16
+# Model 2 :    hp + cbrt(weight) + mpg + pickup + luxuary + sports
+# R-Square=0.8315, p = 7
+#  Cp.m17
+# Model 3 :    hp + cbrt(weight) + mpg + awd + luxuary 
+# R-Square=0.8155, p = 6
+#
+ls.print(lsfit(cbind(chp, cbrt(cweight), cmpg, cawd, cluxuary), logcprice))
+
+
+unbiased.sigma.square.hat<-sum(lsfit(cbind(chp,cbrt(cweight), cmpg, cawd, cpickup, cluxuary, chybrid, csports, cheapest),log(cprice))$residuals^2)/(length(cprice) - 10)
+
+rss.mw<-sum(lsfit(cbind(chp,cbrt(cweight), cmpg, cawd, cpickup, cluxuary, chybrid, csports, cheapest), log(cprice))$residuals^2)
+Cp.mw<-(rss.mw/unbiased.sigma.square.hat - (length(cprice) - 2 * 10))
+
+
+
+Cp.criteria<-c(Cp.m14,  Cp.m16, Cp.m17, Cp.mw)
+Cp.labels<-c("Model 1","Model 2", "Model 3", "whole")
+number.of.variables<-c(7,7,6,10)
+plot(number.of.variables, Cp.criteria, type="n", xlab="number of variables p (inc. constant)", ylab="Cp values")
+text(number.of.variables, Cp.criteria, Cp.labels)
+identify(number.of.variables, Cp.criteria, Cp.criteria)
+
+# Q-Q PLOT
+
+ls.out<-lsfit(cbind(chp, cbrt(cweight), cpickup, cluxuary, chybrid, csports), log(cprice))
+logcprice.model1<-log(cprice) - ls.out$residuals
+plot(logcprice.model1[-(1:248)[max(cweight)==cweight]],
+	log(cprice)[-(1:248)[max(cweight)==cweight]],
+	xlab="fitted log price (model5)",
+	ylab="observed log price")
+text(logcprice.model1[(1:248)[max(cweight)==cweight]],
+	log(cprice)[(1:248)[max(cweight)==cweight]])
+abline(0,1)
+
+identify(logcprice.model1[-(1:248)[max(cweight)==cweight]],
+	log(cprice)[-(1:248)[max(cweight)==cweight]],
+	cmodel)
+
+qqplot(logcprice.model1, log(cprice))
+
+// Smart ForTwo Passion http://en.wikipedia.org/wiki/Smart_Fortwo
+// Audi TT     http://www.autotrader.com/research/car-models/2013-Audi-TT/25346-352166-Coupe/2dr-Cpe-S-tronic-quattro-2.0T-Premium-Plus~model.jsp
+// Mazda MX-5 Miata Grand Touring http://www.mazdausa.com/MusaWeb/displayPage.action?pageParameter=modelsMain&vehicleCode=MX5#photos-video
+// Nissan Frontier HP = 261 WAY TOO HIGH TO MODEL...
+
+plot.strip.n.boxplots(logcprice.model1, lsfit(logcprice.model1,log(cprice))$residuals, 5, xlab="predicted price", ylab="residuals of price")
+
+
+###
+#
+# 散布図行列
+#
+
+
+auto<-cbind(log(cprice),chp,cbrt(cweight),cmpg,cawd, cpickup,cluxuary,chybrid,csports)
+auto.labels<-c("price","hp","weight","mpg","awd", "pickup","luxury","hybrid","sports")
+
+#出力
+#dev.copy(png, file="plotmatrix.png")
+png("plotmatrix.png", width=1200, height=1200)
+pairs(auto, auto.labels, cex=1.2)
+dev.off()
+
+# 調整済み散布図
+
+cbrt.cweight.adjusted.for.chp<-lsfit(chp,cbrt(cweight))$residuals
+logcprice.adjusted.for.chp<-lsfit(chp,log(cprice))$residuals
+
+png("adjusted1.png", width=500, height=500)
+plot(cbrt.cweight.adjusted.for.chp, logcprice.adjusted.for.chp, xlab="最高出力を取り除いた車両重量", ylab="最高出力を取り除いた価格",
+	main="調整済み散布図", cex.main=1.5, cex.lab=1.3)
+lm.obj<-lm(logcprice.adjusted.for.chp ~ cbrt.cweight.adjusted.for.chp)
+abline(lm.obj)
+identify(cbrt.cweight.adjusted.for.chp, logcprice.adjusted.for.chp, cmodel)
+
+dev.off()
+
+
+ls.print(lsfit(cbrt.cweight.adjusted.for.chp,logcprice.adjusted.for.chp))
+
+
+//          Estimate Std.Err t-value Pr(>|t|)
+//Intercept   0.0000  0.0134  0.0000        1
+//X           0.1411  0.0200  7.0733        0
+
+# Model 16 (1)
+ls.print(lsfit(cbind(chp, cbrt(cweight), cmpg, cpickup, cluxuary,csports), log(cprice)))
+# Model 14 (2)
+ls.print(lsfit(cbind(chp, cbrt(cweight), cpickup, cluxuary, chybrid), log(cprice)))
+# Model 17 (3)
+ls.print(lsfit(cbind(chp, cbrt(cweight), cmpg, cawd, cluxuary), logcprice))
+
+
+rss.m1<-sum(lsfit(cbind(chp, cbrt(cweight), cmpg, cpickup, cluxuary,csports), log(cprice))$residuals^2)
+Cp.m1<-(rss.m1/unbiased.sigma.square.hat - (length(cprice) - 2 * 7))
+
+rss.m2<-sum(lsfit(cbind(chp, cbrt(cweight), cpickup, cluxuary, chybrid), log(cprice))$residuals^2)
+Cp.m2<-(rss.m2/unbiased.sigma.square.hat - (length(cprice) - 2 * 6))
+
+rss.m3<-sum(lsfit(cbind(chp, cbrt(cweight), cmpg, cawd, cluxuary), log(cprice))$residuals^2)
+Cp.m3<-(rss.m3/unbiased.sigma.square.hat - (length(cprice) - 2 * 6))
+
+unbiased.sigma.square.hat<-sum(lsfit(cbind(chp,cbrt(cweight), cmpg, cawd, cpickup, cluxuary, chybrid, csports),log(cprice))$residuals^2)/(length(cprice) - 9)
+
+rss.mw<-sum(lsfit(cbind(chp,cbrt(cweight), cmpg, cawd, cpickup, cluxuary, chybrid, csports), log(cprice))$residuals^2)
+Cp.mw<-(rss.mw/unbiased.sigma.square.hat - (length(cprice) - 2 * 9))
+
+
+
+Cp.criteria<-c(Cp.m1,  Cp.m2, Cp.m3, Cp.mw)
+Cp.labels<-c("1","2", "3", "whole")
+number.of.variables<-c(7,6,6,9)
+plot(number.of.variables, Cp.criteria, type="n", xlab="number of variables p (includes constant)", ylab="Cp values")
+text(number.of.variables, Cp.criteria, Cp.labels)
+identify(number.of.variables, Cp.criteria, Cp.criteria)
+
+png("cpplot.png", width=500, height=500)
+plot(number.of.variables, Cp.criteria, type="n", xlab="説明変数の数 (切片含む)", ylab="Cp値", main="Cpプロット", cex.lab=1.2, cex.main=1.5)
+text(number.of.variables, Cp.criteria, Cp.labels)
+dev.off()
+
+# Q-Q
+png("qqplot.png", width=500, height=500)
+result<-lm(log(cprice)[!outlier] ~ logcprice.model1[!outlier])
+plot(resid(result))
+qqnorm(resid(result), xlab="正規分位点", ylab="価格の残差", main="Q-Qプロット", cex.main=1.5, cex.lab=1.2)
+qqline(resid(result))
+dev.off()
+
+# Boxplot
+png("boxplot.png", width=500, height=500)
+plot.strip.n.boxplots(logcprice.model1[!outlier], resid(result), 5)
+identify(logcprice.model1[!outlier], resid(result), cmodel)
+dev.off()
+
+
+#dev.copy(png, file="plotmatrix.png")
+png("plotmatrix.png", width=600, height=600)
+pairs(auto, auto.labels, cex=1.0)
+dev.off()
+
+
+png("boxplot.png", width=600, height=600)
+plot.strip.n.boxplots(logcprice.model1[!outlier], resid(result), 5, xlab="", ylab="")
+title(main="ボックスプロット", xlab="モデルの予測価格",ylab="価格の残差", cex.lab=1.2, cex.main="1.5")
+dev.off()
+
+
+
+
+
+###############################################################################################
+# AFTER PRESENTATION
+#
+# 1. Jitters dummy variables
+# 2. adjusted plot "影響を取り除いた"
+# 3. 1 -> Model 1,    whole -> saturated model
+# 4. Box plot 0.0線の追加
+
+
+# 1. Jitter
+
+cmpg.jittered<-cmpg+runif(248,min=-0.3,max=0.3)
+cawd.jittered<-cawd+runif(248,min=-0.3,max=0.3)
+cpickup.jittered<-cpickup+runif(248,min=-0.3,max=0.3)
+cluxuary.jittered<-cluxuary+runif(248,min=-0.3,max=0.3)
+chybrid.jittered<-chybrid+runif(248,min=-0.3,max=0.3)
+csports.jittered<-csports+runif(248,min=-0.3,max=0.3)
+
+auto<-cbind(log(cprice),chp,cbrt(cweight),cmpg.jittered,cawd.jittered, cpickup.jittered,cluxuary.jittered,chybrid.jittered,csports.jittered)
+auto.labels<-c("price","hp","weight","mpg","awd", "pickup","luxury","hybrid","sports")
+#dev.copy(png, file="plotmatrix2.png")
+png("plotmatrix2.png", width=600, height=600)
+pairs(auto, auto.labels, cex=1.3, cex.lab=1.2, cex.main=1.5)
+dev.off()
+
+# Adjusted
+plot(cbrt.cweight.adjusted.for.chp, logcprice.adjusted.for.chp, xlab="最高出力の影響を取り除いた車両重量", ylab="最高出力の影響を取り除いた価格",
+	main="調整済み散布図", cex.main=1.5, cex.lab=1.3)
+lm.obj<-lm(logcprice.adjusted.for.chp ~ cbrt.cweight.adjusted.for.chp)
+abline(lm.obj)
+identify(cbrt.cweight.adjusted.for.chp, logcprice.adjusted.for.chp, cmodel)
+
+dev.off()
+
+# Cp Plot
+
+Cp.labels<-c("Model 1","Model 2", "Model 3", "Saturated Model")
+png("cpplot2.png", width=500, height=500)
+plot(number.of.variables, Cp.criteria, type="n", xlab="説明変数の数 (切片含む)", ylab="Cp値", main="Cpプロット", cex.lab=1.2, cex.main=1.5, xlim=c(5.5,9.5))
+text(number.of.variables, Cp.criteria, Cp.labels)
+dev.off()
+
+# Box plot
+
+png("boxplot2.png", width=600, height=600)
+plot.strip.n.boxplots(logcprice.model1[!outlier], resid(result), 5, xlab="", ylab="")
+title(main="ボックスプロット", xlab="モデルの予測価格",ylab="価格の残差", cex.lab=1.2, cex.main="1.5")
+abline(0,0)
+dev.off()
+
+
