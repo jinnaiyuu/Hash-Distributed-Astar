@@ -46,6 +46,6 @@ touch main.cc
 make
 cd ..
 cp ./src/tiles ./src/tiles$time
-scp  ./src/tiles$time ./put/job_david.sh ./put/run.sh ./src/*instances ./src/pat*.tab yuu@david:/home/yuu/workspace/ethan/
+scp  ./src/tiles$time ./put/job_david.sh ./put/run.sh ./src/*instances yuu@david:/home/yuu/workspace/ethan/
 ssh -l yuu david "${SCRIPT}"
 
