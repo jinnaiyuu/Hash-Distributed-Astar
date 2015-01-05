@@ -59,6 +59,12 @@ struct Tiles {
 		return s.h;
 	}
 
+	int weight_h(const State &s) const {
+		double h = static_cast<double>(s.h);
+		double wh = h * weight;
+		return static_cast<int>(wh);
+	}
+
 	bool isgoal(const State &s) const {
 		return s.h == 0;
 	}
@@ -116,6 +122,10 @@ struct Tiles {
 		assert (dst.blank >= 0);
 	}
 
+	void set_weight(double weight_) {
+		this->weight = weight_;
+	}
+
 private:
 
 	// mdist returns the Manhattan distance of the given tile array.
@@ -147,6 +157,8 @@ private:
 	// destination location.  Each entry is the change
 	// in Manhattan distance for that particular move.
 	int mdincr[Ntiles][Ntiles][Ntiles];
+
+	double weight;
 
 	// optab is indexed by the blank position.  Each
 	// entry is a description of the possible next

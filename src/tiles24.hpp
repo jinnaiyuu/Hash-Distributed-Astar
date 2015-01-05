@@ -64,6 +64,11 @@ struct Tiles24 {
 		return s.h;
 	}
 
+	int weight_h(const State &s) const {
+		assert(false);
+		return s.h;
+	}
+
 	bool isgoal(const State &s) const {
 		return s.h == 0;
 	}

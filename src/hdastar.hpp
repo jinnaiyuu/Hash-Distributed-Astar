@@ -208,7 +208,7 @@ public:
 		// TODO: Must optimize these numbers
 		HashTable<typename D::PackedState, Node> closed(200000000 / tnum);
 //		Heap<Node> open(100, overrun);
-		heap open(120, overrun);
+		heap open(150, overrun);
 		Pool<Node> nodes(2048);
 
 		// If the buffer is locked when the thread pushes a node,
@@ -647,7 +647,8 @@ public:
 		n->g = c;
 		if (p)
 			n->g += p->g;
-		n->f = n->g + this->dom.h(s);
+		n->f = n->g + this->dom.weight_h(s);
+		printf("h = %d\n", this->dom.weight_h(s));
 		n->pop = pop;
 		n->parent = p;
 		this->dom.pack(n->packed, s);

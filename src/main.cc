@@ -33,7 +33,7 @@
 #define ANALYZE_SEMISYNC
 #endif
 
-//#define ANALYZE_ORDER
+#define ANALYZE_ORDER
 
 //#define ANALYZE_OPENLIST_SIZE
 
@@ -81,6 +81,10 @@ int main(int argc, const char *argv[]) {
 				pnum += argv[2][i] - '0';
 			}
 			Tiles tiles(stdin, pnum);
+
+			tiles.set_weight(2);
+			printf("weight = 2\n");
+
 			SearchAlg<Tiles> *search = NULL;
 
 			if (strcmp(argv[1], "idastar") == 0)

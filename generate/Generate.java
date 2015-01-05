@@ -5,17 +5,17 @@
  */
 public class Generate {
 	
-	static int randomSlides = 500000;
+	static int randomSlides = 70;
 	static int COLUMN = 4;
 	static int ROW = 4;
 	
 	public static void main(String[] args)  {
-		for (int i = 0; i < 1000; ++i) {
+		for (int i = 0; i < 100; ++i) {
 			int[][] initMap = new int[COLUMN][ROW];
 			Generate.initializeMap(initMap);
 			for(int r = 0; r < ROW; r++) {
 				for (int c = 0; c < COLUMN; c++) {
-					System.out.print(initMap[c][r]);
+					System.out.print(initMap[r][c]);
 					System.out.print(" ");
 				}
 			}
