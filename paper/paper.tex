@@ -234,24 +234,23 @@ HDA*とA*の探索順が幅の中で前後する為に生じる探索オーバ�
 \end{enumerate}
 
 \begin{figure}
-	\begin{subfigure}{0.4\columnwidth}
-		\includegraphics[width=\columnwidth]{order/naive_hash.png}
-		\label{fig:order:naive_hash}
-		\caption{naive hash HDA*}
-	\end{subfigure}
-	\begin{subfigure}{0.4\columnwidth}
-		\includegraphics[width=\columnwidth]{order/safepbnf.png}
-		\label{fig:order:safepbnf}
-		\caption{SafePBNF}
-	\end{subfigure}
-	\label{fig:other_orders}
-\end{figure}%
+	\includegraphics[width=0.6\columnwidth]{order/naive_hash.png}
+	\label{fig:order:naive_hash}
+	\caption{naive hash HDA*}
+\end{figure}
 
 上述の探索オーバーヘッドの分類は十分な性能のHashを必要とすると考えられる。\ref{fig:order:naive_hash}はBurnsらHDA*の性能評価に用いたNaive HashによるHDA*の探索順である。Naive Hashは状態$s$に対して以下の式で与えられる。
 
 $H(s) = \sum\nolimits_{i = 0}^{15}(16^{i} \times tiles_{i})$ $mod$ $n$
 
 ただし$n$はスレッドの数、$tiles$は各タイル$i$の位置である。Naive Hash分配はうまくいっていないようである。$n = 2, 4, 8$の場合、Hash値は$tiles_{i}$の値のみに依存する。このとき、Naive Hashは15 Puzzleドメインの状態空間を均等に分割する。しかしながら、Naive Hashは状態の一部分の情報しか利用していない為、状態空間に対して不偏的に均等な分割をすることが出来ない。探索で現れる状態は15 Puzzleドメインの状態空間に対して非常に小さく、偏りのある部分集合であるので、均等な分配にならないと考えられる。Zobrist HashとNaive Hashの詳細な性能比較は次章で行う。
+
+\begin{figure}
+	\includegraphics[width=0.6\columnwidth]{order/safepbnf.png}
+	\label{fig:order:safepbnf}
+	\caption{SafePBNF}
+\end{figure}
+
 
 また、\ref{fig:order:safepbnf}はPBNFの探索順である。A*の探索順とは大きく異なる順番でノードを探索していることが伺える。
 \newline
@@ -264,13 +263,15 @@ Bind Effect, Burst Effectは問題サイズが大きくなるに従い相対的�
 前項の分析にて、問題サイズが大きくなるほど探索オーバーヘッドが小さくなるという仮説を議論した。本節ではこの仮説を実験的に検証する。15 Puzzleドメインを対象に、問題毎の探索ノード数と高速化効率の分析を行った。15 Puzzleのインスタンスはランダムに生成した100問を対象にした。これらの問題はA*探索で50～10000秒の実行時間で解ける問題である。
 
 
-\begin{figure}{0.4\columnwidth}
-	\includegraphics[width=\columnwidth]{eps/efficiency.pdf}	
+\begin{figure}
+	\centering
+	\includegraphics[width=0.5\columnwidth]{eps/efficiency.pdf}	
 	\label{fig:david_speedup}
 	\caption{Efficiency of HDA*}
 \end{figure}
-\begin{figure}{0.4\columnwidth}
-	\includegraphics[width=\columnwidth]{eps/search_overhead.pdf}	
+\begin{figure}
+	\centering
+	\includegraphics[width=0.5\columnwidth]{eps/search_overhead.pdf}	
 	\label{fig:david_so}
 	\caption{Search Overhead of HDA*}
 \end{figure}
