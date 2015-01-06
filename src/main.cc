@@ -33,7 +33,7 @@
 #define ANALYZE_SEMISYNC
 #endif
 
-#define ANALYZE_ORDER
+//#define ANALYZE_ORDER
 
 //#define ANALYZE_OPENLIST_SIZE
 
@@ -44,7 +44,7 @@
 #include "hdastar.hpp"
 #include "oshdastar.hpp"
 
-#include "tiles24.hpp"
+//#include "tiles24.hpp"
 
 //	 expd 32334 length 46   : 14 1 9 6 4 8 12 5 7 2 3 0 10 11 13 15
 //	 expd 909442 length 53  : 13 14 6 12 4 5 1 0 9 3 10 2 15 11 8 7
@@ -64,7 +64,6 @@ void handler(int sig) {
 
 int main(int argc, const char *argv[]) {
 	try {
-		printf("argc == %d\n", argc);
 		fflush(stdout);
 /*
  		if (!(3 <= argc && argc <= 7))
@@ -75,15 +74,23 @@ int main(int argc, const char *argv[]) {
 		int pnum = 0;
 
 //		printf("pnum = %d\n", pnum);
-		if (strcmp(argv[1], "24") != 0) {
+//		if (strcmp(argv[1], "24") != 0) {
+//			printf("15 puzzle");
+//			argv++;
+//			argc--;
+/*
 			for (int i = 0; argv[2][i] != '\0'; ++i) {
 				pnum *= 10;
 				pnum += argv[2][i] - '0';
 			}
+*/
+			sscanf(argv[2], "%d", &pnum);
+
+			printf("pnum = %d",pnum);
 			Tiles tiles(stdin, pnum);
 
-			tiles.set_weight(2);
-			printf("weight = 2\n");
+//			tiles.set_weight(2);
+//			printf("weight = 2\n");
 
 			SearchAlg<Tiles> *search = NULL;
 
@@ -190,7 +197,8 @@ int main(int argc, const char *argv[]) {
 			}
 
 			dffooter(stdout);
-		} else { // 24 puzzle
+//		} else { // 24 puzzle
+#ifdef PUZZLE
 			printf("24 Puzzle\n");
 			argv++;
 			argc--;
@@ -233,7 +241,8 @@ int main(int argc, const char *argv[]) {
 			dfpair(stdout, "total nodes expanded", "%lu", search->expd);
 			dfpair(stdout, "total nodes generated", "%lu", search->gend);
 			dfpair(stdout, "solution length", "%u", (unsigned int) path.size());
-		}
+#endif
+//		}
 	} catch (const Fatal &f) {
 		fputs(f.msg, stderr);
 		fputc('\n', stderr);

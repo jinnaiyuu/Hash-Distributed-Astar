@@ -647,8 +647,8 @@ public:
 		n->g = c;
 		if (p)
 			n->g += p->g;
-		n->f = n->g + this->dom.weight_h(s);
-		printf("h = %d\n", this->dom.weight_h(s));
+		n->f = n->g + this->dom.h(s);
+//		printf("h = %d\n", this->dom.weight_h(s));
 		n->pop = pop;
 		n->parent = p;
 		this->dom.pack(n->packed, s);
