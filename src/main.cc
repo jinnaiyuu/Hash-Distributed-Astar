@@ -84,6 +84,8 @@ int main(int argc, const char *argv[]) {
 				pnum += argv[2][i] - '0';
 			}
 */
+		argv++;
+		argc--;
 			sscanf(argv[2], "%d", &pnum);
 
 			printf("pnum = %d",pnum);
