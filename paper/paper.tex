@@ -266,7 +266,7 @@ Bind Effect, Burst Effectは問題サイズが大きくなるに従い相対的�
 \subsection{問題サイズに対するHDA*の探索オーバーヘッドとパフォーマンスの変化}
 \label{sec:speedup_size}
 
-前項の分析にて、問題サイズが大きくなるほど探索オーバーヘッドが小さくなるという仮説を議論した。本節ではこの仮説を実験的に検証する。15 Puzzleドメインを対象に、問題毎の探索ノード数と高速化効率の分析を行った。15 Puzzleのインスタンスはランダムに生成した100問を対象にした。これらの問題はA*探索で50～10000秒の実行時間で解ける問題である。
+前項の分析にて、問題サイズが大きくなるほど探索オーバーヘッドが小さくなるという仮説を議論した。本節ではこの仮説を実験的に検証する。15 Puzzleドメインを対象に、問題毎の探索ノード数と高速化効率の分析を行った。15 Puzzleのインスタンスはランダムに生成した200問を対象にした。これらの問題はA*探索で10～10000秒の実行時間で解ける問題である。
 
 
 \begin{figure}
@@ -292,7 +292,7 @@ HDA*は、逐次A*で1000秒程度の問題サイズであればほぼperfect li
 
 \subsection{先行研究における比較実験の問題点}
 
-Burnsらの比較実験には複数問題点がある\cite{Burns2010}。まず、HDA*のHash関数を汎用なHash関数によって実装しているが、KishimotoらはZobrist Hashを用いて実装した。Hash関数によってアルゴリズムの挙動は異なると考えられるが、その違いはまだ検証されていない。また、Burnsらの実験ではHDA*, PBNFのオープンリストをheapで実装している。多くのドメインはオープンリストをvectorで実装することが出来る。heapに対するアクセスが$O(logn)$であるのに対してvectorへのアクセスは$O(1)$である。Burnsらは別の論文で、15 Puzzleドメインを対象に、heapとvectorの比較実験を行い、vector実装が3倍程度高速であると結論した[引用](Burns 2012)。HDA*とPBNFは複数オープンリストがある。HDA*はスレッドの数に分割され、PBNFはNBlockの数に分割される。NBlockは15 Puzzleの場合3360個に分割される。両アルゴリズムは各オープンリストが小さくなるので、高速化率はそれぞれ逐次A*における３倍よりも小さくなると推測されるが、まだ検証はされていない。もう一つ重要な問題点として、ベンチマーク問題のサイズが小さいということが挙げられる。並列アルゴリズムは初期化に時間がかかる為、ある程度問題サイズが大きいものでないと実質的な高速化効率を正確に測ることが出来ない。Burnsらの用いた問題集はA*探索で10秒未満のものが殆どである。\ref{sec:speedup_size}で議論したように、HDA*の高速化効率は1000秒程度の問題まで向上し続け、ほぼperfect linear speedupになる。よって、ベンチマーク問題の問題サイズを考慮した比較・解析が必要である。
+Burnsらの比較実験には複数問題点がある\cite{Burns2010}。まず、HDA*のHash関数を汎用なHash関数によって実装しているが、KishimotoらはZobrist Hashを用いて実装した。Hash関数によってアルゴリズムの挙動は異なると考えられるが、その違いはまだ検証されていない。また、Burnsらの実験ではHDA*, PBNFのオープンリストをheapで実装している。多くのドメインはオープンリストをvectorで実装することが出来る。heapに対するアクセスが$O(logn)$であるのに対してvectorへのアクセスは$O(1)$である。Burnsらは別の論文で、15 Puzzleドメインを対象に、heapとvectorの比較実験を行い、vector実装が3倍程度高速であると結論した\cite{burns2012implementing}。HDA*とPBNFは複数オープンリストがある。HDA*はスレッドの数に分割され、PBNFはNBlockの数に分割される。NBlockは15 Puzzleの場合3360個に分割される。両アルゴリズムは各オープンリストが小さくなるので、高速化率はそれぞれ逐次A*における３倍よりも小さくなると推測されるが、まだ検証はされていない。もう一つ重要な問題点として、ベンチマーク問題のサイズが小さいということが挙げられる。並列アルゴリズムは初期化に時間がかかる為、ある程度問題サイズが大きいものでないと実質的な高速化効率を正確に測ることが出来ない。Burnsらの用いた問題集はA*探索で10秒未満のものが殆どである。\ref{sec:speedup_size}で議論したように、HDA*の高速化効率は1000秒程度の問題まで向上し続け、ほぼperfect linear speedupになる。よって、ベンチマーク問題の問題サイズを考慮した比較・解析が必要である。
 
 \subsection{HDA*のチューニング}
 \label{sec:hdastar_tuning}
@@ -390,44 +390,44 @@ HDA*においてvector実装がheap実装よりも速いことが分かった。
 
 \begin{figure}
 	\centering
-	\begin{subfigure}{0.4\columnwidth}
+	\begin{subfigure}{0.6\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/15puzzle_vector_expd.pdf}
-		\label{fig:15puzzle_vector}
+		\label{fig:15puzzle_vector_expd}
 		\caption{15 Puzzle with vector open list}
 	\end{subfigure}
 
-	\begin{subfigure}{0.4\columnwidth}
+	\begin{subfigure}{0.6\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/15puzzle_heap_expd.pdf}
-		\label{fig:15puzzle_vector}
+		\label{fig:15puzzle_vector_expd}
 		\caption{15 Puzzle with heap open list}
 	\end{subfigure}
 
-	\begin{subfigure}{0.4\columnwidth}
+	\begin{subfigure}{0.6\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/grid_expd.pdf}
-		\label{fig:grid}
+		\label{fig:grid_expd}
 		\caption{Grid Pathfinding}
 	\end{subfigure}
 
-	\begin{subfigure}{0.4\columnwidth}
+	\begin{subfigure}{0.6\columnwidth}
 		\includegraphics[width=\columnwidth,draft]{speedup/tsp_20_mst_expd.png}
-		\label{fig:tsp_20_mst}
+		\label{fig:tsp_20_mst_expd}
 		\caption{TSP with minimum spanning tree (20 cities)}
 	\end{subfigure}
 
-	\begin{subfigure}{0.4\columnwidth}
+	\begin{subfigure}{0.6\columnwidth}
 		\includegraphics[width=\columnwidth,draft]{speedup/tsp_13_roundtrip_expd.png}
-		\label{fig:tsp_13_round}
+		\label{fig:tsp_13_round_expd}
 		\caption{TSP with Round-trip distance (13 cities)}
 	\end{subfigure}
 
-	\begin{subfigure}{0.4\columnwidth}
+	\begin{subfigure}{0.6\columnwidth}
 		\includegraphics[width=\columnwidth,draft]{speedup/tsp_13_blind_expd.png}
-		\label{fig:tsp_13_blind}
+		\label{fig:tsp_13_blind_expd}
 		\caption{TSP with blind (13 cities)}
 	\end{subfigure}
 	\label{fig:comparison}
 	\caption{HDA*とPBNFの探索ノード数の比較}
-\end{figure}%
+\end{figure}%-
 
 どのドメインでもHDA* vs. PBNFの探索ノード数はあまり変わらない。BurnsらがHDA*の探索オーバーヘッドを指摘したのはNaive Hashによる実装であったからであると結論出来るだろう。
 
