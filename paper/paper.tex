@@ -299,14 +299,13 @@ Burnsらの比較実験には複数問題点がある\cite{Burns2010}。まず�
 
 前章にて、Naive Hashは分配に問題があると分かった。また、BurnsらはA*探索の15 Puzzleドメインにおける実装の最適化について議論を行い、vectorによるオープンリストがheap実装より3倍程度速いことを示した\cite{burns2012implementing}。Korfの100 puzzleをインスタンスにこれらの比較を行った\ref{korf1985depth}。Korf 100 Puzzleは様々な問題サイズのある問題集であり、最も難しい問題が逐次A*で1000秒程度である。
 
-
 \begin{figure}
 	\centering
-	\begin{subfigure}{width=0.4\columnwidth}
+	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/hdastar_tuning_walltime.pdf}
 		\label{fig:hdastar_tuning_walltime}
 	\end{subfigure}
-	\begin{subfigure}{width=0.4\columnwidth}
+	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/hdastar_tuning_expd.pdf}
 		\label{fig:hdastar_tuning_expd}
 	\end{subfigure}
@@ -322,19 +321,14 @@ Burnsらの比較実験には複数問題点がある\cite{Burns2010}。まず�
 
 HDA*においてvector実装がheap実装よりも速いことが分かった。PBNFにおいてもKorfの100 puzzleを対象に比較を行った。\ref{fig:pbnf_tuning}が実行結果である。PBNFにおいては、HDA*ほどの高速化が得られないようである。heapに対するアクセスは$O(logn)$であるのに対してvectorは$O(1)$である。PBNFは沢山のオープンリストに分割されていて、各オープンリストが小さい為に、$O(logn)$と$O(1)$の差が小さい為、vector実装による高速化が小さいと考えられる。
 
+
 \begin{figure}
 	\centering
-	\includegraphics[width=0.4\columnwidth]{speedup/safepbnf-8_tuning.png}
-	\label{fig:pbnf_tuning}
-	\caption{Tuning PBNF}
-\end{figure}
-\begin{figure}
-	\centering
-	\begin{subfigure}{width=0.4\columnwidth}
+	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/safepbnf_tuning_walltime.pdf}
 		\label{fig:safepbnf_tuning_walltime}
 	\end{subfigure}
-	\begin{subfigure}{width=0.4\columnwidth}
+	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/safepbnf_tuning_expd.pdf}
 		\label{fig:safepbnf_tuning_expd}
 	\end{subfigure}
