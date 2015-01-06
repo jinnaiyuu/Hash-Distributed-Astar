@@ -181,21 +181,25 @@ Kishimotoらはf値によって探索ノードの分類を行うことでHDA*の
 
 \begin{figure}
 	\begin{subfigure}{0.4\columnwidth}
+		\centering
 		\includegraphics[width=\columnwidth]{order/2_threads.png}
 		\label{fig:order:2_threads}
 		\caption{HDA* 2 threads}
 	\end{subfigure}
 	\begin{subfigure}{0.4\columnwidth}
+		\centering
 		\includegraphics[width=\columnwidth]{order/4_threads.png}
 		\label{fig:order:4_threads}
 		\caption{HDA* 4 threads}
 	\end{subfigure}
 	\begin{subfigure}{0.4\columnwidth}
+		\centering
 		\includegraphics[width=\columnwidth]{order/8_threads.png}
 		\label{fig:order:8_t8hreads}
 		\caption{HDA* 8 threads}
 	\end{subfigure}
 	\begin{subfigure}{0.4\columnwidth}
+		\centering
 		\includegraphics[width=\columnwidth]{order/delay.png}
 		\label{fig:order:delay}
 		\caption{delayed expanding HDA*}
@@ -234,6 +238,7 @@ HDA*とA*の探索順が幅の中で前後する為に生じる探索オーバ�
 \end{enumerate}
 
 \begin{figure}
+	\centering
 	\includegraphics[width=0.6\columnwidth]{order/naive_hash.png}
 	\label{fig:order:naive_hash}
 	\caption{naive hash HDA*}
@@ -246,6 +251,7 @@ $H(s) = \sum\nolimits_{i = 0}^{15}(16^{i} \times tiles_{i})$ $mod$ $n$
 ただし$n$はスレッドの数、$tiles$は各タイル$i$の位置である。Naive Hash分配はうまくいっていないようである。$n = 2, 4, 8$の場合、Hash値は$tiles_{i}$の値のみに依存する。このとき、Naive Hashは15 Puzzleドメインの状態空間を均等に分割する。しかしながら、Naive Hashは状態の一部分の情報しか利用していない為、状態空間に対して不偏的に均等な分割をすることが出来ない。探索で現れる状態は15 Puzzleドメインの状態空間に対して非常に小さく、偏りのある部分集合であるので、均等な分配にならないと考えられる。Zobrist HashとNaive Hashの詳細な性能比較は次章で行う。
 
 \begin{figure}
+	\centering
 	\includegraphics[width=0.6\columnwidth]{order/safepbnf.png}
 	\label{fig:order:safepbnf}
 	\caption{SafePBNF}
@@ -296,12 +302,19 @@ Burnsらの比較実験には複数問題点がある\cite{Burns2010}。まず�
 
 \begin{figure}
 	\centering
-	\includegraphics[width=0.4\columnwidth]{speedup/hdastar-8_tuning.png}
+	\begin{subfigure}{width=0.4\columnwidth}
+		\includegraphics[width=\columnwidth]{eps/hdastar_tuning_walltime.pdf}
+		\label{fig:hdastar_tuning_walltime}
+	\end{subfigure}
+	\begin{subfigure}{width=0.4\columnwidth}
+		\includegraphics[width=\columnwidth]{eps/hdastar_tuning_expd.pdf}
+		\label{fig:hdastar_tuning_expd}
+	\end{subfigure}
 	\label{fig:hdastar_tuning}
-	\caption{Tuning HDA*}
+	\caption{zobrist vs haive hash, vector vs heap open list}
 \end{figure}
 
-\ref{fig:hdastar_tuning}が実行結果である。どの問題サイズにおいても、Zobrist Hashとvectorによる実装が一番速いと結論出来る。
+\ref{fig:hdastar_tuning}が実行結果である。どの問題サイズにおいても、Zobrist Hashとvectorによる実装が一番速いと結論出来る。また、\ref{fig:hdastar_tuning_expd}によると、Zobrist HashはNaive Hashよりも展開ノード数が小さい。Naive Hashはどの問題サイズでもおおよそZobrist Hashの２倍の展開ノード数になっている。これは\ref{ch:analysis1}における分析結果とも一致する結果である。
 
 
 \subsection{PBNFのチューニング}
@@ -314,6 +327,19 @@ HDA*においてvector実装がheap実装よりも速いことが分かった。
 	\includegraphics[width=0.4\columnwidth]{speedup/safepbnf-8_tuning.png}
 	\label{fig:pbnf_tuning}
 	\caption{Tuning PBNF}
+\end{figure}
+\begin{figure}
+	\centering
+	\begin{subfigure}{width=0.4\columnwidth}
+		\includegraphics[width=\columnwidth]{eps/safepbnf_tuning_walltime.pdf}
+		\label{fig:safepbnf_tuning_walltime}
+	\end{subfigure}
+	\begin{subfigure}{width=0.4\columnwidth}
+		\includegraphics[width=\columnwidth]{eps/safepbnf_tuning_expd.pdf}
+		\label{fig:safepbnf_tuning_expd}
+	\end{subfigure}
+	\label{fig:safepbnf_tuning}
+	\caption{vector vs heap}
 \end{figure}
 
 \subsection{HDA*とPBNFの性能比較実験}
