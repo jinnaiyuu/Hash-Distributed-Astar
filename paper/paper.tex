@@ -263,12 +263,20 @@ Bind Effect, Burst Effectは問題サイズが大きくなるに従い相対的�
 
 前項の分析にて、問題サイズが大きくなるほど探索オーバーヘッドが小さくなるという仮説を議論した。本節ではこの仮説を実験的に検証する。15 Puzzleドメインを対象に、問題毎の探索ノード数と高速化効率の分析を行った。15 Puzzleのインスタンスはランダムに生成した100問を対象にした。これらの問題はA*探索で50～10000秒の実行時間で解ける問題である。
 
+
 \begin{figure}
 	\centering
-	\includegraphics[width=0.4\columnwidth]{order/efficiency.png}
-	\label{fig:david_speedup}
-	\caption{Efficiency of HDA*}
-\end{figure}
+	\begin{subfigure}{0.4\columnwidth}
+		\includegraphics[width=\columnwidth]{eps/efficiency.pdf}	
+		\label{fig:david_speedup}
+		\caption{Efficiency of HDA*}
+	\end{subfigure}
+	\begin{subfigure}{0.4\columnwidth}
+		\includegraphics[width=\columnwidth]{eps/search_overhead.pdf}	
+		\label{fig:david_so}
+		\caption{Search Overhead of HDA*}
+	\end{subfigure}
+
 
 HDA*は、逐次A*で1000秒程度の問題サイズであればほぼperfect linear speedupが得られるようである。それぞれの実行は一回の実行結果を比較しているので偶然的な要素を含む。例えば、bind effectによって偶然A*よりも速い順番で最適解を発見したインスタンスもある。しかし全体の傾向として右肩上がりに高速化効率が大きくなり、1000秒程度でperfect linear speedupに近づくことは確認出来る。
 
