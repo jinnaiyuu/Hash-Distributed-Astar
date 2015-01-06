@@ -13,7 +13,7 @@ EOF
 }
 
 time=`date +%m%d%H%M%S`
-#problem_type=$1
+#instance_name=$1
 #domain_name=$2
 #algorithm=$3
 #problem_size=$4
