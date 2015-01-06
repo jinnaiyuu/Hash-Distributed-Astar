@@ -180,25 +180,25 @@ Kishimotoらはf値によって探索ノードの分類を行うことでHDA*の
 
 
 \begin{figure}
-	\begin{subfigure}{0.4\columnwidth}
+	\begin{subfigure}{0.6\columnwidth}
 		\centering
 		\includegraphics[width=\columnwidth]{order/2_threads.png}
 		\label{fig:order:2_threads}
 		\caption{HDA* 2 threads}
 	\end{subfigure}
-	\begin{subfigure}{0.4\columnwidth}
+	\begin{subfigure}{0.6\columnwidth}
 		\centering
 		\includegraphics[width=\columnwidth]{order/4_threads.png}
 		\label{fig:order:4_threads}
 		\caption{HDA* 4 threads}
 	\end{subfigure}
-	\begin{subfigure}{0.4\columnwidth}
+	\begin{subfigure}{0.6\columnwidth}
 		\centering
 		\includegraphics[width=\columnwidth]{order/8_threads.png}
 		\label{fig:order:8_t8hreads}
 		\caption{HDA* 8 threads}
 	\end{subfigure}
-	\begin{subfigure}{0.4\columnwidth}
+	\begin{subfigure}{0.6\columnwidth}
 		\centering
 		\includegraphics[width=\columnwidth]{order/delay.png}
 		\label{fig:order:delay}
@@ -271,13 +271,13 @@ Bind Effect, Burst Effectは問題サイズが大きくなるに従い相対的�
 
 \begin{figure}
 	\centering
-	\includegraphics[width=0.5\columnwidth]{eps/efficiency.pdf}	
+	\includegraphics[width=0.6\columnwidth]{eps/efficiency.pdf}	
 	\label{fig:david_speedup}
 	\caption{Efficiency of HDA*}
 \end{figure}
 \begin{figure}
 	\centering
-	\includegraphics[width=0.5\columnwidth]{eps/search_overhead.pdf}	
+	\includegraphics[width=0.6\columnwidth]{eps/search_overhead.pdf}	
 	\label{fig:david_so}
 	\caption{Search Overhead of HDA*}
 \end{figure}
@@ -348,38 +348,38 @@ HDA*においてvector実装がheap実装よりも速いことが分かった。
 
 \begin{figure}
 	\centering
-	\begin{subfigure}{0.4\columnwidth}
+	\begin{subfigure}{0.6\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/15puzzle_vector_walltime.pdf}
 		\label{fig:15puzzle_vector}
 		\caption{15 Puzzle with vector open list}
 	\end{subfigure}
 
-	\begin{subfigure}{0.4\columnwidth}
-		\includegraphics[width=\columnwidth]{speedup/15puzzle_heap.png}
+	\begin{subfigure}{0.6\columnwidth}
+		\includegraphics[width=\columnwidth]{eps/15puzzle_heap_walltime.pdf}
 		\label{fig:15puzzle_vector}
 		\caption{15 Puzzle with heap open list}
 	\end{subfigure}
 
-	\begin{subfigure}{0.4\columnwidth}
-		\includegraphics[width=\columnwidth]{speedup/grid.png}
+	\begin{subfigure}{0.6\columnwidth}
+		\includegraphics[width=\columnwidth]{eps/grid_walltime.pdf}
 		\label{fig:grid}
 		\caption{Grid Pathfinding}
 	\end{subfigure}
 
-	\begin{subfigure}{0.4\columnwidth}
-		\includegraphics[width=\columnwidth,draft]{speedup/tsp_20_mst_bug.png}
+	\begin{subfigure}{0.6\columnwidth}
+		\includegraphics[width=\columnwidth,draft]{speedup/tsp_20_mst_walltime.png}
 		\label{fig:tsp_20_mst}
 		\caption{TSP with minimum spanning tree (20 cities)}
 	\end{subfigure}
 
-	\begin{subfigure}{0.4\columnwidth}
-		\includegraphics[width=\columnwidth,draft]{speedup/tsp_13_roundtrip_bug.png}
+	\begin{subfigure}{0.6\columnwidth}
+		\includegraphics[width=\columnwidth,draft]{speedup/tsp_13_roundtrip_walltime.png}
 		\label{fig:tsp_13_round}
 		\caption{TSP with Round-trip distance (13 cities)}
 	\end{subfigure}
 
-	\begin{subfigure}{0.4\columnwidth}
-		\includegraphics[width=\columnwidth,draft]{speedup/tsp_13_blind_bug.png}
+	\begin{subfigure}{0.6\columnwidth}
+		\includegraphics[width=\columnwidth,draft]{speedup/tsp_13_blind_walltime.png}
 		\label{fig:tsp_13_blind}
 		\caption{TSP with blind (13 cities)}
 	\end{subfigure}
@@ -387,6 +387,47 @@ HDA*においてvector実装がheap実装よりも速いことが分かった。
 	\caption{HDA*とPBNFの実行速度の比較}
 \end{figure}%
 
+
+\begin{figure}
+	\centering
+	\begin{subfigure}{0.4\columnwidth}
+		\includegraphics[width=\columnwidth]{eps/15puzzle_vector_expd.pdf}
+		\label{fig:15puzzle_vector}
+		\caption{15 Puzzle with vector open list}
+	\end{subfigure}
+
+	\begin{subfigure}{0.4\columnwidth}
+		\includegraphics[width=\columnwidth]{eps/15puzzle_heap_expd.pdf}
+		\label{fig:15puzzle_vector}
+		\caption{15 Puzzle with heap open list}
+	\end{subfigure}
+
+	\begin{subfigure}{0.4\columnwidth}
+		\includegraphics[width=\columnwidth]{eps/grid_expd.pdf}
+		\label{fig:grid}
+		\caption{Grid Pathfinding}
+	\end{subfigure}
+
+	\begin{subfigure}{0.4\columnwidth}
+		\includegraphics[width=\columnwidth,draft]{speedup/tsp_20_mst_expd.png}
+		\label{fig:tsp_20_mst}
+		\caption{TSP with minimum spanning tree (20 cities)}
+	\end{subfigure}
+
+	\begin{subfigure}{0.4\columnwidth}
+		\includegraphics[width=\columnwidth,draft]{speedup/tsp_13_roundtrip_expd.png}
+		\label{fig:tsp_13_round}
+		\caption{TSP with Round-trip distance (13 cities)}
+	\end{subfigure}
+
+	\begin{subfigure}{0.4\columnwidth}
+		\includegraphics[width=\columnwidth,draft]{speedup/tsp_13_blind_expd.png}
+		\label{fig:tsp_13_blind}
+		\caption{TSP with blind (13 cities)}
+	\end{subfigure}
+	\label{fig:comparison}
+	\caption{HDA*とPBNFの探索ノード数の比較}
+\end{figure}%
 
 どのドメインでもHDA* vs. PBNFの探索ノード数はあまり変わらない。BurnsらがHDA*の探索オーバーヘッドを指摘したのはNaive Hashによる実装であったからであると結論出来るだろう。
 
