@@ -277,7 +277,7 @@ Bind Effect, Burst Effectは問題サイズが大きくなるに従い相対的�
 		\caption{Search Overhead of HDA*}
 	\end{subfigure}
 
-
+\end{figure}
 HDA*は、逐次A*で1000秒程度の問題サイズであればほぼperfect linear speedupが得られるようである。それぞれの実行は一回の実行結果を比較しているので偶然的な要素を含む。例えば、bind effectによって偶然A*よりも速い順番で最適解を発見したインスタンスもある。しかし全体の傾向として右肩上がりに高速化効率が大きくなり、1000秒程度でperfect linear speedupに近づくことは確認出来る。
 
 アルゴリズムの性能評価は平均の実行時間や探索ノード数を論じることが殆どである。これは上述の偶然的な要素を取り除く為である。しかしながら、並列探索における高速化効率は問題サイズに対して依存する。本質的な高速化効率への知見を得るためには、平均化した高速化効率による議論ではなく、問題サイズ毎に検討をする必要がある。その為、次章の議論においては平均高速化効率ではなく、問題インスタンス毎の高速化を示す。
@@ -293,7 +293,8 @@ Burnsらの比較実験には複数問題点がある\cite{Burns2010}。まず�
 \subsection{HDA*のチューニング}
 \label{sec:hdastar_tuning}
 
-前章にて、Naive Hashは分配に問題があると分かった。また、BurnsらはA*探索の15 Puzzleドメインにおける実装の最適化について議論を行い、vectorによるオープンリストがheap実装より3倍程度速いことを示した\cite{burns2012implementing}。Korfの100 puzzleをインスタンスにこれらの比較を行った\ref{korf1985depth}。Korf 100 Puzzleは様々な問題サイズのある問題集であり、最も難しい問題が逐次A*で1000秒程度である。\ref{fig:hdastar_tuning}が実行結果である。どの問題サイズにおいても、Zobrist Hashとvectorによる実装が一番速いと結論出来る。
+前章にて、Naive Hashは分配に問題があると分かった。また、BurnsらはA*探索の15 Puzzleドメインにおける実装の最適化について議論を行い、vectorによるオープンリストがheap実装より3倍程度速いことを示した\cite{burns2012implementing}。Korfの100 puzzleをインスタンスにこれらの比較を行った\ref{korf1985depth}。Korf 100 Puzzleは様々な問題サイズのある問題集であり、最も難しい問題が逐次A*で1000秒程度である。
+
 
 \begin{figure}
 	\centering
@@ -301,6 +302,9 @@ Burnsらの比較実験には複数問題点がある\cite{Burns2010}。まず�
 	\label{fig:hdastar_tuning}
 	\caption{Tuning HDA*}
 \end{figure}
+
+\ref{fig:hdastar_tuning}が実行結果である。どの問題サイズにおいても、Zobrist Hashとvectorによる実装が一番速いと結論出来る。
+
 
 \subsection{PBNFのチューニング}
 \label{sec:pbnf_tuning}
