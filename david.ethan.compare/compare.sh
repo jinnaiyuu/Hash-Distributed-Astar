@@ -24,7 +24,8 @@ data9=$9
 gnuplot<<EOF
    set xlabel "node expanded"
    set ylabel "instances solved in given node expansion"
-   set terminal postscript enhanced color font ',15'
+   set terminal pdf
+#   set terminal postscript enhanced color font ',15'
 #   set terminal png size 900,900 font ',15'
    set logscale x
    set key out vert
@@ -32,7 +33,7 @@ gnuplot<<EOF
    plot "${data1}.correctrate.expd" u 2:1 w steps title "A*"
    replot "${data2}.correctrate.expd" u 2:1 w steps title "Parallel A*"
    replot "${data3}.correctrate.expd" u 2:1 w steps title "HDA*"
-   set output "${data1}_expd.eps"
+   set output "${data1}_expd.pdf"
    replot "${data4}.correctrate.expd" u 2:1 w steps title "SafePBNF"
 #   replot "${data5}.correctrate.expd" u 2:1 w steps title "$data5"
 #   replot "${data6}.correctrate.expd" u 2:1 w steps title "$data6"
@@ -44,7 +45,8 @@ EOF
 gnuplot<<EOF
    set xlabel "walltime"
    set ylabel "instances solved in given time"
-   set terminal postscript enhanced color font ',15'
+   set terminal pdf
+#   set terminal postscript enhanced color font ',15'
 #   set terminal png size 900,900 font ',15'
    set logscale x
    set key out vert
@@ -52,7 +54,7 @@ gnuplot<<EOF
    plot "${data1}.correctrate" u 2:1 w steps title "A*"
    replot "${data2}.correctrate" u 2:1 w steps title "Parallel A*"
    replot "${data3}.correctrate" u 2:1 w steps title "HDA*"
-   set output "${data1}_walltime.eps"
+   set output "${data1}_walltime.pdf"
    replot "${data4}.correctrate" u 2:1 w steps title "SafePBNF"
 #   replot "${data5}.correctrate" u 2:1 w steps title "$data5"
 #   replot "${data6}.correctrate" u 2:1 w steps title "$data6"
