@@ -1,5 +1,7 @@
 #!/bin/bash
 
-platex paper.tex
+platex -shell-espace paper.tex
+pbibtex paper.aux
+platex -shell-espace paper.tex
 dvipdfmx paper.dvi
 evince paper.pdf

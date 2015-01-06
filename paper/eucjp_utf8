@@ -1,0 +1,395 @@
+\documentclass{jsarticle}
+\renewcommand{\labelenumii}{\theenumii}
+\renewcommand{\theenumii}{\theenumi.\arabic{enumii}.}
+\usepackage[dvipdfmx,hiresbb]{graphicx}
+\usepackage{subcaption}
+\begin{document}
+
+\tableofcontents
+
+\section{序論}
+
+\subsection{研究の背景}
+グラフは情報科学に通底する問題ドメインであり、グラフを解き明かす探索アルゴリズムは分野の基本骨子をなしている。人工知能の分野においても探索は基盤となるアルゴリズムの一つであり、高速で効率的な探索アルゴリズムを研究することは人工知能於いては情報科学全体に意義のある研究である。さて、近年単一プロセッサの高速化は電力の限界を迎え、並列化による高速化へとパラダイムが移った。ハードウェアは今後も各CPUの計算速度の発展よりも並列化による高速化が進むだろうと予測されている [要注釈]。故に今後ハードウェアの高速化の恩恵を引き出す為にはこの並列システムを利用したアルゴリズムを開発する必要がある。然るに探索アルゴリズムも単一プロセッサによる探索だけではなく、マルチコア・分散システムにおいてもそれぞれ効率的なアルゴリズムを研究しなければならない。
+
+
+\subsection{関連研究}
+
+グラフを探索するアルゴリズムのうち最も重要なものの一つとしてA*(エースター)アルゴリズムがある\cite{Hart1968}。このA*アルゴリズムを並列化する手法は数多く提案されている。
+
+Kumarらはオープンリスト, クローズドリストをスレッド間で共有して並列に探索を行うParallel A*を提案し、性能評価を行った\cite{kumar1988parallel}。この手法はオープンリスト, クローズドリストのデータ構造を保つ為に相互排他ロックを必要とする。ノードが展開される度にオープンリストに、生成される度にクローズドリストにロックを獲得してアクセスする必要がある。その為Parallel A*は同期オーバーヘッドが非常に大きいという問題がある。\ref{ch:analysis2}で見るように、このシンプルな手法は逐次A*よりも遅くなってしまう。
+
+同期オーバーヘッドを解決する手法としてKishimotoらはHash Distributed A*(HDA*)を提案した\cite{Kishimoto2013}。HDA*は各スレッドにローカルにオープンリストとクローズドリストを持つ。グラフのノードはHash関数によって均等かつ無作為に分割し各スレッドに割り当てられる。各スレッドは自分に割り当てられたノードのみを探索し、他スレッドに割り当てられたノードを生成した場合はそのスレッドにノードを非同期的に送信する。各スレッドのオープンリスト、クローズドリストはローカルにあり、他のスレッドからアクセスされないので、相互排他ロックを必要としない。その為HDA*は同期オーバーヘッドが殆どない。HDA*は同期オーバーヘッドが殆どなく、分散メモリを効率良く使うことが出来る為、特に分散メモリ環境で有効な手法である。一般に並列探索はA*探索と比較して探索ノード数が大きくなる。HDA*の問題点としても、探索ノード数が大きくなることが指摘されている。HDA*において探索ノード数が増加する原因はまだ調べられていない。また、Kishimotoらの性能評価は殆ど分散メモリ環境におけるものであり、共有メモリ環境における実験は殆ど行われていない。また、それらも共有メモリ環境に最適化された実装を用いたものではない。その為、HDA*のマルチコアマシンにおける正確な性能評価は行われていないと言える。
+
+BurnsらはParallel Best-NBlock-First (PBNF)を提案した\cite{Burns2010}。PBNFは状態空間を複数のNBlockに分割する。それぞれのNBlockはオープンリストとクローズドリストを持つ。それぞれのスレッドは最も有望なノードを持つNBlockを占有し、探索を行う。自分の占有しているNBlockよりも有望なノードを持つNBlockが空いていれば、今探索していたNBlockを解放し、新しいNBlockを占有して探索を始める。あまりに頻繁なNBlockの切り替えが生じるのを防ぐために最小探索ノード数が設定される。これはチューニングの必要なパラメータである。NBlockはスレッドに占有されるので、オープンリスト・クローズドリストに相互排他ロックをかける必要がない。必要なロックは空いているNBlockを保存するheapのみである。その為PBNFは同期オーバーヘッドが小さい。この手法は現在マルチコア環境で最もパフォーマンスの良いstate-of-the-artの手法であるとされている。PBNFの問題点として、その複雑さが挙げられる。すなわち、PBNFのパフォーマンスを引き出す為には空間をNBlockに分割する方法・粒度と最小探索ノード数をドメインに対して最適化をする必要がある。
+
+また、BurnsらはマルチコアマシンでHDA*を含めた様々な並列アルゴリズムの性能比較を行い、その中でPBNFとHDA*を有望な(高速な)アルゴリズムとした。また、その上でPBNFはHDA*より速いと結論をした。その理由としては、PBNFはHDA*よりも探索ノード数が小さいという結果があったことを指摘した。しかしながら、Burnsらの比較実験には複数問題点がある。KishimotoらのHDA*の実装がZobrist Hash\cite{Zobrist1970}を用いていたのに対してBurnsらはNaiveなHash関数を用いている。Hash関数によってHDA*の性能は大きく異なると考えられるが、その違いは検証されていない。また、オープンリストをheapで実装しているが、これはBurnsらがベンチマーク問題として扱っている15 Puzzle、4 way Grid-pathfindingにおいて最適な実装ではない\cite{burns2012implementing}。もう一つ重要な問題点として、ベンチマーク問題のサイズが小さいということが挙げられる。並列アルゴリズムは初期化に時間がかかる為、ある程度問題サイズが大きいものでないと実質的な高速化効率を正確に測ることが出来ない。Burnsらの用いた問題集はA*探索で10秒未満のものが多く、それらが十分な大きさであるかは検証の必要がある。
+
+これらの理由から、HDA*とPBNFはより詳細な性能評価が必要であると考えられる。また、HDA*のHash関数による挙動の違いも重要な問題である。また、両アルゴリズムのオープンリストの実装がそれぞれどのような影響を与えるかも調査する必要がある。
+
+\subsection{研究の目的}
+
+本研究の目的は２つある。
+
+\begin{enumerate}
+\item マルチコア環境においてHDA*の探索ノード数の増加の原因を分析する。
+
+HDA*におけるノードの探索順をA*と比較をすることで探索ノード数の増加の原因を分析する。また、Zobrist HashではなくNaiveなHash関数を使った場合の比較も行う。HDA*のノードの展開速度を遅くした場合の比較も行った。
+\newline
+\item HDA*とPBNFの性能評価を行う。
+
+まず、HDA*のhash関数を変えた際の挙動を調べる。また、HDA*とPBNFのオープンリストの実装をvectorとheapにした場合の性能の違いを調べる。それらの結果を踏まえ、最適なHDA*とPBNFの実装をもって性能の比較を行う。
+\end{enumerate}
+
+
+\subsection{本論文の構成}
+
+本論文は以下の通りに構成される。
+2章でA*探索の詳細とA*探索の並列化手法について述べる。3章は本研究で扱うベンチマーク問題の問題ドメインについて解説する。4章はHDA*の探索ノード数の増加を解析する。5章ではHDA*とPBNFのチューンアップを行ったのち、性能の比較評価を行う。6章は本研究で行った実験・解析から得られる知見をまとめる。
+
+\section{A*探索とその並列化}
+\label{ch:define}
+
+この章ではA*探索、HDA*探索について解説する。
+また、用語の定義を行う。
+
+\subsection{A*探索}
+
+A*探索アルゴリズム(A*, A*探索)はゴール状態までの距離を推定するヒューリスティック関数の利用により、展開された探索空間の中で最も有望であるノードを優先して探索するアルゴリズムである\cite{Hart1968}。その為ヒューリスティック関数を利用しないブラインド探索と比較して高速に最適解を見つけられることが多い。A*探索は以下のようなアルゴリズムである。
+
+\begin{enumerate}
+	\item 初期状態をオープンリストに加える。
+	\item オープンリストにあるノードの中でゴール状態までの見積りが最小であるノードを展開する。
+	\begin{enumerate}
+		\item 展開したノードをオープンリストから取り除き、クローズドリストにその状態を加える。
+		\item 展開した状態がゴール状態かどうかを調べる。ゴール状態である場合は解を出力して終了する。
+		\item 目標状態でない場合、展開した状態から１つの行為で遷移可能な状態のうち、クローズドリストにないすべての状態をオープンリストに加える。
+	\end{enumerate}
+	\item オープンリストが空になった場合は解なしとして終了する。
+\end{enumerate}
+
+オープンリストは未探索のノード、クローズドリストは探索済のノードが保存されるデータ構造である。あるノード$n$からゴール状態までの見積り$f(n)$は$f(n) = g(n) + h(n)$で計算される。$g(n)$は初期状態からノード$n$までの経路にかかったコストである。$h(n)$は状態からゴール状態までの距離を推定するヒューリスティック関数である。ヒューリスティック関数がadmissibleであるならば、A*探索の解の最適性が保証される。ヒューリスティック関数がadmissibleであるとは、ゴール状態までの推定コストを過小に見積もることのないということである。
+
+
+\subsection{A*探索の並列化にかかるオーバーヘッド}
+
+一般に並列計算は３つのオーバーヘッドがある。
+
+\begin{enumerate}
+\item 探索オーバーヘッド
+
+一般に並列探索は逐次A*よりも多くのノードの展開を必要とする。並列化に伴い余剰に探索したノードの割合を探索オーバーヘッドと呼ぶ。本研究では、探索オーバーヘッドは以下の式によって推定する。
+
+$SO := \frac{並列実行によって展開したノード数}{逐次実行によって展開したノード数}$
+
+$SO$は理想的には1になる。探索オーバーヘッドが1未満である場合は、並列実行による展開ノード数の方が小さいということを表す。
+\newline
+
+\item 同期オーバーヘッド
+
+同期オーバーヘッドは、他スレッドの処理を待つ為にアイドル状態で待たなければならない場合に生じる。データ構造の一部は同時に複数のスレッドがアクセスすることが出来ない。そのようなデータ構造をスレッド間で共有する場合は相互排他ロックを必要とする。相互排他ロックは、ロックを獲得したスレッド以外のスレッドによるアクセスを禁止する制御機構である。あるスレッドが他スレッドによって獲得された相互排他ロックが解放されるまで待つ場合、同期オーバーヘッドとなる。
+\newline
+
+\item 通信オーバーヘッド
+
+通信オーバーヘッドはプロセス間の通信にかかる遅延である。プロセス間の通信は仕事の分配や情報の共有の為に行われる。
+
+\end{enumerate}
+
+これらのオーバーヘッドはトレードオフの関係にある。理論的にこれらを最小にすることは非常に困難である為、多くの場合は実験的に最適な実装にチューニングが行われる。
+
+
+\subsection{Parallel A*}
+
+最もシンプルなA*の並列化手法はKumarらの提案したParallel A*である\cite{kumar1988parallel}。Parallel A*は各スレッドでA*探索を行う。オープンリスト, クローズドリストをスレッド間で共有することで並列に探索をすることが出来る。この手法はオープンリスト, クローズドリストのデータ構造を保つ為に相互排他ロックを必要とする。ノードが展開される度にオープンリストに、生成される度にクローズドリストにロックを獲得してアクセスする必要がある。その為Parallel A*は同期オーバーヘッドが非常に大きいという問題がある。\ref{ch:analysis2}章で見るように、このシンプルな手法は逐次A*よりも遅くなってしまう。
+
+\subsection{HDA*}
+
+HDA*は各スレッドにローカルにオープンリストとクローズドリストを持つ。グラフのノードはHash関数によって均等かつ無作為に分割し各スレッドに割り当てられる。各スレッドは自分に割り当てられたノードのみを探索し、他スレッドに割り当てられたノードを生成した場合はそのスレッドにノードを非同期的に送信する。HDA*はまず、ルートプロセスで初期状態を展開する。その後、それぞれのスレッド$P$は最適解を発見するまで以下のループを繰り返す。
+
+
+\begin{enumerate}
+\item $P$は自分のメッセージキューに新しいノードが入っているかを確認する。もし入っていたら、それぞれのノードを$P$のクローズドリストと照合し、オープンリストに入れるべきかを確認する。
+
+\item メッセージキューが空なら、$P$のオープンリストから最も優先度の高いノードを展開し、新しいノードを生成する。生成されたノード$s$に対してそれぞれハッシュキー$K(s)$を計算する。ノード$s$は$K(s)$を担当するプロセッサのメッセージキューに送信される。この送信は非同期的で、ロックを必要としない。$P$は送信先からの返信を待たずに次の計算に移る。
+
+\end{enumerate}
+
+HDA*のHash関数はHDA*の性能に非常に重要である。Hash関数に求められる要件は以下である。
+
+\begin{enumerate}
+\item 全てのスレッドに対してなるべく均等される。
+\item 状態空間に対してなるべく不偏かつ均等な分配である。
+\item Hash値を高速に求めることが出来る。
+\end{enumerate}
+
+以上の要件から、15 Puzzleドメインをはじめとする多くのドメインにおいてZobrist Hash[CITE](Zobrist 1970)が使われる。ノードの状態が整数列で表現されるとする。状態の$i$番目の整数の取りうる値は$l_{i}$通りあるとする。ノードの状態を$x = (x_{0}, x_{1}, …, x_{n})$と置く。この時$x_{i}$は$0 <= x_{i} < l_{i}$である。$R_{i}$を$l_{i}$個の値を持つテーブルとする。$R_{i}$は予めランダムに生成される。ここでZobrist Function $Z(x)$は以下のように定義される。
+\newline
+
+$Z(x) := R_{1}[x_{1}]$ $xor$ $R_{2}[x_{2}]$ $xor$ $…$ $xor$ $mR_{n}[x_{n}]$.
+\newline
+\newline
+$R_{i}$はランダムに生成される為、$Z(x)$は均等な確率で定義域の全ての値が出ると期待される。また、状態の全情報を利用して生成される為、局所的な状態の変化に対しても不偏な分配を行うことが出来る。また、$xor$によって計算する為、親ノードから変化した部分のみをXORして求めることが出来る。その為Hash値を高速に求めることが出来る。
+
+
+\subsection{PBNF}
+
+TODO: 
+
+\section{問題ドメイン}
+\subsection{Sliding-tile Puzzle (15 Puzzle, 24 Puzzle)}
+
+\begin{figure}
+	\centering
+	\includegraphics[width=0.3\columnwidth]{others/15puzzle.png}
+	\label{fig:15puzzle}
+	\caption{Sliding-tile Puzzle}
+\end{figure}%
+
+Sliding-tile Puzzleは四角い枠にタイルが敷き詰められている。枠には一ヶ所タイルのない場所があり、そこに縦と横からタイルをスライドすることが出来る。Sliding-tile Puzzleは、タイルのスライドによって初期状態から特定のゴール状態まで動かす問題である。15 Puzzleの状態空間の大きさはおよそ$10^{13}$状態、24 Puzzleの状態空間はおよそ$10^{25}$状態である。
+
+本実験では15 Puzzleのヒューリスティック関数はマンハッタン距離を用いた。マンハッタン距離ヒューリスティックは、各タイルのゴール状態での位置までのマンハッタン距離の総和で求められる。タイルは同時に２つ動かすことは出来ない。また、あるタイルがゴール位置に動かす為には少なくともマンハッタン距離の回数だけ動かす必要がある。よって、マンハッタン距離ヒューリスティックはadmissibleなヒューリスティック関数である。
+
+24 Puzzleのヒューリスティック関数はdisjoint pattern databases heuristicsを用いた。
+
+
+\subsection{Grid Pathfinding}
+
+Grid Pathfindingは二次元のグリッドにおいて、障害物を避けつつ初期位置からゴール位置までの経路を求める問題である。本研究では4 way Grid Pathfindingを扱う。4 way Grid Pathfindingでは上下左右の位置にあるグリッドに移動することが出来る。また、そのコストは1である。本研究ではゴール距離までのマンハッタン距離をヒューリスティック関数とした。マンハッタン距離はadmissibleなヒューリスティック関数である。
+
+\subsection{Travelling Salesperson Problem (TSP)}
+
+Travelling Salesperson Problem (TSP)は、都市の集合とそれぞれの２都市間の距離が与えられたとき、全ての都市を一度ずつ訪れ、出発都市に戻る為の最短経路を求める問題である。TSPで使われるヒューリスティック関数の一つはMinimum Spanning Treeである。Minimum Spanning Treeはグラフの全ての頂点を含む、最も辺の長さが小さい部分グラフである。これはゴールまでの経路よりも短いか同等である。なぜなら、もしゴールまでの経路の方が短いならば、それがMinimum Spanning Treeになるからである。よって、Minimum Spanning Treeはadmissibleなヒューリスティック関数である。
+
+\section{並列化に伴う探索オーバーヘッドの定性的な解析}
+\label{ch:analysis1}
+
+\subsection{先行研究における探索オーバーヘッドの解析}
+
+探索オーバーヘッドは逐次A*と比較した展開ノードの増加率である。ここで、探索オーバーヘッドは以下のように定義する。
+
+$SO := \frac{並列実行によって展開したノード数}{逐次実行によって展開したノード数}$
+
+Kishimotoらはf値によって探索ノードの分類を行うことでHDA*の探索オーバーヘッドの分析を行った\cite{Kishimoto2013}。c*を最適解のコストとする。探索したノードのうち、f値が$f < c*$となるノードの割合を$R_{<}$, $f = c*$となるノードの割合を$R_{=}$, $f > c*$となるノードの割合を$R_{>}$, 重複して展開されたノードの割合を$R_{r}$とおく。逐次A*で探索されるノードのf値は$f < c*$または$f = c*$である。$f > c*$となるノードは展開されない。同じ状態のノードが複数回展開されることもない。対してHDA*を含む並列アルゴリズムは同じノードを複数回展開しうる。また、$f > c*$のノードも展開しうる。$f = c*$の展開ノード数もA*と異なる。よって、$R_{=}$, $R_{>}$, $R_{r}$の割合によって探索オーバーヘッドを分類することが出来る。
+しかしながらこれらの探索オーバーヘッドの原因に対する分析はまだ行われていない。すなわち、$R_{=}$, $R_{>}$, $R_{r}$となるノードがなぜ生じるのかは分析されていない。
+
+\subsection{HDA*のノードの探索順}
+
+探索オーバーヘッドは、A*と探索順が異なることが原因であると考えることが出来る。ノードの展開する順番がA*と完全に一致するならば、探索オーバーヘッドは全く生じない。裏を返せば、A*と探索順の異なる場合に探索オーバーヘッドが生じると考えられる。よって、HDA*の状態の探索順をA*のそれと比較をすることで、どのようなパターンで探索オーバーヘッドが生じるのかを分析することが出来ると考えられる。
+本実験では15 Puzzleドメインを対象にA*とHDA*においてある状態が探索された順番を記録した。インスタンスはランダムに生成した100問を対象とした。実験環境はIntel dual-quad Xeon 3.33GHz, 32GB mem, OSはGNU/Linux Ubuntu 14.04である。本実験では15 Puzzleドメインに最適化したドメイン依存のコードを実装した。KishimotoらはMPI message passing libraryでプロセス間通信を実装したが、本実験では共有メモリ環境においてMPIよりも高速なpthreadライブラリを用いた。オープンリストはvectorで実装した。なお、オープンリストをheapで実装した場合も同様の結果が得られた。
+
+
+\begin{figure}
+	\begin{subfigure}{0.4\columnwidth}
+		\includegraphics[width=\columnwidth]{order/2_threads.png}
+		\label{fig:order:2_threads}
+		\caption{HDA* 2 threads}
+	\end{subfigure}
+	\begin{subfigure}{0.4\columnwidth}
+		\includegraphics[width=\columnwidth]{order/4_threads.png}
+		\label{fig:order:4_threads}
+		\caption{HDA* 4 threads}
+	\end{subfigure}
+	\begin{subfigure}{0.4\columnwidth}
+		\includegraphics[width=\columnwidth]{order/8_threads.png}
+		\label{fig:order:8_t8hreads}
+		\caption{HDA* 8 threads}
+	\end{subfigure}
+	\begin{subfigure}{0.4\columnwidth}
+		\includegraphics[width=\columnwidth]{order/delay.png}
+		\label{fig:order:delay}
+		\caption{delayed expanding HDA*}
+	\end{subfigure}
+	\label{fig:hdastar_orders}
+	\caption{HDA*の探索順}
+\end{figure}%
+
+
+\ref{fig:hdastar_orders}は、ある状態がA*において何番目に展開されたかを横軸に、HDA*において何番目に展開されたかを縦軸に取ってある。この結果はそれぞれ1インスタンスのものを代表的に示したが、実験対象とした100問のどのインスタンスに対しても同様のパターンを確認することが出来た。
+
+\subsection{探索オーバーヘッドの分類}
+
+HDA*のノードの探索順は大きな流れとしてはA*のそれと一致するようである。しかしながら「幅」が存在し、その範囲内で探索順が前後する。また、この幅はスレッド数が大きくなると広がる。この幅は実行時間を通して大きくなっていくが、探索ノード数が増加する割合に対して小さい。その為、問題サイズが大きいほど、探索ノード数に対する相対的な幅の大きさは小さくなる。
+また、探索の冒頭に探索順が大きくA*から外れる部分がある。これは初期化の終わっていないスレッドがある時間帯に当たる。初期化の終わっていないスレッドがある場合限られた探索空間の中で展開を進めることになる。探索空間が異なるので、探索順もA*から外れてしまうと考えられる。また、ここで探索されたノードは殆どが重複したノードになる。限られた探索空間内を迂回して展開したノードであるので、殆どのノードは最短ではない経路で生成される為である。\ref{fig:order:delay}はノードの展開に無関係の計算を挿入した場合の実行結果である。は見られないので、ノードの展開速度が十分に速い場合に起こると考えられる。
+
+HDA*においては、ある状態に対して複数の経路があり、より長い経路が先に探索された場合に重複が生じる。しかし15 Puzzleドメインではほとんど重複は生じなかった。生じた重複はほぼBurst Effectで生じたものである。15 Puzzleの探索空間はグラフというより木構造に近く、探索中に同じ状態を生成することは少ないドメインである。その為、15 Puzzleでは重複は殆ど発生しなかったのだと考えられる。Kobayashiらがノードの重複が問題となるマルチプルシーケンス問題において、ノードの重複による探索オーバーヘッドついて議論しているのでこちらを参照されたい\ref{Kobayashi2011evaluations}。
+
+これらの結果から、Zobrist Hashを用いたHDA*の探索オーバーヘッドの原因を３つに分類することが出来る。
+
+\begin{enumerate}
+\item Bind Effect
+\newline
+HDA*とA*の探索順が幅の中で前後する為に生じる探索オーバーヘッド。A*と探索順が前後するので、実行時間の最後にA*であれば探索しないノードを展開してしまう。ここで余剰に探索するノードの数は幅の大きさに従う。幅の大きさは問題サイズが大きいほど相対的に小さくなるので、Bind Effectによる探索オーバーヘッドは問題サイズが大きくなるほど小さくなる。なお、Bind EffectによってA*よりも速くゴールノードを展開することもある。$f < c*$のノードが全て探索されていれば、その時点で探索を終了することが出来る。この場合super linear speedupが生じうる。
+\newline
+
+\item Burst Effect
+\newline
+スレッドの初期化にかかる時間の為に生じる探索オーバーヘッド。Burst Effectは探索の冒頭にしか生じない為、問題サイズが大きいほど、Burst Effectによる探索オーバーヘッドの割合は小さくなる。
+\newline
+
+\item Duplicate
+\newline
+ノードの重複による探索オーバーヘッド。ある状態に対して複数の経路があり、より長い経路が先に探索された場合に重複が生じる。本研究で扱うドメイン(15 Puzzle, 24 Puzzle, Grid Pathfinding, Travelling Salesperson Problem)では殆ど発生しない為、分析の対象外とする。
+
+\end{enumerate}
+
+\begin{figure}
+	\begin{subfigure}{0.4\columnwidth}
+		\includegraphics[width=\columnwidth]{order/naive_hash.png}
+		\label{fig:order:naive_hash}
+		\caption{naive hash HDA*}
+	\end{subfigure}
+	\begin{subfigure}{0.4\columnwidth}
+		\includegraphics[width=\columnwidth]{order/safepbnf.png}
+		\label{fig:order:safepbnf}
+		\caption{SafePBNF}
+	\end{subfigure}
+	\label{fig:other_orders}
+\end{figure}%
+
+上述の探索オーバーヘッドの分類は十分な性能のHashを必要とすると考えられる。\ref{fig:order:naive_hash}はBurnsらHDA*の性能評価に用いたNaive HashによるHDA*の探索順である。Naive Hashは状態$s$に対して以下の式で与えられる。
+
+$H(s) = \sum\nolimits_{i = 0}^{15}(16^{i} \times tiles_{i})$ $mod$ $n$
+
+ただし$n$はスレッドの数、$tiles$は各タイル$i$の位置である。Naive Hash分配はうまくいっていないようである。$n = 2, 4, 8$の場合、Hash値は$tiles_{i}$の値のみに依存する。このとき、Naive Hashは15 Puzzleドメインの状態空間を均等に分割する。しかしながら、Naive Hashは状態の一部分の情報しか利用していない為、状態空間に対して不偏的に均等な分割をすることが出来ない。探索で現れる状態は15 Puzzleドメインの状態空間に対して非常に小さく、偏りのある部分集合であるので、均等な分配にならないと考えられる。Zobrist HashとNaive Hashの詳細な性能比較は次章で行う。
+
+また、\ref{fig:order:safepbnf}はPBNFの探索順である。A*の探索順とは大きく異なる順番でノードを探索していることが伺える。
+\newline
+
+Bind Effect, Burst Effectは問題サイズが大きくなるに従い相対的に小さくなる。Duplicateは本ドメインにおいては問題となる大きさではない。以上の分析から、Zobrist Hashを用いたHDA*の探索オーバーヘッドは問題サイズが大きくなる程小さくなると推測される。次節にてこれを実験的に検証する。
+
+\subsection{問題サイズに対するHDA*の探索オーバーヘッドとパフォーマンスの変化}
+\label{sec:speedup_size}
+
+前項の分析にて、問題サイズが大きくなるほど探索オーバーヘッドが小さくなるという仮説を議論した。本節ではこの仮説を実験的に検証する。15 Puzzleドメインを対象に、問題毎の探索ノード数と高速化効率の分析を行った。15 Puzzleのインスタンスはランダムに生成した100問を対象にした。これらの問題はA*探索で50～10000秒の実行時間で解ける問題である。
+
+\begin{figure}
+	\centering
+	\includegraphics[width=0.4\columnwidth]{order/efficiency.png}
+	\label{fig:david_speedup}
+	\caption{Efficiency of HDA*}
+\end{figure}
+
+HDA*は、逐次A*で1000秒程度の問題サイズであればほぼperfect linear speedupが得られるようである。それぞれの実行は一回の実行結果を比較しているので偶然的な要素を含む。例えば、bind effectによって偶然A*よりも速い順番で最適解を発見したインスタンスもある。しかし全体の傾向として右肩上がりに高速化効率が大きくなり、1000秒程度でperfect linear speedupに近づくことは確認出来る。
+
+アルゴリズムの性能評価は平均の実行時間や探索ノード数を論じることが殆どである。これは上述の偶然的な要素を取り除く為である。しかしながら、並列探索における高速化効率は問題サイズに対して依存する。本質的な高速化効率への知見を得るためには、平均化した高速化効率による議論ではなく、問題サイズ毎に検討をする必要がある。その為、次章の議論においては平均高速化効率ではなく、問題インスタンス毎の高速化を示す。
+
+
+\section{HDA*とPBNFの性能比較実験}
+\label{ch:analysis2}
+
+\subsection{先行研究における比較実験の問題点}
+
+Burnsらの比較実験には複数問題点がある\cite{Burns2010}。まず、HDA*のHash関数を汎用なHash関数によって実装しているが、KishimotoらはZobrist Hashを用いて実装した。Hash関数によってアルゴリズムの挙動は異なると考えられるが、その違いはまだ検証されていない。また、Burnsらの実験ではHDA*, PBNFのオープンリストをheapで実装している。多くのドメインはオープンリストをvectorで実装することが出来る。heapに対するアクセスが$O(logn)$であるのに対してvectorへのアクセスは$O(1)$である。Burnsらは別の論文で、15 Puzzleドメインを対象に、heapとvectorの比較実験を行い、vector実装が3倍程度高速であると結論した[引用](Burns 2012)。HDA*とPBNFは複数オープンリストがある。HDA*はスレッドの数に分割され、PBNFはNBlockの数に分割される。NBlockは15 Puzzleの場合3360個に分割される。両アルゴリズムは各オープンリストが小さくなるので、高速化率はそれぞれ逐次A*における３倍よりも小さくなると推測されるが、まだ検証はされていない。もう一つ重要な問題点として、ベンチマーク問題のサイズが小さいということが挙げられる。並列アルゴリズムは初期化に時間がかかる為、ある程度問題サイズが大きいものでないと実質的な高速化効率を正確に測ることが出来ない。Burnsらの用いた問題集はA*探索で10秒未満のものが殆どである。\ref{sec:speedup_size}で議論したように、HDA*の高速化効率は1000秒程度の問題まで向上し続け、ほぼperfect linear speedupになる。よって、ベンチマーク問題の問題サイズを考慮した比較・解析が必要である。
+
+\subsection{HDA*のチューニング}
+\label{sec:hdastar_tuning}
+
+前章にて、Naive Hashは分配に問題があると分かった。また、BurnsらはA*探索の15 Puzzleドメインにおける実装の最適化について議論を行い、vectorによるオープンリストがheap実装より3倍程度速いことを示した\cite{burns2012implementing}。Korfの100 puzzleをインスタンスにこれらの比較を行った\ref{korf1985depth}。Korf 100 Puzzleは様々な問題サイズのある問題集であり、最も難しい問題が逐次A*で1000秒程度である。\ref{fig:hdastar_tuning}が実行結果である。どの問題サイズにおいても、Zobrist Hashとvectorによる実装が一番速いと結論出来る。
+
+\begin{figure}
+	\centering
+	\includegraphics[width=0.4\columnwidth]{speedup/hdastar-8_tuning.png}
+	\label{fig:hdastar_tuning}
+	\caption{Tuning HDA*}
+\end{figure}
+
+\subsection{PBNFのチューニング}
+\label{sec:pbnf_tuning}
+
+HDA*においてvector実装がheap実装よりも速いことが分かった。PBNFにおいてもKorfの100 puzzleを対象に比較を行った。\ref{fig:pbnf_tuning}が実行結果である。PBNFにおいては、HDA*ほどの高速化が得られないようである。heapに対するアクセスは$O(logn)$であるのに対してvectorは$O(1)$である。PBNFは沢山のオープンリストに分割されていて、各オープンリストが小さい為に、$O(logn)$と$O(1)$の差が小さい為、vector実装による高速化が小さいと考えられる。
+
+\begin{figure}
+	\centering
+	\includegraphics[width=0.4\columnwidth]{speedup/safepbnf-8_tuning.png}
+	\label{fig:pbnf_tuning}
+	\caption{Tuning PBNF}
+\end{figure}
+
+\subsection{HDA*とPBNFの性能比較実験}
+
+\ref{sec:hdastar_tuning}より、HDA*はZobrist Hashingとvectorによる実装が最も速いと結論された。\ref{sec:pbnf_tuning}では、PBNFはvectorとheapによる実装で大きなパフォーマンスの違いは見られなかった。よって、vectorとheapの両方の実装で性能評価が必要である。\ref{fig:comparison}が実行結果である。
+
+比較するアルゴリズムはA*, Parallel A*, HDA*, SafePBNFである。
+対象とするドメインは15 Puzzle, Grid Pathfinding, TSPである。
+15 Puzzleはオープンリストをvectorで実装した場合と、heapで実装した場合を両方比較した。Grid Pathfindingはvectorで実装した。TSPはheapで実装した。
+
+実験環境は\ref{ch:analysis1}と同様である。マシンはIntel dual-quad Xeon 2.33GHz, 32GB memのものを使用した。OSはGNU/Linux Ubuntu 14.04である。スレッドはpthreadライブラリで実装した。
+
+\begin{figure}
+	\centering
+	\begin{subfigure}{0.4\columnwidth}
+		\includegraphics[width=\columnwidth]{eps/15puzzle_vector_walltime.png}
+		\label{fig:15puzzle_vector}
+		\caption{15 Puzzle with vector open list}
+	\end{subfigure}
+
+	\begin{subfigure}{0.4\columnwidth}
+		\includegraphics[width=\columnwidth]{speedup/15puzzle_heap.png}
+		\label{fig:15puzzle_vector}
+		\caption{15 Puzzle with heap open list}
+	\end{subfigure}
+
+	\begin{subfigure}{0.4\columnwidth}
+		\includegraphics[width=\columnwidth]{speedup/grid.png}
+		\label{fig:grid}
+		\caption{Grid Pathfinding}
+	\end{subfigure}
+
+	\begin{subfigure}{0.4\columnwidth}
+		\includegraphics[width=\columnwidth,draft]{speedup/tsp_20_mst_bug.png}
+		\label{fig:tsp_20_mst}
+		\caption{TSP with minimum spanning tree (20 cities)}
+	\end{subfigure}
+
+	\begin{subfigure}{0.4\columnwidth}
+		\includegraphics[width=\columnwidth,draft]{speedup/tsp_13_roundtrip_bug.png}
+		\label{fig:tsp_13_round}
+		\caption{TSP with Round-trip distance (13 cities)}
+	\end{subfigure}
+
+	\begin{subfigure}{0.4\columnwidth}
+		\includegraphics[width=\columnwidth,draft]{speedup/tsp_13_blind_bug.png}
+		\label{fig:tsp_13_blind}
+		\caption{TSP with blind (13 cities)}
+	\end{subfigure}
+	\label{fig:comparison}
+	\caption{HDA*とPBNFの実行速度の比較}
+\end{figure}%
+
+
+どのドメインでもHDA* vs. PBNFの探索ノード数はあまり変わらない。BurnsらがHDA*の探索オーバーヘッドを指摘したのはNaive Hashによる実装であったからであると結論出来るだろう。
+
+また、Parallel A*はA*よりも遅くなってしまう。高速化の為にはParallel A*の実装はあまりにシンプルであると考えられる。
+
+\ref{fig:15puzzle_heap}は15 Puzzleに対してheapで実装した場合の実行時間である。PBNFの利点として、オープンリストが小さい為、heapへのアクセスが速いということが挙げられる。しかし、この実験結果はheap実装においてもHDA*がPBNFよりもパフォーマンスに優れるということを示す。
+
+また、問題サイズが小さいとPBNFの方が有利である模様？
+    
+TODO: TSP
+TSP: PBNFはincumbent solutionを見つけるのが速いので早めにcutが出来る。だからTSPのようなsuboptimalな解がすぐに見つかり、多くの状態を足切り出来るドメインは得意である。
+
+\section{おわりに}
+
+本研究の貢献は大きく分けて２つある。
+
+\begin{enumerate}
+\item HDA*の探索オーバーヘッドの定性的な分析
+
+HDA*の探索オーバーヘッドの原因を３つに分類を行い、十分問題サイズが大きい場合に探索オーバーヘッドが無視出来る程度に小さいことを理論的に示した。また、高速化効率と探索オーバーヘッドを問題インスタンス毎に示すことで、それを実験的にも証明した。本実験は共有メモリ環境において行われた。理論的な分析から、分散メモリ環境においても同様の結果が得られると推測している。その実験的な実証は今後の研究課題である。また、本研究は新しい探索オーバーヘッドの分析手法を示した。これは他の並列探索においても有効な分析方法であると考えられる。
+\newline
+
+\item HDA*とPBNFの再評価
+
+先行研究の分析の問題点を指摘し、より正確かつミクロな分析を行った。実験により、マルチコア環境においても相応しい実装を行えばHDA*の方がパフォーマンスに優れるという結果を得た。また、本研究ではOptimal Searchを対象としたがSuboptimal Searchにおける実験は行っていない。Suboptimal Searchにおける性能比較は今後研究課題である。簡易ヒューリスティックを用いたTravelling Salesperson ProblemにおいてはPBNFの方がHDA*よりも速いという結果を得た。これはPBNFのheapの方が小さい為、heapへのアクセスが速い為ではないかと考えられる。heapは複数に分割することが出来る。分割heapを用いることで実数コストドメインにおけるHDA*, PBNFのパフォーマンスを向上させることが出来るかもしれない。これは今後の研究課題である。
+
+\end{enumerate}
+
+\section{謝辞}
+
+研究室の先輩方にはミーティングや中間発表などで沢山の有益なアドバイスを頂きました。特に同期の堀江君とは本当に毎日議論を重ね、沢山のことを学ばせて頂きました。指導教員である福永先生には、初めて情報科学に触る私に対してとても丁寧にご指導して頂きました。研究とは、情報科学とは、プログラミングとは、あらゆることを教えて頂きました。何よりも、研究が楽しいということを教えて頂いたことに深く感謝致します。修士課程でも、一つでも多くのことを学ばせて頂きたいと思います。
+
+\bibliographystyle{jplain}
+\bibliography{b}
+
+\end{document}

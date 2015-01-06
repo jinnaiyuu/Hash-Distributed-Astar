@@ -11,7 +11,7 @@ file=$1
 
 cat ${file} | sort -n -k 2 > ${file}.timesort
 
-cat ${file}.timesort | awk 'BEGIN{printf("0 0\n"); rate=0} NF>=2&&$2<9990{printf("%d %f\n", rate, $2); rate++;}' > ${file}.correctrate
+cat ${file}.timesort | awk 'BEGIN{printf("0 0\n"); pnum=0} NF>=2&&$2<9990{pnum++; printf("%d %f\n", pnum, $2)}' > ${file}.correctrate
 
 
 #gnuplot<<EOF
@@ -22,7 +22,7 @@ cat ${file}.timesort | awk 'BEGIN{printf("0 0\n"); rate=0} NF>=2&&$2<9990{printf
 
 # Cumilative wall time
 
-cat ${file} | awk 'BEGIN{printf("0 0\n"); cumwall=0.0} $2<9990{cumwall=cumwall + $2; printf("%d %f\n", NR, cumwall)}' > ${file}.correctrate.cum
+cat ${file} | awk 'BEGIN{printf("0 0\n"); cumwall=0} $2<9990{cumwall=cumwall + $2; printf("%d %f\n", NR, cumwall)}' > ${file}.correctrate.cum
 
 #gnuplot<<EOF
 #   set terminal postscript
@@ -33,7 +33,7 @@ cat ${file} | awk 'BEGIN{printf("0 0\n"); cumwall=0.0} $2<9990{cumwall=cumwall +
 
 cat ${file} | sort -n -k 3 > ${file}.expdsort
 
-cat ${file}.expdsort | awk 'BEGIN{printf("0 0\n"); pnum=1;} $2<9990{printf("%d %f\n", pnum, $3); pnum++;}' > ${file}.correctrate.expd
+cat ${file}.expdsort | awk 'BEGIN{printf("0 0\n"); pnum=1;} NF>=2&&$2<9990{pnum++;printf("%d %f\n", pnum, $3)}' > ${file}.correctrate.expd
 
 #gnuplot<<EOF
 #   set terminal postscript

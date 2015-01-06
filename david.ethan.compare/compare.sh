@@ -13,7 +13,7 @@ data9=$9
 ./each.sh $data1
 ./each.sh $data2
 ./each.sh $data3
-#./each.sh $data4
+./each.sh $data4
 #./each.sh $data5
 #./each.sh $data6
 #./each.sh $data7
@@ -22,19 +22,18 @@ data9=$9
 
 
 gnuplot<<EOF
-   set title "travelling salesperson problem 20 cities"
    set xlabel "node expanded"
    set ylabel "instances solved in given node expansion"
-#   set terminal postscript enhanced color font ',20'
-   set terminal png size 900,900 font ',15'
+   set terminal postscript enhanced color font ',15'
+#   set terminal png size 900,900 font ',15'
    set logscale x
    set key out vert
    set key center bottom
-   plot "${data1}.correctrate.expd" u 2:1 w steps title "$data1"
-   replot "${data2}.correctrate.expd" u 2:1 w steps title "$data2"
-   set output "${data1}.expd.png"
-   replot "${data3}.correctrate.expd" u 2:1 w steps title "$data3"
-#   replot "${data4}.correctrate.expd" u 2:1 w steps title "$data4"
+   plot "${data1}.correctrate.expd" u 2:1 w steps title "A*"
+   replot "${data2}.correctrate.expd" u 2:1 w steps title "Parallel A*"
+   replot "${data3}.correctrate.expd" u 2:1 w steps title "HDA*"
+   set output "${data1}_expd.eps"
+   replot "${data4}.correctrate.expd" u 2:1 w steps title "SafePBNF"
 #   replot "${data5}.correctrate.expd" u 2:1 w steps title "$data5"
 #   replot "${data6}.correctrate.expd" u 2:1 w steps title "$data6"
 #   replot "${data7}.correctrate.expd" u 2:1 w steps title "$data7"
@@ -43,19 +42,18 @@ gnuplot<<EOF
 EOF
 
 gnuplot<<EOF
-   set title "travelling salesperson problem 20 cities"
    set xlabel "walltime"
    set ylabel "instances solved in given time"
-#   set terminal postscript enhanced color font ',20'
-   set terminal png size 900,900 font ',15'
+   set terminal postscript enhanced color font ',15'
+#   set terminal png size 900,900 font ',15'
    set logscale x
    set key out vert
    set key center bottom
-   plot "${data1}.correctrate" u 2:1 w steps title "$data1"
-   replot "${data2}.correctrate" u 2:1 w steps title "$data2"
-   set output "${data1}.compare.png"
-   replot "${data3}.correctrate" u 2:1 w steps title "$data3"
-#   replot "${data4}.correctrate" u 2:1 w steps title "$data4"
+   plot "${data1}.correctrate" u 2:1 w steps title "A*"
+   replot "${data2}.correctrate" u 2:1 w steps title "Parallel A*"
+   replot "${data3}.correctrate" u 2:1 w steps title "HDA*"
+   set output "${data1}_walltime.eps"
+   replot "${data4}.correctrate" u 2:1 w steps title "SafePBNF"
 #   replot "${data5}.correctrate" u 2:1 w steps title "$data5"
 #   replot "${data6}.correctrate" u 2:1 w steps title "$data6"
 #   replot "${data7}.correctrate" u 2:1 w steps title "$data7"
