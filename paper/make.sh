@@ -1,6 +1,9 @@
 #!/bin/bash
 
-git commit paper.tex b.bib make.sh order/* eps/* others/* speedup/*
+date=`date +%m/%d\ %H:%M`
+
+git commit -m "autocommit $date" paper.tex b.bib make.sh
+git push
 
 platex -shell-escape paper.tex
 pbibtex paper.aux
