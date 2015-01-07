@@ -44,7 +44,7 @@
 #include "hdastar.hpp"
 #include "oshdastar.hpp"
 
-//#include "tiles24.hpp"
+#include "tiles24.hpp"
 
 //	 expd 32334 length 46   : 14 1 9 6 4 8 12 5 7 2 3 0 10 11 13 15
 //	 expd 909442 length 53  : 13 14 6 12 4 5 1 0 9 3 10 2 15 11 8 7
@@ -74,7 +74,7 @@ int main(int argc, const char *argv[]) {
 		int pnum = 0;
 
 //		printf("pnum = %d\n", pnum);
-//		if (strcmp(argv[1], "24") != 0) {
+		if (strcmp(argv[1], "24") != 0) {
 //			printf("15 puzzle");
 //			argv++;
 //			argc--;
@@ -199,8 +199,8 @@ int main(int argc, const char *argv[]) {
 			}
 
 			dffooter(stdout);
-//		} else { // 24 puzzle
-#ifdef PUZZLE
+		} else { // 24 puzzle
+//#ifdef PUZZLE
 			printf("24 Puzzle\n");
 			argv++;
 			argc--;
@@ -243,8 +243,8 @@ int main(int argc, const char *argv[]) {
 			dfpair(stdout, "total nodes expanded", "%lu", search->expd);
 			dfpair(stdout, "total nodes generated", "%lu", search->gend);
 			dfpair(stdout, "solution length", "%u", (unsigned int) path.size());
-#endif
-//		}
+//#endif
+		}
 	} catch (const Fatal &f) {
 		fputs(f.msg, stderr);
 		fputc('\n', stderr);
