@@ -1,10 +1,14 @@
 \documentclass{jsarticle}
+
 \renewcommand{\labelenumii}{\theenumii}
 \renewcommand{\theenumii}{\theenumi.\arabic{enumii}.}
+
 \usepackage[dvipdfmx,hiresbb]{graphicx}
 \usepackage{subcaption}
 \usepackage{algorithm}
 \usepackage{algorithmic}
+\usepackage{comment}
+
 \captionsetup[algorithm]{labelformat=empty}
 \begin{document}
 
@@ -84,7 +88,8 @@ A*探索アルゴリズム(A*, A*探索)はゴール状態までの距離を推�
 
 一般に並列探索は逐次A*よりも多くのノードの展開を必要とする。並列化に伴い余剰に探索したノードの割合を探索オーバーヘッドと呼ぶ。本研究では、探索オーバーヘッドは以下の式によって推定する。
 
-$SO := \frac{並列実行によって展開したノード数}{逐次実行によって展開したノード数}$
+$SO := \frac{並列実行によって展開したノード数}{逐次実行によって展開したノード数}$ %
+\newline
 
 $SO$は理想的には1になる。探索オーバーヘッドが1未満である場合は、並列実行による展開ノード数の方が小さいということを表す。
 \newline
@@ -103,10 +108,12 @@ $SO$は理想的には1になる。探索オーバーヘッドが1未満であ�
 これらのオーバーヘッドはトレードオフの関係にある。理論的にこれらを最小にすることは非常に困難である為、多くの場合は実験的に最適な実装にチューニングが行われる。
 
 並列化にかかるオーバーヘッドの計測の為には高速化効率(efficiency)という指標が用いられる。Efficiencyは以下のように定義される。
+\newline
 
 $Efficiency := \frac{逐次実行による実行時間}{並列実行による実行時間 \times スレッドの数}$ % 
 \newline
-本研究では探索オーバーヘッドと高速化効率を主な指標として用いる。
+
+Efficiencyが1の場合をPerfect linear speedupと呼ぶ。Efficiencyは理想的には1になるが、上述のオーバーヘッドがかかる為に多くの場合1未満である。Efficiencyが1を越える場合をSuperlinear speedupと呼ぶ。本研究では探索オーバーヘッドと高速化効率を主な指標として用いる。
 
 \subsection{Parallel A*}
 
@@ -143,9 +150,9 @@ $R_{i}$はランダムに生成される為、$Z(s)$は均等な確率で定義�
 
 \subsection{PBNF}
 
-BurnsらはParallel Best-NBlock-First (PBNF)を提案した\cite{Burns2010}。\ref{alg:pbnf}はPBNFのフレームワークの擬似コードである。PBNFは状態空間を複数のNBlockに分割する。それぞれのNBlockはオープンリストとクローズドリストを持つ。それぞれのスレッドは最も有望なノードを持つNBlockを占有し、探索を行う。また、占有したNBlockに隣接するNBlockをduplicate detection scopeに加える。他のスレッドのduplicate detection scopeに加わったNBlockを探索することは出来ない。あるNBlockが複数のduplicate detection scopeに入ることは出来る。自分の占有しているNBlockよりも有望なノードを持つNBlockが空いていれば、今探索していたNBlockとduplicate detection scopeを解放し、新しいNBlockを占有して探索を始める。あまりに頻繁なNBlockの切り替えが生じるのを防ぐために最小探索ノード数が設定される。これはチューニングの必要なパラメータである。NBlockはスレッドに占有されるので、オープンリスト・クローズドリストに相互排他ロックをかける必要がない。必要なロックは空いているNBlockを保存するheapのみである。
+BurnsらはParallel Best-NBlock-First (PBNF)を提案した\cite{Burns2010}。\ref{alg:pbnf}はPBNFのフレームワークの擬似コードである。PBNFは状態空間を複数のNBlockに分割する。それぞれのNBlockはオープンリストとクローズドリストを持つ。それぞれのスレッドは最も有望なノードを持つNBlockを占有し、探索を行う。また、占有したNBlockに隣接するNBlockをスレッドのinterference scopeに加える。他のスレッドのinterference scopeに加わったNBlockを探索することは出来ない。同一のNBlockは複数のinterference scopeに入ることが出来る。自分の占有しているNBlockよりも有望なノードを持つNBlockが空いていれば、今探索していたNBlockとinterference scopeを解放し、新しいNBlockを占有して探索を始める。あまりに頻繁なNBlockの切り替えが生じるのを防ぐために最小探索ノード数が設定される。これはチューニングの必要なパラメータである。NBlockはスレッドに占有されるので、オープンリスト・クローズドリストに相互排他ロックをかける必要がない。必要なロックは空いているNBlockを保存するheapのみである。
 
-PBNFはLivelockが起こる可能性がある。Livelockは、複数のスレッドが同じ資源を解放する処理を実行しているにも拘らず、どちらのスレッドも資源が獲得出来ない状況である。あるNBlockが複数のスレッドのduplicate detection scopeに入っている場合、どのスレッドもそのNBlockを探索することが出来ない状態になりうる。Burnsらはこの問題を解決したSafePBNFを提案し、SafePBNFにおいてLivelockが発生しないことを証明した。SafePBNFは、あるNBlockが複数のスレッドのduplicate detection scopeに入っている場合、このNBlockをhotとする。hotなNBlockを探索する要求があった場合、そのNBlockをduplicate detection scopeに含むスレッドは現在探索しているNBlockを解放する。これによって、Livelockを防ぐことが出来る。
+PBNFはLivelockが起こる可能性がある。Livelockは、複数のスレッドが同じ資源を解放する処理を実行しているにも拘らず、どちらのスレッドも資源が獲得出来ない状況である。あるNBlockが複数のスレッドのinterference scopeに入っている場合、どのスレッドもそのNBlockを探索することが出来ない状態になりうる。Burnsらはこの問題を解決したSafePBNFを提案し、SafePBNFにおいてLivelockが発生しないことを証明した。SafePBNFは、あるNBlockが複数のスレッドのinterference scopeに入っている場合、このNBlockをhotとする。hotなNBlockを探索する要求があった場合、そのNBlockをinterference scopeに含むスレッドは現在探索しているNBlockを解放する。これによって、Livelockを防ぐことが出来る。
 
 Livelockの可能性のあるアルゴリズムは完全ではない。アルゴリズムが完全であるとは、健全性と停止性を満たすことである。健全性とはアルゴリズムの結果が正しいことであり、停止性とはどのような入力に対しても有限時間内に結果を出力して停止することである。PBNFはLivelockが生じる可能性があるので、停止性を満たさない。本研究で扱うA*, Parallel A*, HDA*は全て完全なアルゴリズムである。よって、同じ完全なアルゴリズムであるSafePBNFを比較の対象とする。
 
@@ -185,6 +192,7 @@ Livelockの可能性のあるアルゴリズムは完全ではない。アルゴ
 Sliding-tile Puzzleは四角い枠にタイルが敷き詰められている。枠には一ヶ所タイルのない場所があり、そこに縦と横からタイルをスライドすることが出来る。Sliding-tile Puzzleは、タイルのスライドによって初期状態から特定のゴール状態まで動かす問題である。15 Puzzleの状態空間の大きさはおよそ$10^{13}$状態、24 Puzzleの状態空間はおよそ$10^{25}$状態である。
 
 本実験では15 Puzzleのヒューリスティック関数はマンハッタン距離を用いた。マンハッタン距離ヒューリスティックは、各タイルのゴール状態での位置までのマンハッタン距離の総和で求められる。タイルは同時に２つ動かすことは出来ない。また、あるタイルがゴール位置に動かす為には少なくともマンハッタン距離の回数だけ動かす必要がある。よって、マンハッタン距離ヒューリスティックはadmissibleなヒューリスティック関数である。
+15 Puzzleはノードの展開が非常に高速なドメインである。ノードの展開が速いドメインは並列化によって高速化することが困難である。なぜならば、展開が高速である分、同期オーバーヘッドや通信オーバーヘッドによる遅延の影響が大きくなるからである。15 Puzzleドメインにおいて高速化が可能であれば、多くのドメインにおいても同様に高速化が可能であると考えられる。
 
 24 Puzzleのヒューリスティック関数はDisjoint pattern database heuristicsを用いた\cite{Korf2002}。これはCulbersonらの提案したPattern databasesを拡張したヒューリスティックである。Pattern database heuristicsは問題の部分問題に対する最適解のコストを予めデータベースに記録し、ヒューリスティック関数として用いる手法である\cite{culberson1998pattern}。Disjoint pattern databasesは複数のPattern databaseを用いることで複数の部分問題のコストの和をヒューリスティック関数とする。Sliding-tile Puzzleにおいては、タイルを複数のグループに分ける。同じタイルは２つ以上のグループに含まれない。それぞれのグループにおいて、そのグループ内のタイルがゴール位置にたどり着く為の最小コストを求め、データベースに保存する。ある状態に対して、それぞれのグループがゴール位置にたどり着く為の最小コストをデータベースから読み、それらの和をヒューリスティックの値とする。この値は少なくともマンハッタン距離以上である。同じグループ間の相互作用を考慮するので、多くの場合はマンハッタン距離よりも大きい。
 
@@ -212,7 +220,7 @@ Kishimotoらはf値によって探索ノードの分類を行うことでHDA*の
 \subsection{HDA*のノードの探索順}
 
 探索オーバーヘッドは、A*と探索順が異なることが原因であると考えることが出来る。ノードの展開する順番がA*と完全に一致するならば、探索オーバーヘッドは全く生じない。裏を返せば、A*と探索順の異なる場合に探索オーバーヘッドが生じると考えられる。よって、HDA*の状態の探索順をA*のそれと比較をすることで、どのようなパターンで探索オーバーヘッドが生じるのかを分析することが出来ると考えられる。
-本実験では15 Puzzleドメインを対象にA*とHDA*においてある状態が探索された順番を記録した。インスタンスはランダムに生成した100問を対象とした。実験環境はIntel dual-quad Xeon 3.33GHz, 32GB mem, OSはGNU/Linux Ubuntu 14.04である。本実験では15 Puzzleドメインに最適化したドメイン依存のコードを実装した。KishimotoらはMPI message passing libraryでプロセス間通信を実装したが、本実験では共有メモリ環境においてMPIよりも高速なpthreadライブラリを用いた。オープンリストはvectorで実装した。なお、オープンリストをheapで実装した場合も同様の結果が得られた。
+本実験では15 Puzzleドメインを対象にA*とHDA*においてある状態が探索された順番を記録した。インスタンスはランダムに生成した100問を対象とした。実験環境はIntel dual-quad Xeon 2.33GHz, 32GB mem, OSはGNU/Linux Ubuntu 14.04である。本実験では15 Puzzleドメインに最適化したドメイン依存のコードを実装した。KishimotoらはMPI message passing libraryでプロセス間通信を実装したが、本実験では共有メモリ環境においてMPIよりも高速なpthreadライブラリを用いた。オープンリストはvectorで実装した。なお、オープンリストをheapで実装した場合も同様の結果が得られた。
 
 
 \begin{figure}
@@ -250,7 +258,7 @@ Kishimotoらはf値によって探索ノードの分類を行うことでHDA*の
 \subsection{探索オーバーヘッドの分類}
 
 HDA*のノードの探索順は大きな流れとしてはA*のそれと一致するようである。しかしながら「幅」が存在し、その範囲内で探索順が前後する。また、この幅はスレッド数が大きくなると広がる。この幅は実行時間を通して大きくなっていくが、探索ノード数が増加する割合に対して小さい。その為、問題サイズが大きいほど、探索ノード数に対する相対的な幅の大きさは小さくなる。
-また、探索の冒頭に探索順が大きくA*から外れる部分がある。これは初期化の終わっていないスレッドがある時間帯に当たる。初期化の終わっていないスレッドがある場合限られた探索空間の中で展開を進めることになる。探索空間が異なるので、探索順もA*から外れてしまうと考えられる。また、ここで探索されたノードは殆どが重複したノードになる。限られた探索空間内を迂回して展開したノードであるので、殆どのノードは最短ではない経路で生成される為である。\ref{fig:order:delay}はノードの展開に無関係の計算を挿入した場合の実行結果である。は見られないので、ノードの展開速度が十分に速い場合に起こると考えられる。
+また、探索の冒頭に探索順が大きくA*から外れる部分がある。これは初期化の終わっていないスレッドがある時間帯に当たる。初期化の終わっていないスレッドがある場合限られた探索空間の中で展開を進めることになる。探索空間が異なるので、探索順もA*から外れてしまうと考えられる。また、ここで探索されたノードは殆どが重複したノードになる。限られた探索空間内を迂回して展開したノードであるので、殆どのノードは最短ではない経路で生成される為である。\ref{fig:order:delay}はノードの展開に無関係の計算を挿入し、展開速度をた場合の実行結果である。図のインスタンスにおいては39854.8ノード/秒の展開速度である。ノードの展開が遅い場合にこの現象は起こらないという結果を得た。
 
 HDA*においては、ある状態に対して複数の経路があり、より長い経路が先に探索された場合に重複が生じる。しかし15 Puzzleドメインではほとんど重複は生じなかった。生じた重複はほぼBurst Effectで生じたものである。15 Puzzleの探索空間はグラフというより木構造に近く、探索中に同じ状態を生成することは少ないドメインである。その為、15 Puzzleでは重複は殆ど発生しなかったのだと考えられる。Kobayashiらがノードの重複が問題となるマルチプルシーケンス問題において、ノードの重複による探索オーバーヘッドついて議論しているのでこちらを参照されたい\ref{Kobayashi2011evaluations}。
 
@@ -264,7 +272,7 @@ HDA*とA*の探索順が幅の中で前後する為に生じる探索オーバ�
 
 \item Burst Effect
 \newline
-スレッドの初期化にかかる時間の為に生じる探索オーバーヘッド。Burst Effectは探索の冒頭にしか生じない為、問題サイズが大きいほど、Burst Effectによる探索オーバーヘッドの割合は小さくなる。
+スレッドの初期化にかかる時間の為に生じる探索オーバーヘッド。Burst Effectは探索の冒頭にしか生じない為、問題サイズが大きいほど、Burst Effectによる探索オーバーヘッドの割合は小さくなる。この現象はノードの展開速度が速い場合に起こると考えられる。
 \newline
 
 \item Duplicate
@@ -351,12 +359,13 @@ HDA*は、逐次A*で1000秒程度の問題サイズであればほぼperfect li
 \subsection{先行研究における比較実験の問題点}
 
 Burnsらの比較実験には複数問題点がある\cite{Burns2010}。まず、HDA*のHash関数を汎用なHash関数によって実装しているが、KishimotoらはZobrist Hashを用いて実装した。Hash関数によってアルゴリズムの挙動は異なると考えられるが、その違いは検証されていない。また、Burnsらの実験ではHDA*, PBNFのオープンリストをheapで実装している。多くのドメインはオープンリストをvectorで実装することが出来る。heapに対するアクセスが$O(logn)$であるのに対してvectorへのアクセスは$O(1)$である。Burnsらは別の論文で、15 Puzzleドメインを対象に、heapとvectorの比較実験を行い、vector実装が3倍程度高速であると結論した\cite{burns2012implementing}。HDA*とPBNFは複数オープンリストがある。HDA*はスレッドの数に分割され、PBNFはNBlockの数に分割される。NBlockは15 Puzzleの場合3360個に分割する。両アルゴリズムは各オープンリストが小さくなるので、高速化率はそれぞれ逐次A*における３倍よりも小さくなると推測されるが、まだ検証はされていない。もう一つ重要な問題点として、ベンチマーク問題のサイズが小さいということが挙げられる。\ref{sec:speedup_size}で議論したように、HDA*の高速化効率は1000秒程度の問題まで向上し続け、ほぼperfect linear speedupになる。しかしながらBurnsらの用いた問題集はA*探索で10秒未満のものが殆どである。よって、ベンチマーク問題の問題サイズを考慮した比較・解析が必要である。
-以下の実験の実験環境は\ref{sec:analysis1}章と同様である。マシンはIntel dual-quad Xeon 2.33GHzプロセッサ, 32GB RAMのものを使用した。OSはGNU/Linux Ubuntu 14.04である。スレッドはpthreadライブラリで実装した。
+\newline
+以下の実験の実験環境は\ref{sec:analysis1}章と同様である。マシンはIntel dual-quad Xeon 2.33GHzプロセッサ, 32GB RAMのものを使用した。OSはGNU/Linux Ubuntu 14.04である。スレッドはpthreadライブラリで実装した。なお、本実験は様々な問題ドメインとアルゴリズムを比較するために、\ref{sec:analysis1}章とは異なる実装のコードを利用している。
 
 \subsection{HDA*のチューニング}
 \label{sec:hdastar_tuning}
 
-前章にて、Naive Hashは分配に問題があると分かった。また、BurnsらはA*探索の15 Puzzleドメインにおける実装の最適化について議論を行い、vectorによるオープンリストがheap実装より3倍程度速いことを示した\cite{burns2012implementing}。Korfの100 puzzleをインスタンスにこれらの比較を行った\ref{korf1985depth}。Korf 100 Puzzleは様々な問題サイズのある問題集であり、最も難しい問題が逐次A*で1000秒程度である。
+前章にて、Naive Hashは分配に問題があると分かった。また、BurnsらはA*探索の15 Puzzleドメインにおける実装の最適化について議論を行い、vectorによるオープンリストがheap実装より3倍程度速いことを示した\cite{burns2012implementing}。Korfの100 puzzleをインスタンスにこれらの比較を行った\ref{korf1985depth}。実行時間の上限は2000秒とした。
 
 \begin{figure}
 	\centering
@@ -379,7 +388,7 @@ Burnsらの比較実験には複数問題点がある\cite{Burns2010}。まず�
 \label{sec:pbnf_tuning}
 
 HDA*においてvector実装がheap実装よりも速いことが分かった。PBNFにおいてもKorfの100 puzzleを対象に比較を行った。\ref{fig:pbnf_tuning}が実行結果である。PBNFにおいては、HDA*ほどの高速化が得られないようである。heapに対するアクセスは$O(logn)$であるのに対してvectorは$O(1)$である。PBNFは沢山のオープンリストに分割されていて、各オープンリストが小さい為に、$O(logn)$と$O(1)$の差が小さい為、vector実装による高速化が小さいと考えられる。
-PBNFのパラメータとして、NBlockの個数と最小探索ノード数がある。BurnsらはSliding-tile puzzle問題においてNBlock = 3360, 最小探索ノード数 = 8とした場合に最適であると示した。Burnsらの実験はdual quad-core Intel Xeon E5320 1.86GHzプロセッサ、16 GB RAMである。本実験の実験環境と類似している為、Burnsらの提案したパラメータを用いた。
+PBNFのパラメータとして、NBlockの個数と最小探索ノード数がある。BurnsらはSliding-tile puzzle問題においてNBlock = 3360, 最小探索ノード数 = 8とした場合に最適であると示した。Burnsらの実験はdual quad-core Intel Xeon E5320 1.86GHzプロセッサ、16 GB RAMである。本実験の実験環境と類似している為、Burnsらの提案したパラメータを用いた。実行時間の上限は2000秒とした。
 
 
 \begin{figure}
@@ -398,7 +407,7 @@ PBNFのパラメータとして、NBlockの個数と最小探索ノード数が�
 
 \subsection{HDA*とPBNFの性能比較実験}
 
-\ref{sec:hdastar_tuning}より、HDA*はZobrist Hashingとvectorによる実装が最も速いと結論された。\ref{sec:pbnf_tuning}では、PBNFはvectorとheapによる実装で大きなパフォーマンスの違いは見られなかった。よって、vectorとheapの両方の実装で性能評価が必要である。\ref{fig:comparison}が実行結果である。
+\ref{sec:hdastar_tuning}より、HDA*はZobrist Hashingとvectorによる実装が最も速いと結論された。\ref{sec:pbnf_tuning}では、PBNFはvectorとheapによる実装で大きなパフォーマンスの違いは見られなかった。よって、vectorとheapの両方の実装で性能評価が必要である。\ref{fig:comparison}が実行結果である。どのドメイン・インスタンスも実行時間の上限は2000秒とした。
 
 \begin{figure}
 	\centering
@@ -407,26 +416,32 @@ PBNFのパラメータとして、NBlockの個数と最小探索ノード数が�
 		\label{fig:15puzzle_vector}
 		\caption{15 Puzzle (vector)}
 	\end{subfigure}
-
 	\begin{subfigure}{0.6\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/15puzzle_heap_walltime.pdf}
 		\label{fig:15puzzle_vector}
 		\caption{15 Puzzle (heap)}
 	\end{subfigure}
-
+	\begin{subfigure}{0.6\columnwidth}
+		\includegraphics[width=\columnwidth]{eps/24_walltime.pdf}
+		\label{fig:24puzzle_vector}
+		\caption{24 Puzzle (vector)}
+	\end{subfigure}
 	\begin{subfigure}{0.6\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/grid_walltime.pdf}
 		\label{fig:grid}
 		\caption{Grid Pathfinding (vector)}
 	\end{subfigure}
-\end{figure}%
-\begin{figure}
 	\begin{subfigure}{0.6\columnwidth}
-		\includegraphics[width=\columnwidth,draft]{ruby.png}
+		\includegraphics[width=\columnwidth]{eps/tsp_20_walltime.pdf}
 		\label{fig:tsp_20_mst}
-		\caption{20 Cities TSP with minimum spanning tree (heap)}
+		\caption{TSP (heap)}
 	\end{subfigure}
+	\label{fig:comparison}
+	\caption{HDA*とPBNFの実行速度の比較}
+\end{figure}%
 
+\begin{comment}
+\begin{figure}
 	\begin{subfigure}{0.6\columnwidth}
 		\includegraphics[width=\columnwidth,draft]{ruby.png}
 		\label{fig:tsp_13_round}
@@ -441,20 +456,26 @@ PBNFのパラメータとして、NBlockの個数と最小探索ノード数が�
 	\label{fig:comparison}
 	\caption{HDA*とPBNFの実行速度の比較}
 \end{figure}%
-
+\end{comment}
 
 \begin{figure}
 	\centering
 	\begin{subfigure}{0.6\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/15puzzle_vector_expd.pdf}
 		\label{fig:15puzzle_vector_expd}
-		\caption{15 Puzzle with vector open list}
+		\caption{15 Puzzle (vector)}
 	\end{subfigure}
 
 	\begin{subfigure}{0.6\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/15puzzle_heap_expd.pdf}
 		\label{fig:15puzzle_vector_expd}
-		\caption{15 Puzzle with heap open list}
+		\caption{15 Puzzle (heap)}
+	\end{subfigure}
+
+	\begin{subfigure}{0.6\columnwidth}
+		\includegraphics[width=\columnwidth]{eps/24_expd.pdf}
+		\label{fig:24puzzle_vector_expd}
+		\caption{24 Puzzle (vector)}
 	\end{subfigure}
 
 	\begin{subfigure}{0.6\columnwidth}
@@ -462,14 +483,17 @@ PBNFのパラメータとして、NBlockの個数と最小探索ノード数が�
 		\label{fig:grid_expd}
 		\caption{Grid Pathfinding}
 	\end{subfigure}
-\end{figure}%
-\begin{figure}
 	\begin{subfigure}{0.6\columnwidth}
-		\includegraphics[width=\columnwidth,draft]{ruby.png}
+		\includegraphics[width=\columnwidth]{eps/tsp_20_expd.pdf}
 		\label{fig:tsp_20_mst_expd}
-		\caption{TSP with minimum spanning tree (20 cities)}
+		\caption{TSP (heap)}
 	\end{subfigure}
+	\label{fig:comparison_expd}
+	\caption{HDA*とPBNFの探索ノード数の比較}
+\end{figure}%
 
+\begin{comment}
+\begin{figure}
 	\begin{subfigure}{0.6\columnwidth}
 		\includegraphics[width=\columnwidth,draft]{ruby.png}
 		\label{fig:tsp_13_round_expd}
@@ -484,15 +508,14 @@ PBNFのパラメータとして、NBlockの個数と最小探索ノード数が�
 	\label{fig:comparison_expd}
 	\caption{HDA*とPBNFの探索ノード数の比較}
 \end{figure}%
+\end{comment}
 
 どのドメインでもHDA* vs. PBNFの探索ノード数はあまり変わらない。\ref{sec:analysis1}章の結論とこの結果を踏まえると、BurnsらがHDA*の探索オーバーヘッドを指摘したのはNaive Hashによる実装であったからであると結論出来るだろう。また、Parallel A*はどのドメインにおいてもA*よりも遅くなってしまう。Parallel A*は非常にシンプルな並列アルゴリズムであるが、探索の高速化はもたらさない。
 
-\ref{fig:15puzzle_heap}は15 Puzzleに対してheapで実装した場合の実行時間である。PBNFの利点として、オープンリストが小さい為、heapへのアクセスが速いということが挙げられる。しかし、この実験結果はheap実装においてもHDA*がPBNFよりもパフォーマンスに優れるということを示す。
+\ref{fig:15puzzle_heap}は15 Puzzleに対してheapで実装した場合の実行時間である。PBNFの利点として、Burnsらはオープンリストが小さい為、heapへのアクセスが速いということと挙げた\cite{Burns2010}。しかし、この実験結果はheap実装においてもHDA*がPBNFよりもパフォーマンスに優れるということを示す。
 
-また、問題サイズが小さいとPBNFの方が有利である模様？
-    
-TODO: TSP
-TSP: PBNFはincumbent solutionを見つけるのが速いので早めにcutが出来る。だからTSPのようなsuboptimalな解がすぐに見つかり、多くの状態を足切り出来るドメインは得意である。
+どのドメインにも共通する傾向として、実行時間が5秒未満程度の小さい問題に対してはHDA*よりもPBNFの方が優れる場合が多い。特にGrid Pathfindingにおいて顕著に見られる。また、この時HDA*の展開ノード数はPBNFよりも大きい。\ref{sec:analysis1}章で述べたように、HDA*は実行時間の冒頭と末尾に探索オーバーヘッドがある。実行時間が短い場合、これらのオーバーヘッドの割合が大きくなる。よって、小さな問題インスタンスに対しては探索オーバーヘッドが大きく、PBNFの方が速いと考えられる。
+
 
 \section{おわりに}
 
