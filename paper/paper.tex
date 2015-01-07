@@ -372,7 +372,7 @@ Burnsらの比較実験には複数問題点がある\cite{Burns2010}。まず�
 \subsection{HDA*のチューニング}
 \label{sec:hdastar_tuning}
 
-前章にて、Naive Hashは分配に問題があると分かった。また、BurnsらはA*探索の15 Puzzleドメインにおける実装の最適化について議論を行い、vectorによるオープンリストがheap実装より3倍程度速いことを示した\cite{burns2012implementing}。Korfの100 puzzleをインスタンスにこれらの比較を行った\ref{korf1985depth}。実行時間の上限は2000秒とした。
+前章にて、Naive Hashは分配に問題があると分かった。また、BurnsらはA*探索の15 Puzzleドメインにおける実装の最適化について議論を行い、vectorによるオープンリストがheap実装より3倍程度速いことを示した\cite{burns2012implementing}。Korfの100 puzzleをインスタンスにこれらの比較を行った\ref{korf1985depth}。並列アルゴリズムは全て8スレッドの実行による。実行時間の上限は2000秒とした。
 
 \begin{figure}
 	\centering
@@ -397,7 +397,7 @@ Burnsらの比較実験には複数問題点がある\cite{Burns2010}。まず�
 \label{sec:pbnf_tuning}
 
 HDA*においてvector実装がheap実装よりも速いことが分かった。SafePBNFにおいてもKorfの100 puzzleを対象に比較を行った。\ref{fig:pbnf_tuning}が実行結果である。PBNFにおいては、HDA*ほどの高速化が得られないようである。heapに対するアクセスは$O(logn)$であるのに対してvectorは$O(1)$である。SafePBNFは沢山のオープンリストに分割されていて、各オープンリストが小さく、$O(logn)$と$O(1)$の差が小さい為、vector実装による高速化が小さいと考えられる。
-SafePBNFのパラメータとして、NBlockの個数と最小探索ノード数がある。BurnsらはSliding-tile puzzle問題においてNBlock = 3360, 最小探索ノード数 = 8とした場合に最適であると示した。Burnsらの実験はdual quad-core Intel Xeon E5320 1.86GHzプロセッサ、16 GB RAMである。本実験の実験環境と類似している為、Burnsらの提案したパラメータを用いた。実行時間の上限は2000秒とした。
+SafePBNFのパラメータとして、NBlockの個数と最小探索ノード数がある。BurnsらはSliding-tile puzzle問題においてNBlock = 3360, 最小探索ノード数 = 8とした場合に最適であると示した。Burnsらの実験はdual quad-core Intel Xeon E5320 1.86GHzプロセッサ、16 GB RAMである。本実験の実験環境と類似している為、Burnsらの提案したパラメータを用いた。並列アルゴリズムは全て8スレッドの実行による。実行時間の上限は2000秒とした。
 
 
 \begin{figure}
@@ -418,7 +418,7 @@ SafePBNFのパラメータとして、NBlockの個数と最小探索ノード数
 
 \subsection{HDA*とPBNFの性能比較実験}
 
-\ref{sec:hdastar_tuning}より、HDA*はZobrist Hashingとvectorによる実装が最も速いと結論された。\ref{sec:pbnf_tuning}では、SafePBNFはvectorとheapによる実装で大きなパフォーマンスの違いは見られなかった。よって、vectorとheapの両方の実装で性能評価が必要である。\ref{fig:comparison}が実行結果である。どのドメイン・インスタンスも実行時間の上限は2000秒とした。
+\ref{sec:hdastar_tuning}より、HDA*はZobrist Hashingとvectorによる実装が最も速いと結論された。\ref{sec:pbnf_tuning}では、SafePBNFはvectorとheapによる実装で大きなパフォーマンスの違いは見られなかった。よって、vectorとheapの両方の実装で性能評価が必要である。並列アルゴリズムは全て8スレッドの実行による。どのドメイン・インスタンスも実行時間の上限は2000秒とした。
 
 \begin{figure}
 %	\centering
@@ -486,14 +486,15 @@ SafePBNFのパラメータとして、NBlockの個数と最小探索ノード数
 	\label{fig:comparison_expd}
 \end{figure}%
 
+特に実行時間の大きい問題ドメイン・インスタンスにおいて、HDA*はSafePBNFよりも実行速度で勝っている。
 
-どのドメインでもHDA* vs. PBNFの探索ノード数はあまり変わらない。\ref{sec:analysis1}章の結論とこの結果を踏まえると、BurnsらがHDA*の探索オーバーヘッドを指摘したのはNaive Hashによる実装であったからであると結論出来るだろう。
+どのドメインでもHDA* vs. SafePBNFの探索ノード数はあまり変わらない。\ref{sec:analysis1}章の結論とこの結果を踏まえると、BurnsらがHDA*の探索オーバーヘッドを指摘したのはNaive Hashによる実装であったからであると結論出来るだろう。
 
 Parallel A*はどのドメインにおいてもA*よりも遅くなってしまう。Parallel A*は非常にシンプルな並列アルゴリズムであるが、探索の高速化はもたらさない。
 
-\ref{fig:15puzzle_heap}は15 Puzzleに対してheapで実装した場合の実行時間である。PBNFの利点として、Burnsらはオープンリストが小さい為、heapへのアクセスが速いということと挙げた\cite{Burns2010}。しかし、この実験結果はheap実装においてもHDA*がPBNFよりもパフォーマンスに優れるということを示す。
+\ref{fig:15puzzle_heap}は15 Puzzleに対してheapで実装した場合の実行時間である。SafePBNFの利点として、Burnsらはオープンリストが小さい為、heapへのアクセスが速いということと挙げた\cite{Burns2010}。しかし、この実験結果はheap実装においてもHDA*SafePBNFよりもパフォーマンスに優れるということを示す。
 
-どのドメインにも共通する傾向として、実行時間が5秒未満程度の小さい問題に対してはHDA*よりもPBNFの方が優れる場合が多い。特にGrid Pathfindingにおいて顕著に見られる。また、この時HDA*の展開ノード数はPBNFよりも大きい。\ref{sec:analysis1}章で述べたように、HDA*は実行時間の冒頭と末尾に探索オーバーヘッドがある。実行時間が短い場合、これらのオーバーヘッドの割合が大きくなる。よって、小さな問題インスタンスに対しては探索オーバーヘッドが大きく、PBNFの方が速いと考えられる。
+どのドメインにも共通する傾向として、実行時間が5秒未満程度の小さい問題に対してはHDA*よりもSafePBNFの方が優れる場合が多い。特にGrid Pathfindingにおいて顕著に見られる。また、この時HDA*の展開ノード数はSafePBNFよりも大きい。\ref{sec:analysis1}章で述べたように、HDA*は実行時間の冒頭と末尾に探索オーバーヘッドがある。実行時間が短い場合、これらのオーバーヘッドの割合が大きくなる。よって、小さな問題インスタンスに対しては探索オーバーヘッドが大きく、SafePBNFの方が速いと考えられる。
 
 
 \section{おわりに}
