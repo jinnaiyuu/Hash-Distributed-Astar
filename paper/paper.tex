@@ -3,6 +3,8 @@
 \renewcommand{\theenumii}{\theenumi.\arabic{enumii}.}
 \usepackage[dvipdfmx,hiresbb]{graphicx}
 \usepackage{subcaption}
+\usepackage{algorithm}
+\usepackage{algorithmic}
 \begin{document}
 
 \tableofcontents
@@ -134,7 +136,7 @@ $R_{i}$はランダムに生成される為、$Z(x)$は均等な確率で定義�
 
 \subsection{PBNF}
 
-TODO: 
+
 
 \section{問題ドメイン}
 \subsection{Sliding-tile Puzzle (15 Puzzle, 24 Puzzle)}
@@ -150,7 +152,7 @@ Sliding-tile Puzzleは四角い枠にタイルが敷き詰められている。�
 
 本実験では15 Puzzleのヒューリスティック関数はマンハッタン距離を用いた。マンハッタン距離ヒューリスティックは、各タイルのゴール状態での位置までのマンハッタン距離の総和で求められる。タイルは同時に２つ動かすことは出来ない。また、あるタイルがゴール位置に動かす為には少なくともマンハッタン距離の回数だけ動かす必要がある。よって、マンハッタン距離ヒューリスティックはadmissibleなヒューリスティック関数である。
 
-24 Puzzleのヒューリスティック関数はdisjoint pattern databases heuristicsを用いた。
+24 Puzzleのヒューリスティック関数はDisjoint pattern database heuristicsを用いた\cite{Korf2002}。これはCulbersonらの提案したPattern databasesを拡張したヒューリスティックである。Pattern database heuristicsは問題の部分問題に対する最適解のコストを予めデータベースに記録し、ヒューリスティック関数として用いる手法である\cite{culberson1998pattern}。Disjoint pattern databasesは複数のPattern databaseを用いることで複数の部分問題のコストの和をヒューリスティック関数とする。Sliding-tile Puzzleにおいては、タイルを複数のグループに分ける。同じタイルは２つ以上のグループに含まれない。それぞれのグループにおいて、そのグループ内のタイルがゴール位置にたどり着く為の最小コストを求め、データベースに保存する。ある状態に対して、それぞれのグループがゴール位置にたどり着く為の最小コストをデータベースから読み、それらの和をヒューリスティックの値とする。この値は少なくともマンハッタン距離以上である。同じグループ間の相互作用を考慮するので、多くの場合はマンハッタン距離よりも大きい。
 
 
 \subsection{Grid Pathfinding}
