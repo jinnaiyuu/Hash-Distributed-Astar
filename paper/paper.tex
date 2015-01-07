@@ -259,7 +259,7 @@ Kishimotoらはf値によって探索ノードの分類を行うことでHDA*の
 \subsection{探索オーバーヘッドの分類}
 
 HDA*のノードの探索順は大きな流れとしてはA*のそれと一致するようである。しかしながら「幅」が存在し、その範囲内で探索順が前後する。また、この幅はスレッド数が大きくなると広がる。この幅は実行時間を通して大きくなっていくが、探索ノード数が増加する割合に対して小さい。その為、問題サイズが大きいほど、探索ノード数に対する相対的な幅の大きさは小さくなる。
-また、探索の冒頭に探索順が大きくA*から外れる部分がある。これは初期化の終わっていないスレッドがある時間帯に当たる。初期化の終わっていないスレッドがある場合限られた探索空間の中で展開を進めることになる。探索空間が異なるので、探索順もA*から外れてしまうと考えられる。また、ここで探索されたノードは殆どが重複したノードになる。限られた探索空間内を迂回して展開したノードであるので、殆どのノードは最短ではない経路で生成される為である。\ref{fig:order:delay}はノードの展開に無関係の計算を挿入し、展開速度をた場合の実行結果である。図のインスタンスにおいては39854.8ノード/秒の展開速度である。ノードの展開が遅い場合にこの現象は起こらないという結果を得た。
+また、探索の冒頭に探索順が大きくA*から外れる部分がある。これは初期化の終わっていないスレッドがある時間帯に当たる。初期化の終わっていないスレッドがある場合限られた探索空間の中で展開を進めることになる。探索空間が異なるので、探索順もA*から外れてしまうと考えられる。また、ここで探索されたノードは殆どが重複したノードになる。限られた探索空間内を迂回して展開したノードであるので、殆どのノードは最短ではない経路で生成される為である。\ref{fig:order:delay}はノードの展開に無関係の計算を挿入し、展開速度をた場合の実行結果である。\ref{fig:order:delay}の実行の展開速度は39854.8ノード/秒である。ノードの展開が遅い場合にこの現象は起こらないという結果を得た。
 
 HDA*においては、ある状態に対して複数の経路があり、より長い経路が先に探索された場合に重複が生じる。しかし15 Puzzleドメインではほとんど重複は生じなかった。生じた重複はほぼBurst Effectで生じたものである。15 Puzzleの探索空間はグラフというより木構造に近く、探索中に同じ状態を生成することは少ないドメインである。その為、15 Puzzleでは重複は殆ど発生しなかったのだと考えられる。Kobayashiらがノードの重複が問題となるマルチプルシーケンス問題において、ノードの重複による探索オーバーヘッドついて議論しているのでこちらを参照されたい\ref{Kobayashi2011evaluations}。
 
@@ -311,44 +311,42 @@ Bind Effect, Burst Effectは問題サイズが大きくなるに従い相対的�
 \subsection{問題サイズに対するHDA*の探索オーバーヘッドとパフォーマンスの変化}
 \label{sec:speedup_size}
 
-前項の分析にて、問題サイズが大きくなるほど探索オーバーヘッドが小さくなるという仮説を議論した。本節ではこの仮説を実験的に検証する。15 Puzzle, 24 Puzzleドメインを対象に、問題毎の高速化効率と探索ノード数の分析を行った。ここで、高速化効率(efficiency)とは以下のように定義される。
+前項の分析にて、問題サイズが大きくなるほど探索オーバーヘッドが小さくなるという仮説を議論した。本節ではこの仮説を実験的に検証する。15 Puzzle, 24 Puzzleドメインを対象に、問題毎の探索ノード数と高速化効率の分析を行った。ここで、高速化効率(efficiency)とは以下のように定義される。
 
 $Efficiency = $
 
-15 Puzzleのインスタンスはランダムに生成した200問を対象にした。これらの問題はA*探索で10～10000秒の実行時間で解ける問題である。24 PuzzleはKorfによる50問のうち、25, 32, 34, 38, 40番の問題を対象とした\cite{Korf2002}。
+15 Puzzleのインスタンスはランダムに生成した200問を対象にした。これらの問題はA*探索で10～3000秒の実行時間で解ける問題である。24 PuzzleはKorfによる50問のうち、25, 32, 34, 38, 40番の問題を対象とした\cite{Korf2002}。
 
-
-\begin{figure}
-	\centering
-	\includegraphics[width=0.6\columnwidth]{eps/efficiency.pdf}	
-	\label{fig:david_speedup}
-	\caption{Efficiency (15 Puzzle)}
-\end{figure}
 \begin{figure}
 	\centering
 	\includegraphics[width=0.6\columnwidth]{eps/search_overhead.pdf}	
 	\label{fig:david_so}
 	\caption{Search Overhead (15 Puzzle)}
 \end{figure}
-
 \begin{figure}
 	\centering
-	\includegraphics[width=0.6\columnwidth]{eps/efficiency_24puzzle.pdf}	
-	\label{fig:david_speedup_24}
-	\caption{Efficiency (24 Puzzle)}
+	\includegraphics[width=0.6\columnwidth]{eps/efficiency.pdf}	
+	\label{fig:david_speedup}
+	\caption{Efficiency (15 Puzzle)}
 \end{figure}
+
 \begin{figure}
 	\centering
 	\includegraphics[width=0.6\columnwidth]{eps/search_overhead_24puzzle.pdf}	
 	\label{fig:david_so_24}
 	\caption{Search Overhead (24 Puzzle)}
 \end{figure}
+\begin{figure}
+	\centering
+	\includegraphics[width=0.6\columnwidth]{eps/efficiency_24puzzle.pdf}	
+	\label{fig:david_speedup_24}
+	\caption{Efficiency (24 Puzzle)}
+\end{figure}
 
+\ref{fig:david_so}を見ると、問題サイズが大きくなるほど、探索オーバーヘッドが1に近づいているのが分かる。また、探索オーバーヘッドは1よりも小さくなりうる。
 
-HDA*は、逐次A*で1000秒程度の問題サイズであればほぼperfect linear speedupが得られるようである。それぞれの実行は一回の実行結果を比較しているので偶然的な要素を含む。例えば、bind effectによって偶然A*よりも速い順番で最適解を発見したインスタンスもある。しかし全体の傾向として右肩上がりに高速化効率が大きくなり、1000秒程度でperfect linear speedupに近づくことは確認出来る。
-
-また、探索オーバーヘッド
-
+\ref{fig:david_speedup}は実行時間の高速化効率を測ったものである。全体の傾向として右肩上がりに高速化効率が大きくなり、1000秒程度でperfect linear speedupに近づくことが確認出来る。HDA*は、逐次A*で1000秒程度の問題サイズであればほぼperfect linear speedupが得られるようである。
+%それぞれの実行は一回の実行結果を比較しているので偶然的な要素を含む。例えば、bind effectによって偶然A*よりも速い順番で最適解を発見したインスタンスも多い。
 興味深い現象として、特に大きな問題インスタンスに対してしばしばsuperlinear speedupが生じる。多くのインスタンスにおいて発生している為、偶然的な要素だけでは説明されないと考えられる。逐次A*と1スレッドのHDA*の実行時間はほぼ同じであるので、本実験のA*の実装に問題があるとは考えにくい。また、Kishimotoらの分散メモリ環境における24 Puzzleの実験においても、一部のインスタンスでsuperlinear speedupが生じている\ref{Kishimoto2013}。高速化効率の大きいインスタンスは、スレッドの数が変化しても大きい場合が多いようである。高速化効率の大きさはインスタンスに強く依存しているのではないかと推察される。高速化効率がインスタンスのどのような特徴に依存しているかは今後の研究課題である。
 
 アルゴリズムの性能評価は平均の実行時間や探索ノード数を論じることが殆どである。これは上述の偶然的な要素を取り除く為である。しかしながら、並列探索における高速化効率は問題サイズに対して依存する。然るに本質的な高速化効率への知見を得るためには、平均化した高速化効率による議論ではなく、問題サイズ毎に検討をする必要がある。その為、次章の議論において高速化効率や探索オーバーヘッドは平均値ではなく、問題インスタンス毎に示す。
@@ -419,7 +417,7 @@ PBNFのパラメータとして、NBlockの個数と最小探索ノード数が�
 	\end{subfigure}
 	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/15puzzle_heap_walltime.pdf}
-		\label{fig:15puzzle_vector}
+		\label{fig:15puzzle_heap}
 		\caption{15 Puzzle (heap)}
 	\end{subfigure}
 	\begin{subfigure}{0.4\columnwidth}
@@ -469,7 +467,7 @@ PBNFのパラメータとして、NBlockの個数と最小探索ノード数が�
 
 	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/15puzzle_heap_expd.pdf}
-		\label{fig:15puzzle_vector_expd}
+		\label{fig:15puzzle_heap_expd}
 		\caption{15 Puzzle (heap)}
 	\end{subfigure}
 
