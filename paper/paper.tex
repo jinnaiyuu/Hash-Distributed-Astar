@@ -482,8 +482,9 @@ PBNFのパラメータとして、NBlockの個数と最小探索ノード数が�
 	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/grid_expd.pdf}
 		\label{fig:grid_expd}
-		\caption{Grid Pathfinding}
+		\caption{Grid Pathfinding (vector)}
 	\end{subfigure}
+	\centering
 	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/tsp_20_expd.pdf}
 		\label{fig:tsp_20_mst_expd}
@@ -511,7 +512,11 @@ PBNFのパラメータとして、NBlockの個数と最小探索ノード数が�
 \end{figure}%
 \end{comment}
 
-どのドメインでもHDA* vs. PBNFの探索ノード数はあまり変わらない。\ref{sec:analysis1}章の結論とこの結果を踏まえると、BurnsらがHDA*の探索オーバーヘッドを指摘したのはNaive Hashによる実装であったからであると結論出来るだろう。また、Parallel A*はどのドメインにおいてもA*よりも遅くなってしまう。Parallel A*は非常にシンプルな並列アルゴリズムであるが、探索の高速化はもたらさない。
+どのドメインでもHDA* vs. PBNFの探索ノード数はあまり変わらない。\ref{sec:analysis1}章の結論とこの結果を踏まえると、BurnsらがHDA*の探索オーバーヘッドを指摘したのはNaive Hashによる実装であったからであると結論出来るだろう。
+
+Parallel A*はどのドメインにおいてもA*よりも遅くなってしまう。Parallel A*は非常にシンプルな並列アルゴリズムであるが、探索の高速化はもたらさない。
+
+
 
 \ref{fig:15puzzle_heap}は15 Puzzleに対してheapで実装した場合の実行時間である。PBNFの利点として、Burnsらはオープンリストが小さい為、heapへのアクセスが速いということと挙げた\cite{Burns2010}。しかし、この実験結果はheap実装においてもHDA*がPBNFよりもパフォーマンスに優れるということを示す。
 
