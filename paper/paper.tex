@@ -194,8 +194,8 @@ Livelockの可能性のあるアルゴリズムは完全ではない。アルゴ
 \begin{figure}
 	\centering
 	\includegraphics[width=0.3\columnwidth]{others/15puzzle.png}
-	\label{fig:15puzzle}
 	\caption{Sliding-tile Puzzle}
+	\label{fig:15puzzle}
 \end{figure}% 
 
 四角い枠にタイルが敷き詰められている。枠には一ヶ所タイルのない場所があり、そこに縦と横からタイルをスライドすることが出来る。Sliding-tile Puzzleは、タイルのスライドによって初期状態から特定のゴール状態まで動かす経路を求める問題である。15 Puzzleの状態空間の大きさはおよそ$10^{13}$状態、24 Puzzleの状態空間はおよそ$10^{25}$状態である。
@@ -237,29 +237,29 @@ Kishimotoらはf値によって探索ノードの分類を行うことでHDA*の
 	\begin{subfigure}{0.6\columnwidth}
 		\centering
 		\includegraphics[width=\columnwidth]{order/2_threads.png}
-		\label{fig:order_2_threads}
 		\caption{HDA* 2 threads}
+		\label{fig:order_2_threads}
 	\end{subfigure}
 	\begin{subfigure}{0.6\columnwidth}
 		\centering
 		\includegraphics[width=\columnwidth]{order/4_threads.png}
-		\label{fig:order_4_threads}
 		\caption{HDA* 4 threads}
+		\label{fig:order_4_threads}
 	\end{subfigure}
 	\begin{subfigure}{0.6\columnwidth}
 		\centering
 		\includegraphics[width=\columnwidth]{order/8_threads.png}
-		\label{fig:order_8_t8hreads}
 		\caption{HDA* 8 threads}
+		\label{fig:order_8_t8hreads}
 	\end{subfigure}
 	\begin{subfigure}{0.6\columnwidth}
 		\centering
 		\includegraphics[width=\columnwidth]{order/delay.png}
-		\label{fig:order_delay}
 		\caption{delayed expanding HDA*}
+		\label{fig:order_delay}
 	\end{subfigure}
-	\label{fig:hdastar_orders}
 	\caption{HDA*の探索順}
+	\label{fig:hdastar_orders}
 \end{figure}% TODO: PNGファイルの扱い
 
 
@@ -296,8 +296,8 @@ HDA*とA*の展開順が幅の中で前後する為に生じる探索オーバ�
 \begin{figure}
 	\centering
 	\includegraphics[width=0.6\columnwidth]{order/naive_hash.png}
-	\label{fig:order_naive_hash}
 	\caption{naive hash HDA*}
+	\label{fig:order_naive_hash}
 \end{figure}
 
 上述の探索オーバーヘッドの分類は十分な性能のHashを必要とすると考えられる。\ref{fig:order:naive_hash}はBurnsらHDA*の性能評価に用いたNaive HashによるHDA*の探索順である。Naive Hashは状態$s$に対して以下の式で与えられる。
@@ -309,8 +309,8 @@ $H(s) = \sum\nolimits_{i = 0}^{15}(16^{i} \times tiles_{i})$ $mod$ $n$
 \begin{figure}
 	\centering
 	\includegraphics[width=0.6\columnwidth]{order/safepbnf.png}
-	\label{fig:order_safepbnf}
 	\caption{SafePBNF}
+	\label{fig:order_safepbnf}
 \end{figure}
 
 
@@ -328,27 +328,27 @@ Bind Effect, Burst Effectは問題サイズが大きくなるに従い相対的�
 \begin{figure}
 	\centering
 	\includegraphics[width=0.4\columnwidth]{eps/search_overhead.pdf}	
-	\label{fig:david_so}
 	\caption{Search Overhead (15 Puzzle)}
+	\label{fig:david_so}
 \end{figure}
 \begin{figure}
 	\centering
 	\includegraphics[width=0.4\columnwidth]{eps/efficiency.pdf}	
-	\label{fig:david_speedup}
 	\caption{Efficiency (15 Puzzle)}
+	\label{fig:david_speedup}
 \end{figure}
 
 \begin{figure}
 	\centering
 	\includegraphics[width=0.4\columnwidth]{eps/search_overhead_24puzzle.pdf}	
-	\label{fig:david_so_24}
 	\caption{Search Overhead (24 Puzzle)}
+	\label{fig:david_so_24}
 \end{figure}
 \begin{figure}
 	\centering
 	\includegraphics[width=0.4\columnwidth]{eps/efficiency_24puzzle.pdf}	
-	\label{fig:david_speedup_24}
 	\caption{Efficiency (24 Puzzle)}
+	\label{fig:david_speedup_24}
 \end{figure}
 
 \ref{fig:david_so}の図は横軸に逐次A*探索における実行時間、縦軸に探索オーバーヘッドを取っている。この図を見ると、問題サイズが大きくなるほど、探索オーバーヘッドが1に近づいているのが分かる。同様の傾向が\ref{fig:david_so_24}でも見られる。
@@ -378,17 +378,19 @@ Burnsらの比較実験には複数問題点がある\cite{Burns2010}。まず�
 	\centering
 	\begin{subfigure}{0.6\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/hdastar_tuning_walltime.pdf}
+		\caption{tuning HDA* (walltime)}
 		\label{fig:hdastar_tuning_walltime}
 	\end{subfigure}
 	\begin{subfigure}{0.6\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/hdastar_tuning_expd.pdf}
+		\caption{tuning HDA* (search overhead)}
 		\label{fig:hdastar_tuning_expd}
 	\end{subfigure}
-	\label{fig:hdastar_tuning}
 	\caption{zobrist vs haive hash, vector vs heap open list}
+	\label{fig:hdastar_tuning}
 \end{figure}
 
-\ref{fig:hdastar_tuning}が実行結果である。\ref{fig:hdastar_tuning_walltime}は横軸に実行時間、縦軸にその時間内に解けた問題の数を取っている。どの問題サイズにおいても、Zobrist Hashとvectorによる実装が一番速いと結論出来る。特にZobrist Hashを用いた実装はNaive Hashによる実装よりも2倍程度速い。\ref{fig:hdastar_tuning_expd}は横軸を展開ノード数にしたものである。図によると、Zobrist HashはNaive Hashよりも展開ノード数が小さい。Naive Hashはどの問題サイズでもおおよそZobrist Hashの２倍の展開ノード数になっている。よってZobrist Hashの実装の方が高速であるのは展開ノード数の違いによるものであると結論出来る。Zobrist HashがNaive Hashよりも大きく性能が優れるという結果は\ref{sec:analysis1}における分析結果とも一致する。
+\ref{fig:hdastar_tuning_walltime}は横軸に実行時間、縦軸にその時間内に解けた問題の数を取っている。どの問題サイズにおいても、Zobrist Hashとvectorによる実装が一番速いと結論出来る。特にZobrist Hashを用いた実装はNaive Hashによる実装よりも2倍程度速い。\ref{fig:hdastar_tuning_expd}は横軸を展開ノード数にしたものである。図によると、Zobrist HashはNaive Hashよりも展開ノード数が小さい。Naive Hashはどの問題サイズでもおおよそZobrist Hashの２倍の展開ノード数になっている。よってZobrist Hashの実装の方が高速であるのは展開ノード数の違いによるものであると結論出来る。Zobrist HashがNaive Hashよりも大きく性能が優れるという結果は\ref{sec:analysis1}における分析結果とも一致する。
 
 
 \subsection{SafePBNFのチューニング}
@@ -402,10 +404,12 @@ SafePBNFのパラメータとして、NBlockの個数と最小探索ノード数
 	\centering
 	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/safepbnf_tuning_walltime.pdf}
+		\caption{tuning SafePBNF (walltime)}
 		\label{fig:safepbnf_tuning_walltime}
 	\end{subfigure}
 	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/safepbnf_tuning_expd.pdf}
+		\caption{tuning SafePBNF (search overhead)}
 		\label{fig:safepbnf_tuning_expd}
 	\end{subfigure}
 	\label{fig:safepbnf_tuning}
@@ -420,66 +424,66 @@ SafePBNFのパラメータとして、NBlockの個数と最小探索ノード数
 %	\centering
 	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/15puzzle_vector_walltime.pdf}
-		\label{fig:15puzzle_vector}
 		\caption{15 Puzzle (vector)}
+		\label{fig:15puzzle_vector}
 	\end{subfigure}
 	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/15puzzle_heap_walltime.pdf}
-		\label{fig:15puzzle_heap}
 		\caption{15 Puzzle (heap)}
+		\label{fig:15puzzle_heap}
 	\end{subfigure}
 	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/24_walltime.pdf}
-		\label{fig:24puzzle_vector}
 		\caption{24 Puzzle (vector)}
+		\label{fig:24puzzle_vector}
 	\end{subfigure}
 	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/grid_walltime.pdf}
-		\label{fig:grid}
 		\caption{Grid Pathfinding (vector)}
+		\label{fig:grid}
 	\end{subfigure}
 	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/tsp_20_walltime.pdf}
-		\label{fig:tsp_20_mst}
 		\caption{TSP (heap)}
+		\label{fig:tsp_20_mst}
 	\end{subfigure}
-	\label{fig:comparison}
 	\caption{HDA*とPBNFの実行速度の比較}
+	\label{fig:comparison}
 \end{figure}%
 
 \begin{figure}
 %	\centering
 	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/15puzzle_vector_expd.pdf}
-		\label{fig:15puzzle_vector_expd}
 		\caption{15 Puzzle (vector)}
+		\label{fig:15puzzle_vector_expd}
 	\end{subfigure}
 
 	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/15puzzle_heap_expd.pdf}
-		\label{fig:15puzzle_heap_expd}
 		\caption{15 Puzzle (heap)}
+		\label{fig:15puzzle_heap_expd}
 	\end{subfigure}
 
 	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/24_expd.pdf}
-		\label{fig:24puzzle_vector_expd}
 		\caption{24 Puzzle (vector)}
+		\label{fig:24puzzle_vector_expd}
 	\end{subfigure}
 
 	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/grid_expd.pdf}
-		\label{fig:grid_expd}
 		\caption{Grid Pathfinding (vector)}
+		\label{fig:grid_expd}
 	\end{subfigure}
 	\centering
 	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/tsp_20_expd.pdf}
-		\label{fig:tsp_20_mst_expd}
 		\caption{TSP (heap)}
+		\label{fig:tsp_20_mst_expd}
 	\end{subfigure}
-	\label{fig:comparison_expd}
 	\caption{HDA*とPBNFの探索ノード数の比較}
+	\label{fig:comparison_expd}
 \end{figure}%
 
 
