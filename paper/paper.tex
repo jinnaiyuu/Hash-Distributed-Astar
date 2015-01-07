@@ -5,6 +5,7 @@
 \usepackage{subcaption}
 \usepackage{algorithm}
 \usepackage{algorithmic}
+\captionsetup[algorithm]{labelformat=empty}
 \begin{document}
 
 \tableofcontents
@@ -140,11 +141,15 @@ $R_{i}$はランダムに生成される為、$Z(s)$は均等な確率で定義�
 \caption{PBNF search framework}         
 \label{alg1}                          
 \begin{algorithmic}                  
-\while {there is an nblock with open nodes}
-\STATE lock; $b \leftarrow$ best free nblock; unlock
-\while {$b$ is no worse than the best free nblock or we've done fewer than $m$ expansions}
-\STATE $n \leftarrow$ best open node in $b$
-
+\WHILE {there is an nblock with open nodes}
+	\STATE lock; $b \leftarrow$ best free nblock; unlock
+	\WHILE {$b$ is no worse than the best free nblock or we've done fewer than $m$ expansions}
+		\STATE $n \leftarrow$ best open node in $b$
+		\IF $f(n) > f(incumbent)$, prune all open nodes in $b$
+		\ELSIF $n$ is a goal
+			\STATE $incumbent \leftarrow n$
+		\ELSE for each child $c$ of $n$
+			\STATE insert $c$ in the open list of the appropriate nblock
 \ENDWHILE
 \ENDWHILE
 \end{algorithmic}
