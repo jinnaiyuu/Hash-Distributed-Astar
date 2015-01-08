@@ -9,6 +9,11 @@
 \usepackage{algorithmic}
 \usepackage{comment}
 
+\usepackage{ijcai15}
+
+% Use the postscript times font!
+\usepackage{times}
+
 \captionsetup[algorithm]{labelformat=empty}
 \begin{document}
 
@@ -59,7 +64,7 @@ HDA*におけるノードの探索順をA*と比較をすることで探索ノ�
 \subsection{本論文の構成}
 
 本論文は以下の通りに構成される。
-2章でA*探索の詳細とA*探索の並列化手法について述べる。3章は本研究で扱うベンチマーク問題の問題ドメインについて解説する。4章はHDA*の探索ノード数の増加を解析する。5章ではHDA*とPBNFのチューンアップを行ったのち、性能の比較評価を行う。6章は本研究で行った実験・解析から得られる知見をまとめる。
+\ref{sec:define}章でA*探索の詳細とA*探索の並列化手法について述べる。\ref{sec:domain}章は本研究で扱うベンチマーク問題の問題ドメインについて解説する。\ref{sec:analysis1}章はHDA*の探索ノード数の増加を解析する。\ref{sec:analysis2}章ではHDA*とPBNFのチューンアップを行ったのち、性能の比較評価を行う。\ref{sec:conclusion}章は本研究で行った実験・解析から得られる知見をまとめる。
 
 \section{A*探索とその並列化}
 \label{sec:define}
@@ -116,7 +121,7 @@ $SO$は理想的には1になるが、多くの場合1よりも大きくなる�
 並列化にかかるオーバーヘッドの計測の為には高速化効率(efficiency)という指標が用いられる。Efficiencyは以下のように定義される。
 \newline
 
-$Efficiency := \frac{逐次実行による実行時間}{並列実行による実行時間 \times スレッドの数}$ % TODO: の字体を修正
+Efficiency $:= \frac{逐次実行による実行時間}{並列実行による実行時間 \times スレッドの数}$ % TODO: の字体を修正
 \newline
 
 Efficiencyは理想的には1になるが、上述のオーバーヘッドがかかる為に多くの場合1未満である。Efficiencyが1の場合をPerfect linear speedupと呼ぶ。Efficiencyが1を越える場合をSuperlinear speedupと呼ぶ。
@@ -188,6 +193,7 @@ Livelockの可能性のあるアルゴリズムは完全ではない。アルゴ
 
 
 \section{問題ドメイン}
+\label{sec:domain}
 
 \subsection{Sliding-tile Puzzle (15 Puzzle, 24 Puzzle)}
 
@@ -499,6 +505,7 @@ Parallel A*はどのドメインにおいてもA*よりも遅くなってしま�
 
 
 \section{おわりに}
+\ref{sec:conclusion}
 
 本研究の貢献は大きく分けて２つある。
 
