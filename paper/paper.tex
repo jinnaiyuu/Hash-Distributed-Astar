@@ -16,7 +16,8 @@
 
 \captionsetup[algorithm]{labelformat=empty}
 
-\title{マルチコア環境における並列A*探索の探索オーバーヘッドの定性的な解析とアルゴリズムの再評価}
+\title{マルチコア環境における並列A*探索の探索オーバーヘッドの定性的な解析と\\
+アルゴリズムの再評価}
 \author{陣内　佑 \\
 東京大学教養学部学際科学科\\
 \\
@@ -212,7 +213,7 @@ Livelockの可能性のあるアルゴリズムは完全ではない。アルゴ
 
 \begin{figure}
 	\centering
-	\includegraphics[width=0.3\columnwidth]{others/15puzzle.png}
+	\includegraphics[width=0.6\columnwidth]{others/15puzzle.png}
 	\caption{Sliding-tile Puzzle}
 	\label{fig:15puzzle}
 \end{figure}% 
@@ -253,25 +254,25 @@ Kishimotoらはf値によって探索ノードの分類を行うことでHDA*の
 
 
 \begin{figure}
-	\begin{subfigure}{0.6\columnwidth}
+	\begin{subfigure}{\columnwidth}
 		\centering
 		\includegraphics[width=\columnwidth]{order/2_threads.png}
 		\caption{HDA* 2 threads}
 		\label{fig:order_2_threads}
 	\end{subfigure}
-	\begin{subfigure}{0.6\columnwidth}
+	\begin{subfigure}{\columnwidth}
 		\centering
 		\includegraphics[width=\columnwidth]{order/4_threads.png}
 		\caption{HDA* 4 threads}
 		\label{fig:order_4_threads}
 	\end{subfigure}
-	\begin{subfigure}{0.6\columnwidth}
+	\begin{subfigure}{\columnwidth}
 		\centering
 		\includegraphics[width=\columnwidth]{order/8_threads.png}
 		\caption{HDA* 8 threads}
 		\label{fig:order_8_t8hreads}
 	\end{subfigure}
-	\begin{subfigure}{0.6\columnwidth}
+	\begin{subfigure}{\columnwidth}
 		\centering
 		\includegraphics[width=\columnwidth]{order/delay.png}
 		\caption{delayed expanding HDA*}
@@ -314,7 +315,7 @@ HDA*とA*の展開順が幅の中で前後する為に生じる探索オーバ�
 
 \begin{figure}
 	\centering
-	\includegraphics[width=0.6\columnwidth]{order/naive_hash.png}
+	\includegraphics[width=\columnwidth]{order/naive_hash.png}
 	\caption{naive hash HDA*}
 	\label{fig:order_naive_hash}
 \end{figure}
@@ -327,7 +328,7 @@ $H(s) = \sum\nolimits_{i = 0}^{15}(16^{i} \times tiles_{i})$ $mod$ $n$
 
 \begin{figure}
 	\centering
-	\includegraphics[width=0.6\columnwidth]{order/safepbnf.png}
+	\includegraphics[width=\columnwidth]{order/safepbnf.png}
 	\caption{SafePBNF}
 	\label{fig:order_safepbnf}
 \end{figure}
@@ -348,12 +349,12 @@ Bind Effect, Burst Effectは問題サイズが大きくなるに従い相対的�
 
 \begin{figure}
 	\centering
-	\begin{subfigure}{0.6\columnwidth}
+	\begin{subfigure}{\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/search_overhead.pdf}	
 		\caption{Search Overhead}
 		\label{fig:david_so}
 	\end{subfigure}
-	\begin{subfigure}{0.6\columnwidth}
+	\begin{subfigure}{\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/efficiency.pdf}	
 		\caption{Efficiency}
 		\label{fig:david_speedup}
@@ -364,12 +365,12 @@ Bind Effect, Burst Effectは問題サイズが大きくなるに従い相対的�
 
 \begin{figure}
 	\centering
-	\begin{subfigure}{0.6\columnwidth}
+	\begin{subfigure}{\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/search_overhead_24puzzle.pdf}	
 		\caption{Search Overhead}
 		\label{fig:david_so_24}
 	\end{subfigure}
-	\begin{subfigure}{0.6\columnwidth}
+	\begin{subfigure}{\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/efficiency_24puzzle.pdf}	
 		\caption{Efficiency}
 		\label{fig:david_speedup_24}
@@ -403,12 +404,12 @@ Burnsらの比較実験には複数問題点がある\cite{Burns2010}。まず�
 
 \begin{figure}
 	\centering
-	\begin{subfigure}{0.6\columnwidth}
+	\begin{subfigure}{\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/hdastar_tuning_walltime.pdf}
 		\caption{tuning HDA* (walltime)}
 		\label{fig:hdastar_tuning_walltime}
 	\end{subfigure}
-	\begin{subfigure}{0.6\columnwidth}
+	\begin{subfigure}{\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/hdastar_tuning_expd.pdf}
 		\caption{tuning HDA* (search overhead)}
 		\label{fig:hdastar_tuning_expd}
@@ -429,12 +430,12 @@ SafePBNFのパラメータとして、NBlockの個数と最小探索ノード数
 
 \begin{figure}
 	\centering
-	\begin{subfigure}{0.4\columnwidth}
+	\begin{subfigure}{\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/safepbnf_tuning_walltime.pdf}
 		\caption{tuning SafePBNF (walltime)}
 		\label{fig:safepbnf_tuning_walltime}
 	\end{subfigure}
-	\begin{subfigure}{0.4\columnwidth}
+	\begin{subfigure}{\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/safepbnf_tuning_expd.pdf}
 		\caption{tuning SafePBNF (search overhead)}
 		\label{fig:safepbnf_tuning_expd}
@@ -449,27 +450,27 @@ SafePBNFのパラメータとして、NBlockの個数と最小探索ノード数
 
 \begin{figure}
 %	\centering
-	\begin{subfigure}{0.4\columnwidth}
+	\begin{subfigure}{\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/15puzzle_vector_walltime.pdf}
 		\caption{15 Puzzle (vector)}
 		\label{fig:15puzzle_vector}
 	\end{subfigure}
-	\begin{subfigure}{0.4\columnwidth}
+	\begin{subfigure}{\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/15puzzle_heap_walltime.pdf}
 		\caption{15 Puzzle (heap)}
 		\label{fig:15puzzle_heap}
 	\end{subfigure}
-	\begin{subfigure}{0.4\columnwidth}
+	\begin{subfigure}{\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/24_walltime.pdf}
 		\caption{24 Puzzle (vector)}
 		\label{fig:24puzzle_vector}
 	\end{subfigure}
-	\begin{subfigure}{0.4\columnwidth}
+	\begin{subfigure}{\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/grid_walltime.pdf}
 		\caption{Grid Pathfinding (vector)}
 		\label{fig:grid}
 	\end{subfigure}
-	\begin{subfigure}{0.4\columnwidth}
+	\begin{subfigure}{\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/tsp_20_walltime.pdf}
 		\caption{TSP (heap)}
 		\label{fig:tsp_20_mst}
@@ -480,31 +481,31 @@ SafePBNFのパラメータとして、NBlockの個数と最小探索ノード数
 
 \begin{figure}
 %	\centering
-	\begin{subfigure}{0.4\columnwidth}
+	\begin{subfigure}{\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/15puzzle_vector_expd.pdf}
 		\caption{15 Puzzle (vector)}
 		\label{fig:15puzzle_vector_expd}
 	\end{subfigure}
 
-	\begin{subfigure}{0.4\columnwidth}
+	\begin{subfigure}{\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/15puzzle_heap_expd.pdf}
 		\caption{15 Puzzle (heap)}
 		\label{fig:15puzzle_heap_expd}
 	\end{subfigure}
 
-	\begin{subfigure}{0.4\columnwidth}
+	\begin{subfigure}{\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/24_expd.pdf}
 		\caption{24 Puzzle (vector)}
 		\label{fig:24puzzle_vector_expd}
 	\end{subfigure}
 
-	\begin{subfigure}{0.4\columnwidth}
+	\begin{subfigure}{\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/grid_expd.pdf}
 		\caption{Grid Pathfinding (vector)}
 		\label{fig:grid_expd}
 	\end{subfigure}
 
-	\begin{subfigure}{0.4\columnwidth}
+	\begin{subfigure}{\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/tsp_20_expd.pdf}
 		\caption{TSP (heap)}
 		\label{fig:tsp_20_mst_expd}
