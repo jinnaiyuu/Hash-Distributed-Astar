@@ -9,7 +9,7 @@
 \usepackage{algorithmic}
 \usepackage{comment}
 
-%\usepackage{ijcai15}
+\usepackage{ijcai15}
 
 % Use the postscript times font!
 \usepackage{times}
@@ -331,30 +331,38 @@ Bind Effect, Burst Effectは問題サイズが大きくなるに従い相対的�
 
 前項の分析にて、問題サイズが大きくなるほど探索オーバーヘッドが小さくなるという仮説を議論した。本節ではこの仮説を実験的に検証する。15 Puzzle, 24 Puzzleドメインを対象に、問題毎の探索ノード数と高速化効率の分析を行った。15 Puzzleのインスタンスはランダムに生成した200問を対象にした。これらの問題はA*探索で10～3000秒の実行時間で解ける問題である。24 PuzzleはKorfによる50問のうち、25, 32, 34, 38, 40番の問題を対象とした\cite{Korf2002}。
 
+% TODO: supermicroでの実験結果を追加。24 threadまでの比較を行う。
+
 \begin{figure}
 	\centering
-	\includegraphics[width=0.4\columnwidth]{eps/search_overhead.pdf}	
-	\caption{Search Overhead (15 Puzzle)}
-	\label{fig:david_so}
-\end{figure}
-\begin{figure}
-	\centering
-	\includegraphics[width=0.4\columnwidth]{eps/efficiency.pdf}	
-	\caption{Efficiency (15 Puzzle)}
-	\label{fig:david_speedup}
+	\begin{subfigure}{0.6\columnwidth}
+		\includegraphics[width=\columnwidth]{eps/search_overhead.pdf}	
+		\caption{Search Overhead}
+		\label{fig:david_so}
+	\end{subfigure}
+	\begin{subfigure}{0.6\columnwidth}
+		\includegraphics[width=\columnwidth]{eps/efficiency.pdf}	
+		\caption{Efficiency}
+		\label{fig:david_speedup}
+	\end{subfigure}
+	\caption{15 Puzzle}
+	\label{fig:15_david}
 \end{figure}
 
 \begin{figure}
 	\centering
-	\includegraphics[width=0.4\columnwidth]{eps/search_overhead_24puzzle.pdf}	
-	\caption{Search Overhead (24 Puzzle)}
-	\label{fig:david_so_24}
-\end{figure}
-\begin{figure}
-	\centering
-	\includegraphics[width=0.4\columnwidth]{eps/efficiency_24puzzle.pdf}	
-	\caption{Efficiency (24 Puzzle)}
-	\label{fig:david_speedup_24}
+	\begin{subfigure}{0.6\columnwidth}
+		\includegraphics[width=\columnwidth]{eps/search_overhead_24puzzle.pdf}	
+		\caption{Search Overhead}
+		\label{fig:david_so_24}
+	\end{subfigure}
+	\begin{subfigure}{0.6\columnwidth}
+		\includegraphics[width=\columnwidth]{eps/efficiency_24puzzle.pdf}	
+		\caption{Efficiency}
+		\label{fig:david_speedup_24}
+	\end{subfigure}
+	\caption{24 Puzzle}
+	\label{fig:24_david}
 \end{figure}
 
 \ref{fig:david_so}の図は横軸に逐次A*探索における実行時間、縦軸に探索オーバーヘッドを取っている。この図を見ると、問題サイズが大きくなるほど、探索オーバーヘッドが1に近づいているのが分かる。同様の傾向が\ref{fig:david_so_24}でも見られる。
@@ -482,7 +490,7 @@ SafePBNFのパラメータとして、NBlockの個数と最小探索ノード数
 		\caption{Grid Pathfinding (vector)}
 		\label{fig:grid_expd}
 	\end{subfigure}
-	\centering
+
 	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/tsp_20_expd.pdf}
 		\caption{TSP (heap)}
