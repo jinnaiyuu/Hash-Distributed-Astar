@@ -15,14 +15,22 @@
 \usepackage{times}
 
 \captionsetup[algorithm]{labelformat=empty}
+
+\title{マルチコア環境における並列A*探索の探索オーバーヘッドの定性的な解析とアルゴリズムの再評価}
+\author{陣内　佑 \\
+東京大学教養学部学際科学科\\
+\\
+指導教員　福永 Alex}
+
 \begin{document}
 
-\tableofcontents
 
-\begin{abstraction}
+\begin{abstract}
 HDA*は特に分散メモリ環境において効率的である並列A*探索アルゴリズムである。HDA*の問題点として、余剰な展開ノードが生じることが挙げられている。本研究はHDA*の余剰な展開ノードを定性的に分析し、その原因を３つに分類する。また、問題サイズが十分に大きい場合、それらのオーバーヘッドが無視出来る大きさであることを理論的・実験的に示す。
 PBNFは共有メモリ環境においてstate-of-the-artとされる手法である。PBNFはHDA*と比較して展開ノードの数が小さい為にパフォーマンスに優れるとされていた。しかしながら先行研究によるHDA*とPBNFの性能比較実験は複数問題点がある。本研究はそれらの問題点を指摘した上でより詳細な性能比較実験を行う。その結果、1. 両アルゴリズムで展開ノード数は大きく変わらないこと、2. 逐次実行で10秒程度以上の問題ではHDA*の方が高速である、という結果を得たことを示す。
-\end{abstraction}
+\end{abstract}
+
+\tableofcontents
 
 \section{序論}
 
