@@ -271,25 +271,25 @@ Kishimotoらはf値によって探索ノードの分類を行うことでHDA*の
 
 
 \begin{figure}
-	\begin{subfigure}{\columnwidth}
+	\begin{subfigure}{0.4\columnwidth}
 		\centering
 		\includegraphics[width=\columnwidth]{order/2_threads.png}
 		\caption{HDA* 2 threads}
 		\label{fig:order_2_threads}
 	\end{subfigure}
-	\begin{subfigure}{\columnwidth}
+	\begin{subfigure}{0.4\columnwidth}
 		\centering
 		\includegraphics[width=\columnwidth]{order/4_threads.png}
 		\caption{HDA* 4 threads}
 		\label{fig:order_4_threads}
 	\end{subfigure}
-	\begin{subfigure}{\columnwidth}
+	\begin{subfigure}{0.4\columnwidth}
 		\centering
 		\includegraphics[width=\columnwidth]{order/8_threads.png}
 		\caption{HDA* 8 threads}
 		\label{fig:order_8_t8hreads}
 	\end{subfigure}
-	\begin{subfigure}{\columnwidth}
+	\begin{subfigure}{0.4\columnwidth}
 		\centering
 		\includegraphics[width=\columnwidth]{order/delay.png}
 		\caption{delayed expanding HDA*}
@@ -301,7 +301,7 @@ Kishimotoらはf値によって探索ノードの分類を行うことでHDA*の
 
 \begin{tabular}{lrrr} \hline
 	スレッド     & 2 & 4 & 8 \\ \hline
-	ノードの重複 & 3.2069e-06 & 0.000109291 & 0.0214408 \hline
+	ノードの重複 & 3.2069e-06 & 0.000109291 & 0.0214408 \\ \hline
 \end{tabular}
 
 
@@ -337,7 +337,7 @@ HDA*とA*の展開順が幅の中で前後する為に生じる探索オーバ�
 
 \begin{figure}
 	\centering
-	\includegraphics[width=\columnwidth]{order/naive_hash.png}
+	\includegraphics[width=0.4\columnwidth]{order/naive_hash.png}
 	\caption{naive hash HDA*}
 	\label{fig:order_naive_hash}
 \end{figure}
@@ -350,7 +350,7 @@ $H(s) = \sum\nolimits_{i = 0}^{15}(16^{i} \times tiles_{i})$ $mod$ $n$
 
 \begin{figure}
 	\centering
-	\includegraphics[width=\columnwidth]{order/safepbnf.png}
+	\includegraphics[width=0.4\columnwidth]{order/safepbnf.png}
 	\caption{SafePBNF}
 	\label{fig:order_safepbnf}
 \end{figure}
