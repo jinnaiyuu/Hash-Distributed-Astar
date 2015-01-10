@@ -299,12 +299,13 @@ Kishimotoらはf値によって探索ノードの分類を行うことでHDA*の
 	\label{fig:hdastar_orders}
 \end{figure}% TODO: PNGファイルの扱い
 
-\begin{tabular}{lrrr} \hline
-	スレッド     & 2 & 4 & 8 \\ \hline
-	ノードの重複 & 3.2069e-06 & 0.000109291 & 0.0214408 \\ \hline
-\end{tabular}
-
-
+\begin{center}
+	\begin{tabular}{lrrr} \hline
+		スレッド     & 2 & 4 & 8 \\ \hline
+		ノードの重複 & 3.2069e-06 & 0.000109291 & 0.0214408 \\ \hline
+	\end{tabular}
+\end{center}
+\newline
 図\ref{fig:order_2_threads}は、ある状態がA*において何番目に展開されたかを横軸に、HDA*において何番目に展開されたかを縦軸に取ってある。これらの結果はそれぞれ1インスタンスのものを代表的に示したが、実験対象とした100問のどのインスタンスに対しても同様のパターンを確認することが出来た。
 
 HDA*のノードの探索順は大きな流れとしてはA*のそれと一致するようである。しかしながら「幅」が存在し、その範囲内で展開順が前後する。また、この幅はスレッド数が大きくなると広がる。この幅は実行時間を通して大きくなっていくが、展開ノード数が増加する割合に対して小さい。その為、問題サイズが大きいほど、展開ノード数に対する相対的な幅の大きさは小さくなる。
@@ -374,12 +375,12 @@ Bind Effect, Burst Effectは問題サイズが大きくなるに従い相対的�
 
 \begin{figure}
 	\centering
-	\begin{subfigure}{\columnwidth}
+	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/search_overhead.pdf}	
 		\caption{Search Overhead}
 		\label{fig:david_so}
 	\end{subfigure}
-	\begin{subfigure}{\columnwidth}
+	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/efficiency.pdf}	
 		\caption{Efficiency}
 		\label{fig:david_speedup}
@@ -390,12 +391,12 @@ Bind Effect, Burst Effectは問題サイズが大きくなるに従い相対的�
 
 \begin{figure}
 	\centering
-	\begin{subfigure}{\columnwidth}
+	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/search_overhead_24puzzle.pdf}	
 		\caption{Search Overhead}
 		\label{fig:david_so_24}
 	\end{subfigure}
-	\begin{subfigure}{\columnwidth}
+	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/efficiency_24puzzle.pdf}	
 		\caption{Efficiency}
 		\label{fig:david_speedup_24}
@@ -429,12 +430,12 @@ Burnsらの比較実験には複数問題点がある\cite{Burns2010}。まず�
 
 \begin{figure}
 	\centering
-	\begin{subfigure}{\columnwidth}
+	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/hdastar_tuning_walltime.pdf}
 		\caption{tuning HDA* (walltime)}
 		\label{fig:hdastar_tuning_walltime}
 	\end{subfigure}
-	\begin{subfigure}{\columnwidth}
+	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/hdastar_tuning_expd.pdf}
 		\caption{tuning HDA* (search overhead)}
 		\label{fig:hdastar_tuning_expd}
@@ -455,12 +456,12 @@ SafePBNFのパラメータとして、NBlockの個数と最小探索ノード数
 
 \begin{figure}
 	\centering
-	\begin{subfigure}{\columnwidth}
+	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/safepbnf_tuning_walltime.pdf}
 		\caption{tuning SafePBNF (walltime)}
 		\label{fig:safepbnf_tuning_walltime}
 	\end{subfigure}
-	\begin{subfigure}{\columnwidth}
+	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/safepbnf_tuning_expd.pdf}
 		\caption{tuning SafePBNF (search overhead)}
 		\label{fig:safepbnf_tuning_expd}
@@ -475,27 +476,27 @@ SafePBNFのパラメータとして、NBlockの個数と最小探索ノード数
 
 \begin{figure}
 %	\centering
-	\begin{subfigure}{\columnwidth}
+	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/15puzzle_vector_walltime.pdf}
 		\caption{15 Puzzle (vector)}
 		\label{fig:15puzzle_vector}
 	\end{subfigure}
-	\begin{subfigure}{\columnwidth}
+	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/15puzzle_heap_walltime.pdf}
 		\caption{15 Puzzle (heap)}
 		\label{fig:15puzzle_heap}
 	\end{subfigure}
-	\begin{subfigure}{\columnwidth}
+	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/24_walltime.pdf}
 		\caption{24 Puzzle (vector)}
 		\label{fig:24puzzle_vector}
 	\end{subfigure}
-	\begin{subfigure}{\columnwidth}
+	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/grid_walltime.pdf}
 		\caption{Grid Pathfinding (vector)}
 		\label{fig:grid}
 	\end{subfigure}
-	\begin{subfigure}{\columnwidth}
+	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/tsp_20_walltime.pdf}
 		\caption{TSP (heap)}
 		\label{fig:tsp_20_mst}
@@ -506,31 +507,31 @@ SafePBNFのパラメータとして、NBlockの個数と最小探索ノード数
 
 \begin{figure}
 %	\centering
-	\begin{subfigure}{\columnwidth}
+	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/15puzzle_vector_expd.pdf}
 		\caption{15 Puzzle (vector)}
 		\label{fig:15puzzle_vector_expd}
 	\end{subfigure}
 
-	\begin{subfigure}{\columnwidth}
+	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/15puzzle_heap_expd.pdf}
 		\caption{15 Puzzle (heap)}
 		\label{fig:15puzzle_heap_expd}
 	\end{subfigure}
 
-	\begin{subfigure}{\columnwidth}
+	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/24_expd.pdf}
 		\caption{24 Puzzle (vector)}
 		\label{fig:24puzzle_vector_expd}
 	\end{subfigure}
 
-	\begin{subfigure}{\columnwidth}
+	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/grid_expd.pdf}
 		\caption{Grid Pathfinding (vector)}
 		\label{fig:grid_expd}
 	\end{subfigure}
 
-	\begin{subfigure}{\columnwidth}
+	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/tsp_20_expd.pdf}
 		\caption{TSP (heap)}
 		\label{fig:tsp_20_mst_expd}
