@@ -1,6 +1,6 @@
 #!/bin/bash
 
-date=`date +%m-%d_%H:%M`
+date=`date +%m-%d`
 
 cp paper.tex /home/yuu/Dropbox/
 git commit -m "autocommit $date" paper.tex b.bib make.sh
