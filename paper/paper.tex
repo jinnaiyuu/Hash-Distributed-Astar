@@ -4,9 +4,12 @@
 \renewcommand{\theenumii}{\theenumi.\arabic{enumii}.}
 
 \usepackage[dvipdfmx,hiresbb]{graphicx}
+\usepackage{array}
 \usepackage{subcaption}
+
 \usepackage{algorithm}
 \usepackage{algorithmic}
+
 \usepackage{comment}
 
 %\usepackage{ijcai15}
@@ -296,6 +299,12 @@ Kishimotoらはf値によって探索ノードの分類を行うことでHDA*の
 	\label{fig:hdastar_orders}
 \end{figure}% TODO: PNGファイルの扱い
 
+\begin{tabular}{lrrr} \toprule
+	スレッド     & 2 & 4 & 8 \\ \midrule
+	ノードの重複 & 3.2069e-06 & 0.000109291 & 0.0214408 \bottomrule
+\end{tabular}
+
+
 図\ref{fig:order_2_threads}は、ある状態がA*において何番目に展開されたかを横軸に、HDA*において何番目に展開されたかを縦軸に取ってある。これらの結果はそれぞれ1インスタンスのものを代表的に示したが、実験対象とした100問のどのインスタンスに対しても同様のパターンを確認することが出来た。
 
 HDA*のノードの探索順は大きな流れとしてはA*のそれと一致するようである。しかしながら「幅」が存在し、その範囲内で展開順が前後する。また、この幅はスレッド数が大きくなると広がる。この幅は実行時間を通して大きくなっていくが、展開ノード数が増加する割合に対して小さい。その為、問題サイズが大きいほど、展開ノード数に対する相対的な幅の大きさは小さくなる。
@@ -356,7 +365,7 @@ Bind Effect, Burst Effectは問題サイズが大きくなるに従い相対的�
 \subsection{問題サイズに対するHDA*の探索オーバーヘッドとパフォーマンスの変化}
 \label{sec:speedup_size}
 
-前項の分析にて、問題サイズが大きくなるほど探索オーバーヘッドが小さくなるという仮説を議論した。本節ではこの仮説を実験的に検証する。15 Puzzle, 24 Puzzleドメインを対象に、問題毎の探索ノード数と高速化効率の分析を行った。15 Puzzleのインスタンスはランダムに生成した200問を対象にした。これらの問題はA*探索で10～3000秒の実行時間で解ける問題である。24 PuzzleはKorfによる50問のうち、25, 32, 34, 38, 40番の問題を対象とした\cite{Korf2002}。
+前項の分析にて、問題サイズが大きくなるほど探索オーバーヘッドが小さくなるという仮説を議論した。本節ではこの仮説を実験的に検証する。15 Puzzle, 24 Puzzleドメインを対象に、問題毎の探索ノード数と高速化効率の分析を行った。15 Puzzleのインスタンスはランダムに生成した200問を対象にした。これらの問題はA*探索で10～3000秒の実行時間で解ける問題である。24 PuzzleはKorfによる50問のうち、25, 32, 34, 38, 40番の問題を対象とした\cite{Korf2002}。実験環境はIntel dual-quad Xeon 2.33GHz, 64GB mem, OSはGNU/Linux Ubuntu 14.04である。
 
 % TODO: supermicroでの実験結果を追加。24 threadまでの比較を行う。
 % TODO: 一応問題インスタンスに対して平均化した統計値を載せる。 
