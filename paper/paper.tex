@@ -145,7 +145,7 @@ $SO$は理想的には1になるが、多くの場合1よりも大きくなる�
 \newline
 
 \begin{equation}
-Efficiency $:= \frac{逐次実行による実行時間}{並列実行による実行時間 \times スレッドの数}$ % TODO: fの字体を修正
+Efficiency := \frac{逐次実行による実行時間}{並列実行による実行時間 \times スレッドの数} % TODO: fの字体を修正
 \end{equation}
 
 Efficiencyは理想的には1になるが、上述のオーバーヘッドがかかる為に多くの場合1未満である。Efficiencyが1の場合をPerfect linear speedupと呼ぶ。Efficiencyが1を越える場合をSuperlinear speedupと呼ぶ。
@@ -179,7 +179,7 @@ HDA*のHash関数はHDA*の性能に非常に重要である。Hash関数に求�
 以上の要件から、多くのドメインにおいてZobrist Hashが使われる\cite{Zobrist1970}。ノード$s$の状態が整数列$\mathbf{x}$で表現されるとする。状態の$i$番目の整数の取りうる値は$l_{i}$通りあるとする。ノードの状態を$\mathbf{x} = (x_{0}, x_{1}, …, x_{n})$と置く。この時$x_{i}$は$0 \leq x_{i} < l_{i}$である。$R_{i}$を$l_{i}$個の値を持つテーブルとする。$R_{i}$は予めランダムに生成される。ここでZobrist Function $Z(s)$は以下のように定義される。
 \newline
 \begin{equation}
-$Z(s) := R_{0}[x_{0}]$ $xor$ $R_{1}[x_{1}]$ $xor$ $…$ $xor$ $R_{n}[x_{n}]$ %
+Z(s) := R_{0}[x_{0}] xor R_{1}[x_{1}] xor … xor R_{n}[x_{n}] %
 \end{equation}
 
 $R_{i}$はランダムに生成される為、$Z(s)$は均等な確率で定義域の全ての値が出ると期待される。また、状態の全情報を利用して生成される為、局所的な状態の変化に対しても不偏な分配を行うことが出来る。$xor$によって計算する為、親ノードからの差分のみを計算してHash値を求めることが出来る。加えて、XOR命令は非常に速い計算である。よってZobrist Hashは高速に求めることが出来る。
@@ -244,7 +244,7 @@ Grid Pathfindingは二次元のグリッドにおいて、障害物を避けつ�
 
 \subsection{Travelling Salesperson Problem (TSP)}
 
-Travelling Salesperson Problem (TSP)は、都市の集合とそれぞれの２都市間の距離が与えられたとき、全ての都市を一度ずつ訪れ、出発都市に戻る為の最短経路を求める問題である。TSPで使われるヒューリスティック関数の一つはMinimum Spanning Treeである。Minimum Spanning Treeはグラフの全ての頂点を含む、最も辺の長さが小さい部分グラフである。これはゴールまでの経路よりも短いか同等である。なぜなら、ゴールまでの経路の方が短いならば、それがMinimum Spanning Treeになるはずであるからである。よって、Minimum Spanning Treeはadmissibleなヒューリスティック関数である。本研究では1\times1の盤に対してランダムに２０都市を配置し、都市間の直線距離をコストとした。
+Travelling Salesperson Problem (TSP)は、都市の集合とそれぞれの２都市間の距離が与えられたとき、全ての都市を一度ずつ訪れ、出発都市に戻る為の最短経路を求める問題である。TSPで使われるヒューリスティック関数の一つはMinimum Spanning Treeである。Minimum Spanning Treeはグラフの全ての頂点を含む、最も辺の長さが小さい部分グラフである。これはゴールまでの経路よりも短いか同等である。なぜなら、ゴールまでの経路の方が短いならば、それがMinimum Spanning Treeになるはずであるからである。よって、Minimum Spanning Treeはadmissibleなヒューリスティック関数である。本研究では$1\times1$の盤に対してランダムに２０都市を配置し、都市間の直線距離をコストとした。
 
 \section{並列化に伴う探索オーバーヘッドの定性的な解析}
 \label{sec:analysis1}
