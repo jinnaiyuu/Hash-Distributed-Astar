@@ -561,7 +561,7 @@ Grid Pathfindingを除きどのドメインでもHDA* vs. SafePBNFの探索ノ�
 
 Parallel A*はどのドメインにおいてもA*よりも遅くなってしまう。Parallel A*は非常にシンプルな並列アルゴリズムであるが、探索の高速化はもたらさない。
 
-\ref{fig:15puzzle_heap}は15 Puzzleに対してheapで実装した場合の実行時間である。SafePBNFの利点として、Burnsらはオープンリストが小さい為、heapへのアクセスが速いということと挙げた\cite{Burns2010}。しかし、この実験結果はheap実装においてもHDA*SafePBNFよりもパフォーマンスに優れるということを示す。
+図\ref{fig:15puzzle_heap}は15 Puzzleに対してheapで実装した場合の実行時間である。SafePBNFの利点として、Burnsらはオープンリストが小さい為、heapへのアクセスが速いということと挙げた\cite{Burns2010}。しかし、この実験結果はheap実装においてもHDA*がSafePBNFよりもパフォーマンスに優れるということを示す。
 
 どのドメインにも共通する傾向として、実行時間が5秒未満程度の小さい問題に対してはHDA*よりもSafePBNFの方が優れる場合が多い。特にGrid Pathfindingにおいて顕著に見られる。また、この時HDA*の展開ノード数はSafePBNFよりも大きい。\ref{sec:analysis1}章で述べたように、HDA*は実行時間の冒頭と末尾に探索オーバーヘッドがある。実行時間が短い場合、これらのオーバーヘッドの割合が大きくなる。よって、小さな問題インスタンスに対しては探索オーバーヘッドが大きく、SafePBNFの方が速いと考えられる。
 
