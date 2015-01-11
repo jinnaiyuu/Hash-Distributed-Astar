@@ -5,11 +5,11 @@
 
 % Font
 %\renewcommand{\textbf}[1]{{\bfseries\sffamily#1}}
-%\usepackage{times}
-\usepackage[deluxe,expert]{otf}
-\renewcommand{\textbf}[1]{{\bfseries\sffamily#1}}
+\usepackage{times}
+%\usepackage[deluxe,expert]{otf}
+%\renewcommand{\textbf}[1]{{\bfseries\sffamily#1}}
 
-% \renewcommand{\textbf}{}
+\renewcommand{\textbf}{} % TODO: enable blod font for japanese.
 
 % Graphics
 \usepackage[dvipdfmx,hiresbb]{graphicx}
@@ -158,7 +158,7 @@ $SO$は理想的には1になるが、多くの場合1よりも大きくなる�
 \item 同期オーバーヘッド\index{同期オーバーヘッド}
 \newline
 
-同期オーバーヘッドは、他スレッドの処理を待つ為にアイドル状態で待たなければならない場合に生じる。データ構造の一部は同時に複数のスレッドがアクセスすることが出来ない。そのようなデータ構造をスレッド間で共有する場合は相互排他ロックを必要とする。相互排他ロックは、ロックを獲得したスレッド以外のスレッドによるアクセスを禁止する制御機構である。あるスレッドが他スレッドによって獲得された相互排他ロックが解放されるまで待つ場合、同期オーバーヘッドとなる。
+同期オーバーヘッドは、他スレッドの処理を待つ為にアイドル状態で待たなければならない場合に生じる。データ構造の一部は同時に複数のスレッドがアクセスすることが出来ない。そのようなデータ構造をスレッド間で共有する場合は相互排他ロック\index{相互排他ロック}を必要とする。相互排他ロックは、ロックを獲得したスレッド以外のスレッドによるアクセスを禁止する制御機構である。あるスレッドが他スレッドによって獲得された相互排他ロックが解放されるまで待つ場合、同期オーバーヘッドとなる。
 \newline
 
 \item 通信オーバーヘッド\index{通信オーバーヘッド}
