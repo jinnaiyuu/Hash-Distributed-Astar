@@ -174,7 +174,7 @@ Efficiencyは理想的には1になるが、上述のオーバーヘッドがか
 
 \subsection{Parallel A*}
 
-最もシンプルなA*の並列化手法はKumarらの提案したParallel A*である\cite{Kumar1988parallel}。Parallel A*は各スレッドでA*探索を行う。スレッド間でオープンリスト, クローズドリストを共有することで並列に探索をすることが出来る。この手法はオープンリスト, クローズドリストのデータ構造を保つ為に相互排他ロックを必要とする。各スレッドはノードを展開する度にオープンリストに、ノードを生成する度にクローズドリストにロックを獲得してアクセスする必要がある。その為Parallel A*は同期オーバーヘッドが非常に大きいという問題がある。\ref{sec:analysis2}章で見るように、このシンプルな手法は逐次A*よりも遅くなってしまう。
+最もシンプルなA*の並列化手法はKumarらの提案したParallel A*である\cite{Kumar1988parallel}。Parallel A*は各スレッドでA*探索を行う。スレッド間でオープンリスト, クローズドリストを共有することで並列に探索をすることが出来る。この手法はオープンリスト, クローズドリストのデータ構造を保つ為に相互排他ロックを必要とする。各スレッドはノードを展開する度にオープンリストに、ノードを生成する度にクローズドリストにロックを獲得してアクセスする必要がある。その為Parallel A*は同期オーバーヘッドが非常に大きいという問題がある。\ref{sec:analysis2}章で見るように、このシンプルな手法は逐次A*よりも遅くなってしまう。以降、Parallel A*は特にこの手法を指す。
 
 \subsection{HDA*}
 % TODO: Transposition-table-work-scheduling, PRA*との比較を行う
@@ -184,7 +184,6 @@ HDA*は各スレッドにローカルにオープンリストとクローズド�
 
 \begin{enumerate}
 	\item $P$は自分のメッセージキューに新しいノードが入っているかを確認する。もし入っていたら、それぞれのノードを$P$のクローズドリストと照合し、オープンリストに入れるべきかを確認する。
-
 	\item メッセージキューが空なら、$P$のオープンリストから最も優先度の高いノードを展開し、新しいノードを生成する。生成されたノード$s$に対してそれぞれハッシュキー$K(s)$を計算する。ノード$s$は$K(s)$を担当するプロセッサのメッセージキューに送信される。この送信は非同期的で、ロックを必要としない。$P$は送信先からの返信を待たずに次の計算に移る。
 \end{enumerate}
 
@@ -205,7 +204,7 @@ HDA*のHash関数はHDA*の性能に非常に重要である。Hash関数に求�
 $R_{i}$はランダムに生成される為、$Z(s)$は均等な確率で定義域の全ての値が出ると期待される。また、状態の全情報を利用して生成される為、局所的な状態の変化に対しても不偏な分配を行うことが出来る。$xor$によって計算する為、親ノードからの差分のみを計算してHash値を求めることが出来る。加えて、XOR命令は非常に速い計算である。よってZobrist Hashは高速に求めることが出来る。
 
 
-\subsection{PBNF}
+\subsection{PBNF (SafePBNF)}
 
 PBNFは状態空間を複数のNBlockに分割し、各スレッドがNBlockを交換しながら探索する手法である\cite{Burns2010}。それぞれのNBlockはオープンリストとクローズドリストを持つ。それぞれのスレッドは最も有望なノードを持つNBlockを占有し、探索を行う。また、占有したNBlockに隣接するNBlockをスレッドのinterference scopeに加える。他のスレッドのinterference scopeに加わったNBlockを探索することは出来ない。同一のNBlockは複数のinterference scopeに入ることが出来る。自分の占有しているNBlockよりも有望なノードを持つNBlockが空いていれば、今探索していたNBlockとinterference scopeを解放し、新しいNBlockを占有して探索を始める。このとき、あまりに頻繁なNBlockの切り替えが生じるのを防ぐために、NBlockを切り替える前に探索する最小のノード数が設定される。これはチューニングの必要なパラメータである。NBlockはスレッドに占有されるので、オープンリスト・クローズドリストに相互排他ロックをかける必要がない。必要なロックは空いているNBlockを保存するheapのみである。
 
@@ -440,12 +439,12 @@ Bind Effect, Burst Effectは問題サイズが大きくなるに従い相対的�
 12, 24 threadsのときに探索オーバーヘッドが若干生じる。Zobrist Hashは、スレッドの数が$2^n$でない場合、スレッドの数で除算しなければならない。このとき、ノードの分配は不均一になる。不均一性はZobrist Hashのビット列の長さとトレードオフになる。長いほどスレッド間の分配は均一になるが、各ノードに必要な情報が増える。本実験では4 Bytes (4294967296)をビット列の長さとした。理論的には、24スレッド実行において最も分配の多いスレッドと最も少ないスレッドのノードの比率は178956971:178956970である。ほぼ無視出来る差であるように考えられるが、探索オーバーヘッドが生じている。この探索オーバーヘッドの原因やビット列の長さとのトレードオフは今後の研究課題である。
 % 計算機のアーキテクチャは12 core * 2であるので、アーキテクチャによる探索オーバーヘッドではないと考えられる。
 
-\section{HDA*とPBNFの性能比較実験}
+\section{HDA*とSafePBNFの性能比較実験}
 \label{sec:analysis2}
 
 \subsection{先行研究における比較実験の問題点}
 
-Burnsらの比較実験には複数問題点がある\cite{Burns2010}。まず、HDA*のHash関数を汎用なHash関数によって実装しているが、KishimotoらはZobrist Hashを用いて実装した。Hash関数によってアルゴリズムの挙動は異なると考えられるが、その違いは検証されていない。また、Burnsらの実験ではHDA*, PBNFのオープンリストをheapで実装している。コストが整数のドメインはオープンリストをvectorで実装することが出来る。heapに対するアクセスが$O(logn)$であるのに対してvectorへのアクセスは$O(1)$である。Burnsらは別の論文で、15 Puzzleドメインを対象にA*探索の最適化を議論しており、heap実装とvector実装の比較実験を行い、vector実装が3倍程度高速であると結論した\cite{Burns2012implementing}。HDA*とPBNFは複数のオープンリストがある。HDA*はスレッドの数に分割され、PBNFはNBlockの数に分割される。NBlockは15 Puzzleの場合3360個に分割される。両アルゴリズムは各オープンリストが小さくなるので、高速化の割合はそれぞれ逐次A*における３倍よりも小さくなると推測されるが、まだ検証はされていない。もう一つ重要な問題点として、ベンチマーク問題のサイズが小さいということが挙げられる。\ref{sec:speedup_size}節で議論したように、HDA*の高速化効率は1000秒程度の問題まで向上し続け、ほぼperfect linear speedupになる。しかしながらBurnsらの用いた問題集はA*探索で10秒未満のものが殆どである。よって、ベンチマーク問題の問題サイズを考慮した比較・解析が必要である。
+Burnsらの比較実験には複数問題点がある\cite{Burns2010}。まず、HDA*のHash関数を汎用なHash関数によって実装しているが、KishimotoらはZobrist Hashを用いて実装した。Hash関数によってアルゴリズムの挙動は異なると考えられるが、その違いは検証されていない。また、Burnsらの実験ではHDA*, SafePBNFのオープンリストをheapで実装している。コストが整数のドメインはオープンリストをvectorで実装することが出来る。heapに対するアクセスが$O(logn)$であるのに対してvectorへのアクセスは$O(1)$である。Burnsらは別の論文で、15 Puzzleドメインを対象にA*探索の最適化を議論しており、heap実装とvector実装の比較実験を行い、vector実装が3倍程度高速であると結論した\cite{Burns2012implementing}。HDA*とSafePBNFは複数のオープンリストがある。HDA*はスレッドの数に分割され、SafePBNFはNBlockの数に分割される。NBlockは15 Puzzleの場合3360個に分割される。両アルゴリズムは各オープンリストが小さくなるので、高速化の割合はそれぞれ逐次A*における３倍よりも小さくなると推測されるが、まだ検証はされていない。もう一つ重要な問題点として、ベンチマーク問題のサイズが小さいということが挙げられる。\ref{sec:speedup_size}節で議論したように、HDA*の高速化効率は1000秒程度の問題まで向上し続け、ほぼperfect linear speedupになる。しかしながらBurnsらの用いた問題集はA*探索で10秒未満のものが殆どである。よって、ベンチマーク問題の問題サイズを考慮した比較・解析が必要である。
 \newline
 実験マシンはIntel dual-quad Xeon 2.33GHzプロセッサ, 32GB RAMのものを使用した。OSはGNU/Linux Ubuntu 14.04である。スレッドはpthreadライブラリで実装した。なお、本実験は様々な問題ドメインとアルゴリズムを比較するために、\ref{sec:analysis1}章とは異なる実装のコードを利用した。
 
@@ -503,7 +502,7 @@ SafePBNFのパラメータとして、NBlockの個数と最小探索ノード数
 
 図\ref{fig:safepbnf_tuning}が実行結果である。SafePBNFにおいては、HDA*ほどの高速化が得られないようである。heapに対するアクセスは$O(logn)$であるのに対してvectorは$O(1)$である。本実験でSafePBNFは3360個のオープンリストに分割されている。その為各オープンリストが小さく、$O(logn)$と$O(1)$の差が小さい為、vector実装による高速化が小さいと考えられる。翻って、SafePBNFはheap実装による遅延の影響が小さいとも言える。
 
-\subsection{HDA*とPBNFの性能比較実験}
+\subsection{HDA*とSafePBNFの性能比較実験}
 
 \ref{sec:hdastar_tuning}節より、HDA*はZobrist Hashingとvectorによる実装が最も速いと結論された。\ref{sec:pbnf_tuning}節では、SafePBNFはvectorとheapによる実装で大きなパフォーマンスの違いは見られなかった。一方、vector実装はコストが整数値のドメインでのみ可能な実装であるのに対して、heap実装はコストが実数値のドメインでも有効である。よって、vectorとheapの両方の実装で性能評価をする必要がある。以下、15 Puzzle, 24 Puzzle, Grid Pathfinding, TSPドメインで実験を行った。15 Puzzleはvectorとheapのそれぞれ、24 Puzzle、 Grid Pathfindingはvector, TSPはheapで実装をした。TSPのヒューリスティックはminimum spanning treeとround trip distanceの両方で実験をした。インスタンスの都市の数はそれぞれ20と13とした。HDA*のHash関数はZobrist Hashによる。並列アルゴリズムは全て8スレッドの実行による。どのドメイン・インスタンスも実行時間の上限は2000秒とした。
 
@@ -539,7 +538,7 @@ SafePBNFのパラメータとして、NBlockの個数と最小探索ノード数
 		\caption{TSP13 round trip (heap)}
 		\label{fig:tsp_13}
 	\end{subfigure}
-	\caption{HDA*とPBNFの実行速度の比較}
+	\caption{HDA*とSafePBNFの実行速度の比較}
 	\label{fig:comparison}
 \end{figure}%
 
@@ -575,14 +574,14 @@ SafePBNFのパラメータとして、NBlockの個数と最小探索ノード数
 		\caption{TSP13 round trip (heap)}
 		\label{fig:tsp_13_expd}
 	\end{subfigure}
-	\caption{HDA*とPBNFの探索ノード数の比較}
+	\caption{HDA*とSafePBNFの探索ノード数の比較}
 	\label{fig:comparison_expd}
 \end{figure}%
 
 \begin{table}
 	\centering
 	\begin{tabular}{lrrrr} \hline
-		 & &             HDA* & & PBNF \\ 
+		 & &             HDA* & & SafePBNF \\ 
 		 &  解の発見回数 & 最初の解の発見時間 & 解の発見回数 & 最初の解の発見時間 \\ \hline
 		15 Puzzle & 1 & 14.56 & 1.14 & 20.73 \\ 
 		24 Puzzle & 1 & 59.82 & 1 & 67.04 \\ 
@@ -620,7 +619,7 @@ HDA*の探索オーバーヘッドの原因を３つに分類を行い、十分�
 
 \item HDA*とPBNFの再評価
 
-先行研究の分析の問題点を指摘し、より正確かつミクロな分析を行った。実験により、マルチコア環境においても相応しい実装を行えばHDA*の方がパフォーマンスに優れるという結果を得た。また、本研究ではOptimal Searchを対象としたがSuboptimal Searchにおける実験は行っていない。Suboptimal Searchにおける性能比較は今後研究課題である。簡易ヒューリスティックを用いたTravelling Salesperson ProblemにおいてはPBNFの方がHDA*よりも速いという結果を得た。これはPBNFのheapの方が小さい為、heapへのアクセスが速い為ではないかと考えられる。heapは複数に分割することが出来る。分割heapを用いることで実数コストドメインにおけるHDA*, PBNFのパフォーマンスを向上させることが出来るかもしれない。これは今後の研究課題である。
+先行研究の分析の問題点を指摘し、より正確かつミクロな分析を行った。実験により、マルチコア環境においても相応しい実装を行えばHDA*の方がパフォーマンスに優れるという結果を得た。また、本研究ではOptimal Searchを対象としたがSuboptimal Searchにおける実験は行っていない。Suboptimal Searchにおける性能比較は今後研究課題である。簡易ヒューリスティックを用いたTravelling Salesperson ProblemにおいてはSafePBNFの方がHDA*よりも速いという結果を得た。これはSafePBNFのheapの方が小さい為、heapへのアクセスが速い為ではないかと考えられる。heapは複数に分割することが出来る。分割heapを用いることで実数コストドメインにおけるHDA*, SafePBNFのパフォーマンスを向上させることが出来るかもしれない。これは今後の研究課題である。
 
 \end{enumerate}
 
