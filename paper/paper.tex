@@ -559,13 +559,13 @@ SafePBNFのパラメータとして、NBlockの個数と最小探索ノード数
 
 \begin{table}
 	\centering
-	\begin{tabular}{lrr} \hline
+	\begin{tabular}{lrrrr} \hline
 		 & &             HDA* & & PBNF \\ 
-		 &  発見回数 & 最初の解の発見時間 & 発見回数 & 最初の解の発見時間 \hline
+		 &  解の発見回数 & 最初の解の発見時間 & 解の発見回数 & 最初の解の発見時間 \\ \hline
 		15 Puzzle & 1 & 14.56 & 1.14 & 52.53 \\ 
 		24 Puzzle & 1 & 59.82 & 1 & 67.04 \\ 
 		Grid Pathfinding & 1.02 & 3.45 & 1.02 & 3.30 \\ 
-		TSP & 1 & 16.80 & 2.6 & 8.64 \\ \hline
+		TSP & 1 & 16.80 & \textbf{2.6} & 8.64 \\ \hline
 	\end{tabular}
 	\caption{解の発見回数と最初の解の発見時間}
 	\label{hdastar_incumbent}
