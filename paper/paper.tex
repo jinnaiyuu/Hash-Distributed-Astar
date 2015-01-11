@@ -248,7 +248,7 @@ Grid Pathfindingは二次元のグリッドにおいて、障害物を避けつ�
 
 \subsection{Travelling Salesperson Problem (TSP)}
 
-Travelling Salesperson Problem (TSP)は、都市の集合とそれぞれの２都市間の距離が与えられたとき、全ての都市を一度ずつ訪れ、出発都市に戻る為の最短経路を求める問題である。TSPで使われるヒューリスティック関数の一つはMinimum Spanning Treeである。Minimum Spanning Treeはグラフの全ての頂点を含む、最も辺の長さが小さい部分グラフである。これはゴールまでの経路よりも短いか同等である。なぜなら、ゴールまでの経路の方が短いならば、それがMinimum Spanning Treeになるはずであるからである。よって、Minimum Spanning Treeはadmissibleなヒューリスティック関数である。本研究では$1\times1$の盤に対してランダムに２０都市を配置し、都市間の直線距離をコストとした。
+Travelling Salesperson Problem (TSP)は、都市の集合とそれぞれの２都市間の距離が与えられたとき、全ての都市を一度ずつ訪れ、出発都市に戻る為の最短経路を求める問題である。TSPで使われるヒューリスティック関数の一つはMinimum Spanning Treeである。Minimum Spanning Treeはグラフの全ての頂点を含む、最も辺の長さが小さい部分グラフである。これはゴールまでの経路よりも短いか同等である。なぜなら、ゴールまでの経路の方が短いならば、それがMinimum Spanning Treeになるはずであるからである。よって、Minimum Spanning Treeはadmissibleなヒューリスティック関数である。本研究では$1\times1$の盤に対してランダムに都市を配置し、都市間の直線距離をコストとした。
 
 \section{並列化に伴う探索オーバーヘッドの定性的な解析}
 \label{sec:analysis1}
@@ -489,7 +489,7 @@ SafePBNFのパラメータとして、NBlockの個数と最小探索ノード数
 
 \subsection{HDA*とPBNFの性能比較実験}
 
-\ref{sec:hdastar_tuning}節より、HDA*はZobrist Hashingとvectorによる実装が最も速いと結論された。\ref{sec:pbnf_tuning}節では、SafePBNFはvectorとheapによる実装で大きなパフォーマンスの違いは見られなかった。一方、vector実装はコストが整数値のドメインでのみ可能な実装であるのに対して、heap実装はコストが実数値のドメインでも有効である。よって、vectorとheapの両方の実装で性能評価をする必要がある。以下、15 Puzzle, 24 Puzzle, Grid Pathfinding, TSPドメインで実験を行った。15 Puzzleはvectorとheapのそれぞれ、24 Puzzle、 Grid Pathfindingはvector, TSPはheapで実装をした。HDA*のHash関数はZobrist Hashによる。並列アルゴリズムは全て8スレッドの実行による。どのドメイン・インスタンスも実行時間の上限は2000秒とした。
+\ref{sec:hdastar_tuning}節より、HDA*はZobrist Hashingとvectorによる実装が最も速いと結論された。\ref{sec:pbnf_tuning}節では、SafePBNFはvectorとheapによる実装で大きなパフォーマンスの違いは見られなかった。一方、vector実装はコストが整数値のドメインでのみ可能な実装であるのに対して、heap実装はコストが実数値のドメインでも有効である。よって、vectorとheapの両方の実装で性能評価をする必要がある。以下、15 Puzzle, 24 Puzzle, Grid Pathfinding, TSPドメインで実験を行った。15 Puzzleはvectorとheapのそれぞれ、24 Puzzle、 Grid Pathfindingはvector, TSPはheapで実装をした。TSPのヒューリスティックはminimum spanning treeとround trip distanceの両方で実験をした。インスタンスの都市の数はそれぞれ20と13とした。HDA*のHash関数はZobrist Hashによる。並列アルゴリズムは全て8スレッドの実行による。どのドメイン・インスタンスも実行時間の上限は2000秒とした。
 
 \begin{figure}
 %	\centering
@@ -515,8 +515,13 @@ SafePBNFのパラメータとして、NBlockの個数と最小探索ノード数
 	\end{subfigure}
 	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/tsp_20_walltime.pdf}
-		\caption{TSP (heap)}
+		\caption{TSP20 minimum spanning tree (heap)}
 		\label{fig:tsp_20_mst}
+	\end{subfigure}
+	\begin{subfigure}{0.4\columnwidth}
+		\includegraphics[width=\columnwidth]{eps/tsp_13_walltime.pdf}
+		\caption{TSP13 round trip (heap)}
+		\label{fig:tsp_13}
 	\end{subfigure}
 	\caption{HDA*とPBNFの実行速度の比較}
 	\label{fig:comparison}
@@ -529,29 +534,30 @@ SafePBNFのパラメータとして、NBlockの個数と最小探索ノード数
 		\caption{15 Puzzle (vector)}
 		\label{fig:15puzzle_vector_expd}
 	\end{subfigure}
-
 	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/15puzzle_heap_expd.pdf}
 		\caption{15 Puzzle (heap)}
 		\label{fig:15puzzle_heap_expd}
 	\end{subfigure}
-
 	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/24_expd.pdf}
 		\caption{24 Puzzle (vector)}
 		\label{fig:24puzzle_vector_expd}
 	\end{subfigure}
-
 	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/grid_expd.pdf}
 		\caption{Grid Pathfinding (vector)}
 		\label{fig:grid_expd}
 	\end{subfigure}
-
 	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/tsp_20_expd.pdf}
-		\caption{TSP (heap)}
+		\caption{TSP20 minimum spanning tree (heap)}
 		\label{fig:tsp_20_mst_expd}
+	\end{subfigure}
+	\begin{subfigure}{0.4\columnwidth}
+		\includegraphics[width=\columnwidth]{eps/tsp_13_expd.pdf}
+		\caption{TSP13 round trip (heap)}
+		\label{fig:tsp_13_expd}
 	\end{subfigure}
 	\caption{HDA*とPBNFの探索ノード数の比較}
 	\label{fig:comparison_expd}
@@ -562,10 +568,11 @@ SafePBNFのパラメータとして、NBlockの個数と最小探索ノード数
 	\begin{tabular}{lrrrr} \hline
 		 & &             HDA* & & PBNF \\ 
 		 &  解の発見回数 & 最初の解の発見時間 & 解の発見回数 & 最初の解の発見時間 \\ \hline
-		15 Puzzle & 1 & 14.56 & 1.14 & 52.53 \\ 
+		15 Puzzle & 1 & 14.56 & 1.14 & 20.73 \\ 
 		24 Puzzle & 1 & 59.82 & 1 & 67.04 \\ 
 		Grid Pathfinding & 1.02 & 3.45 & 1.02 & 3.30 \\ 
-		TSP & 1 & 16.80 & \textbf{2.6} & 8.64 \\ \hline
+		TSP20(MST) & 1 & 5.18 & \textbf{2.25} & \textbf{1.23} \\ 
+		TSP13(RT) & 1 & 16.80 & \textbf{2.60} & \textbf{8.56} \\ \hline
 	\end{tabular}
 	\caption{解の発見回数と最初の解の発見時間}
 	\label{hdastar_incumbent}
@@ -573,17 +580,17 @@ SafePBNFのパラメータとして、NBlockの個数と最小探索ノード数
 
 図\ref{fig:comparison}が実行速度の比較である。特に実行時間の大きい問題ドメイン・インスタンスにおいて、HDA*はSafePBNFよりもパフォーマンスに優れる。
 
-Grid Pathfindingを除きどのドメインでもHDA* vs. SafePBNFの探索ノード数はあまり変わらない。\ref{sec:analysis1}章の結論とこの結果を踏まえると、BurnsらがHDA*の探索オーバーヘッドを指摘したのはNaive Hashによる実装であったからであると結論出来るだろう。
+15 PuzzleドメインにおいてHDA* vs. SafePBNFの探索ノード数はあまり変わらない。\ref{sec:analysis1}章の結論とこの結果を踏まえると、BurnsらがHDA*の探索オーバーヘッドを指摘したのはNaive Hashによる実装であったからであると結論出来るだろう。
 
 Parallel A*はどのドメインにおいてもA*よりも遅くなってしまう。Parallel A*は非常にシンプルな並列アルゴリズムであるが、探索の高速化はもたらさない。
 
 図\ref{fig:15puzzle_heap}は15 Puzzleに対してheapで実装した場合の実行時間である。SafePBNFの利点として、Burnsらはオープンリストが小さい為、heapへのアクセスが速いということと挙げた\cite{Burns2010}。しかし、この実験結果はheap実装においてもHDA*がSafePBNFよりもパフォーマンスに優れるということを示す。
 
 % TSPはSafePBNFが得意な問題ドメインであると考えられる。空間を簡単に分割することが出来る為である。
-SafePBNFはその探索方法から、weighted A*のような特徴を持つ\cite{Burns2010}。すなわち、最適でない解を素早く見つけることが出来る。最適でない解を発見した場合、その解のコストよりもコストの大きいノードを生成する必要がなくなる。ノードの生成は探索時間の大きな割合を占める為、生成の回数を減らすことはsubstantialな高速化につながることが多い。TSPは解が沢山あるドメインである。表\ref{hdastar_incumbent}はHDA*とSafePBNFにおいて、解を発見した平均の回数である。
+表\ref{hdastar_incumbent}はHDA*とSafePBNFにおいて、解を発見した平均の回数である。SafePBNFの探索方法はweighted A*のような特徴を持つ\cite{Burns2010}。すなわち、最適でない解を素早く見つけることが出来る。最適でない解を発見した場合、その解のコストよりもコストの大きいノードを生成する必要がなくなる。ノードの生成は探索時間の大きな割合を占める為、生成の回数を減らすことはsubstantialな高速化につながることが多い。TSPは深さが都市の数と同じノードは全て解である。都市が20個の場合は$20!/2$通りの解が存在する。
+SafePBNFは解が沢山あるTSPでは解を素早く発見でき、その為最適解も高速に見つけられると考えられる。
 
 実行時間が5秒未満程度の小さい問題に対してはHDA*よりもSafePBNFの方が優れる場合が多い。特にGrid Pathfindingにおいて顕著に見られる。また、この時HDA*の展開ノード数はSafePBNFよりも大きい。\ref{sec:analysis1}章で述べたように、HDA*は実行時間の冒頭と末尾に探索オーバーヘッドがある。実行時間が短い場合、これらのオーバーヘッドの割合が大きくなる。よって、小さな問題インスタンスに対しては探索オーバーヘッドが大きく、SafePBNFの方が速いと考えられる。
-
 
 \section{おわりに}
 \label{sec:conclusion}
