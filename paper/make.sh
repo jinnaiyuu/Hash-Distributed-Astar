@@ -12,7 +12,9 @@ platex -shell-escape paper.tex
 pbibtex paper.aux
 platex -shell-escape paper.tex
 dvipdfmx paper.dvi
-cp paper.pdf /home/yuu/Dropbox/"2015_${date}_陣内佑_マルチコア環境における並列A*探索の探索オーバーヘッドの定性的な解析とアルゴリズムの再評価.pdf"
+cp paper.pdf "2015_${date}_陣内佑_マルチコア環境における並列A*探索の探索オーバーヘッドの定性的な解析とアルゴリズムの再評価.pdf"
+cp "2015_${date}_陣内佑_マルチコア環境における並列A*探索の探索オーバーヘッドの定性的な解析とアルゴリズムの再評価.pdf" /home/yuu/Dropbox/
+
 
 
 evince paper.pdf
