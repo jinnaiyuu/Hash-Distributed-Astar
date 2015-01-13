@@ -195,7 +195,7 @@ Efficiencyは理想的には1になるが、上述のオーバーヘッドがか
 HDA*はParallel Retracting A*とTransposition-table driven work schedulingのアイディアを発展させた手法である。
 \newline
 
-\subsection{PRA*}
+\subsection{Parallel Retracting A* (PRA*)}
 \index{Parallel Retracting A*, PRA*}
 % PRA*の説明
 Parallel Retracting A* (PRA*)は各スレッドにローカルにオープンリストとクローズドリストを持つ\cite{evett1995massively}。グラフのノードはHash関数によって均等かつ無作為に分割し各スレッドに割り当てられる。各スレッドは自分に割り当てられたノードのみを探索し、他スレッドに割り当てられたノードを生成した場合はそのスレッドにノードを同期的に送信する。Hash関数が均等かつ無作為な分割であれば、仕事の分配は均等であり、全てのスレッドが効率的に仕事をすることが出来る。また、クローズドリストをローカルに置くことが出来るので、分散メモリ環境においても効率的に重複の確認が可能である。ノードの送信時、送信側のスレッドは受信側のスレッドが受信の態勢に入るのを待ち、受信側スレッドは受信に成功したら送信側スレッドにそれを報告する。送信側スレッドはその報告を受け取るまで待機しなければならない。この為PRA*は同期オーバーヘッドが大きいという問題がある。
@@ -205,8 +205,8 @@ Parallel Retracting A* (PRA*)は各スレッドにローカルにオープンリ
 Mahapatra and DuttはHash関数による仕事の分配をより深く研究した。
 \newline
 
-\subsection{TDS}
-\index{Transposition-table driven work scheduling. TDS}
+\subsection{Transposition-table driven work scheduling (TDS)}
+\index{Transposition-table driven work scheduling, TDS}
 % TODO: TDSの説明
 Transposition-table driven work scheduling (TDS)は分散メモリ環境におけるIDA*の並列アルゴリズムである\cite{romein1999transposition}。TDSはPRA*同様にHash関数によってノードを分配する。Transposition-tableはプロセッサの数だけ分割されており、ノードの重複を調べる為に使われる。TDSはTransposition-tableによって探索オーバーヘッドが非常に小さい。TDSは分散メモリ環境において、特に15 PuzzleやRubik's cubeなどの問題で高速化出来る。TDSの基礎となるアイディアは二人零和ゲームにも応用されている。
 \newline
@@ -215,7 +215,7 @@ Transposition-table driven work scheduling (TDS)は分散メモリ環境にお�
 %\newline
 
 % HDA*の定義
-\subsection{HDA*}
+\subsection{Hash Distributed A* (HDA*)}
 \index{HDA*}
 HDA*はPRA*で提案されたHashによる仕事の分配メカニズムに基づく手法である。
 各スレッドはローカルにオープンリストとクローズドリストを持つ。グラフのノードはHash関数によって均等かつ無作為に分割し各スレッドに割り当てられる。各スレッドは自分に割り当てられたノードのみを探索し、他スレッドに割り当てられたノードを生成した場合はそのスレッドにノードを非同期的に送信する。
@@ -252,10 +252,10 @@ HDA*のHash関数はHDA*の性能に非常に重要である。Hash関数に求�
 $R_{i}$はランダムに生成される為、$Z(s)$は均等な確率で定義域の全ての値が出ると期待される。また、状態の全情報を利用して生成される為、局所的な状態の変化に対しても不偏な分配を行うことが出来る。$xor$によって計算する為、親ノードからの差分のみを計算してHash値を求めることが出来る。加えて、XOR命令は非常に速い計算である。よってZobrist Hashは高速に求めることが出来る。
 
 
-\subsection{PBNF (SafePBNF)}
-\index{PBNF, SafePBNF}
-
-PBNFは状態空間を複数のNBlock\index{NBlock}に分割し、各スレッドがNBlockを交換しながら探索する手法である\cite{Burns2010}。それぞれのNBlockはオープンリストとクローズドリストを持つ。それぞれのスレッドは最も有望なノードを持つNBlockを占有し、探索を行う。また、占有したNBlockに隣接するNBlockをスレッドのinterference scopeに加える。他のスレッドのinterference scopeに加わったNBlockを探索することは出来ない。同一のNBlockは複数のinterference scopeに入ることが出来る。自分の占有しているNBlockよりも有望なノードを持つNBlockが空いていれば、今探索していたNBlockとinterference scopeを解放し、新しいNBlockを占有して探索を始める。このとき、あまりに頻繁なNBlockの切り替えが生じるのを防ぐために、NBlockを切り替える前に探索する最小のノード数が設定される。これはチューニングの必要なパラメータである。NBlockはスレッドに占有されるので、オープンリスト・クローズドリストに相互排他ロックをかける必要がない。必要なロックは空いているNBlockを保存するheapのみである。
+\subsection{Parallel Best-NBlock First (PBNF, SafePBNF)}
+\index{Parallel Best-NBlock First, PBNF}
+\index{SafePBNF}
+Parallel Best-NBlock First (PBNF)は状態空間を複数のNBlock\index{NBlock}に分割し、各スレッドがNBlockを交換しながら探索する手法である\cite{Burns2010}。それぞれのNBlockはオープンリストとクローズドリストを持つ。それぞれのスレッドは最も有望なノードを持つNBlockを占有し、探索を行う。また、占有したNBlockに隣接するNBlockをスレッドのinterference scopeに加える。他のスレッドのinterference scopeに加わったNBlockを探索することは出来ない。同一のNBlockは複数のinterference scopeに入ることが出来る。自分の占有しているNBlockよりも有望なノードを持つNBlockが空いていれば、今探索していたNBlockとinterference scopeを解放し、新しいNBlockを占有して探索を始める。このとき、あまりに頻繁なNBlockの切り替えが生じるのを防ぐために、NBlockを切り替える前に探索する最小のノード数が設定される。これはチューニングの必要なパラメータである。NBlockはスレッドに占有されるので、オープンリスト・クローズドリストに相互排他ロックをかける必要がない。必要なロックは空いているNBlockを保存するheapのみである。
 % Livelock
 PBNFはLivelockが起こる可能性がある。Livelockは、複数のスレッドが同じ資源を解放する処理を実行しているにも拘らず、どちらのスレッドも資源が獲得出来ない状況である。この時、アルゴリズムは有限時間内に終了しないことになる。あるNBlockが複数のスレッドのinterference scopeに入っている場合、どのスレッドもそのNBlockを探索することが出来ない状態になりうる。Burnsらはこの問題を解決したSafePBNFを提案し、SafePBNFにおいてLivelockが発生しないことを証明した。SafePBNFは、あるNBlockが複数のスレッドのinterference scopeに入っている場合、このNBlockをhotとする。hotなNBlockを探索する要求があった場合、そのNBlockをinterference scopeに含むスレッドは現在探索しているNBlockを解放する。これによって、Livelockを防ぐことが出来る。
 % Why SafePBNF, not PBNF?
@@ -298,8 +298,12 @@ Livelockの可能性のあるアルゴリズムは完全ではない。アルゴ
 \end{figure}% 
 % What is slinding tile puzzle? % TODO: 過去形？現在形？
 図\ref{fig:15puzzle}のように、四角い枠にタイルが敷き詰められている。枠には一ヶ所タイルのない場所があり、そこに縦と横からタイルをスライドすることが出来る。\textbf{Sliding-tile Puzzle}は、タイルのスライドによって初期状態から特定のゴール状態まで動かす経路を求める問題である。15 Puzzleの状態空間の大きさはおよそ$10^{13}$状態、24 Puzzleの状態空間はおよそ$10^{25}$状態である。 本研究では15 Puzzleのヒューリスティック関数は\textbf{マンハッタン距離}\index{マンハッタン距離}を用いた。マンハッタン距離ヒューリスティックは、各タイルのゴール状態での位置までのマンハッタン距離の総和で求められる。タイルは同時に２つ動かすことは出来ない。また、あるタイルがゴール位置に動かす為には少なくともマンハッタン距離の回数だけ動かす必要がある。よって、マンハッタン距離ヒューリスティックはadmissibleなヒューリスティック関数である。
+\newline
+
 % Why 15 Puzzle as the main benchmark?
 15 Puzzleはノードの展開が非常に高速なドメインである。ノードの展開が速いドメインは並列化によって高速化することが困難である。なぜならば、展開が高速である分、同期オーバーヘッドや通信オーバーヘッドによる遅延の影響が大きくなるからである。15 Puzzleドメインにおいて高速化が可能であれば、多くのドメインにおいても同様に高速化が可能であると考えられる。この理由から、15 Puzzleは並列探索のベンチマーク問題として広く使われている。本研究でも主に15 Puzzleをベンチマーク問題として使った。
+\newline
+
 % 24 Puzzle and why not manhattan distance?
 マンハッタン距離は24 Puzzleを解くにはシンプルすぎるヒューリスティックである。24 Puzzleのヒューリスティック関数は\textbf{Disjoint pattern database heuristics}\index{Disjoint pattern database heuristics}を用いた\cite{Korf2002}。Disjoint pattern database heuristicsはCulbersonらの提案したPattern databasesを拡張したヒューリスティックである。Pattern database heuristicsは問題の部分問題に対する最適解のコストを予めデータベースに記録し、ヒューリスティック関数として用いる手法である\cite{Culberson1998pattern}。Disjoint pattern databasesは複数のPattern databaseを用いることで複数の部分問題のコストの和をヒューリスティック関数とする。Sliding-tile Puzzleにおいては、タイルを複数のグループに分ける。同じタイルは２つ以上のグループに含まれない。それぞれのグループにおいて、そのグループ内のタイルがゴール位置にたどり着く為の最小コストを求め、データベースに保存する。ある状態に対して、それぞれのグループがゴール位置にたどり着く為の最小コストをデータベースから読み、それらの和をヒューリスティックの値とする。この値は少なくともマンハッタン距離以上である。マンハッタン距離がタイル間の相互作用を考慮しないのに対して、このヒューリスティックは同じグループ間の相互作用を考慮するので、多くの場合はマンハッタン距離よりも大きい。Disjoint pattern database heursiticsはマンハッタン距離よりも正確なヒューリスティックである。
 
