@@ -209,11 +209,10 @@ Mahapatra and DuttはHash関数による仕事の分配をより深く研究し�
 \index{Transposition-table driven work scheduling. TDS}
 % TODO: TDSの説明
 Transposition-table driven work scheduling (TDS)は分散メモリ環境におけるIDA*の並列アルゴリズムである\cite{romein1999transposition}。TDSはPRA*同様にHash関数によってノードを分配する。Transposition-tableはプロセッサの数だけ分割されており、ノードの重複を調べる為に使われる。TDSはTransposition-tableによって探索オーバーヘッドが非常に小さい。TDSは分散メモリ環境において、特に15 PuzzleやRubik's cubeなどの問題で高速化出来る。TDSの基礎となるアイディアは二人零和ゲームにも応用されている。
-
 \newline
 
 % PRA*はHash関数によって効率的な仕事の分配を可能にした。同時に、クローズドリストをローカルに置くことで効率的にノードの重複の確認が出来るという利点がある。TDSは非同期的な通信が同期的通信に大きく上回るメリットがあることを示した。HDA*はこれらの手法の良い点を組み合わせた方法である。
-\newline
+%\newline
 
 % HDA*の定義
 \subsection{HDA*}
