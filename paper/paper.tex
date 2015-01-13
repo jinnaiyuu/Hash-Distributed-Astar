@@ -196,13 +196,12 @@ Efficiencyは理想的には1になるが、上述のオーバーヘッドがか
 \index{Parallel Retracting A*, PRA*}
 % まずPRA*とTDSの説明を行い、比較したHDA*の利点の説明
 % HDA*はParallel Retracting A* (PRA*)とTransposition-table driven work scheduling (TDS)のアイディアを発展させた手法である。
-\newline
 % PRA*の説明
 Parallel Retracting A* (PRA*)は各スレッドにローカルにオープンリストとクローズドリストを持つ\cite{evett1995massively}。グラフのノードはHash関数によって均等かつ無作為に分割し各スレッドに割り当てられる。各スレッドは自分に割り当てられたノードのみを探索し、他スレッドに割り当てられたノードを生成した場合はそのスレッドにノードを同期的に送信する。Hash関数が均等かつ無作為な分割であれば、仕事の分配は均等であり、全てのスレッドが効率的に仕事をすることが出来る。また、クローズドリストをローカルに置くことが出来るので、分散メモリ環境においても効率的に重複の確認が可能である。ノードの送信時、送信側のスレッドは受信側のスレッドが受信の態勢に入るのを待ち、受信側スレッドは受信に成功したら送信側スレッドにそれを報告する。送信側スレッドはその報告を受け取るまで待機しなければならない。この為PRA*は同期オーバーヘッドが大きいという問題がある。
 \newline
 
 % TODO: Mahapatra and Duttの説明
-MahapatraとDuttはPRA*で提案されたHash関数による仕事の分配をより深く研究した\cite{mahapatra1997scalable}。彼らはSEL_SEQ_A*を対象として、効率よく重複の枝刈りの出来るHash関数を提案した。SEL_SEQ_A*はA*探索の変化形であり、$f$値の小さいノードの生成を後周しにする手法である。彼らはまず、PRA*で提案されたHash関数による分配をSEL_SEQ_A*に適応したものをGlobal Hashing of Nodes (GOHA)と定義して実装をした。その上で、彼らはQuality Equalizingのメカニズムを適応したGlobal Hashing of Nodes and Quality Equalizing (GOHA&QE)。この手法は異なるメカニズムで重複の確認と仕事の分配を行う。一度オーナーに重複がないことが確認されたノードは、どのプロセスで展開しても問題ない。GOHA&QEは仕事を効率的に分配する為に、重複の確認後に更に各プロセスの仕事の質に応じて仕事の再分配を行う。GOHA及びGOHA&QEで使われるHash関数はグローバルであり、ノードはあるプロセッサからどのプロセッサにも送信される可能性がある。一般に、並列コンピュータアーキテクチャにおいて、プロセッサ同士の通信コストはペア毎に異なる。よって、このようなHash関数は最適ではない可能性がある。Local Hashing of Nodes and Quality Equalizinig (LOHA&QE)は探索空間を複数のグループに分割し、隣り合うグループが隣り合うプロセッサに割り当てる手法である。MahapatraとDuttはTravelling Salesperson Problemにおいてこれらの手法が単純なPRA*よりもパフォーマンスに優れることを示した。この手法はコンピュータのアーキテクチャに依存し、かつLOHAは問題ドメインに対して複数の前提を必要とするという問題点がある。
+MahapatraとDuttはPRA*で提案されたHash関数による仕事の分配をより深く研究した\cite{mahapatra1997scalable}。彼らはSEL\_SEQ\_A*を対象として、効率よく重複の枝刈りの出来るHash関数を提案した。SEL\_SEQ\_A*はA*探索の変化形であり、$f$値の小さいノードの生成を後周しにする手法である。彼らはまず、PRA*で提案されたHash関数による分配をSEL\_SEQ\_A*に適応したものをGlobal Hashing of Nodes (GOHA)と定義して実装をした。その上で、彼らはQuality Equalizingのメカニズムを適応したGlobal Hashing of Nodes and Quality Equalizing (GOHA\&QE)。この手法は異なるメカニズムで重複の確認と仕事の分配を行う。一度オーナーに重複がないことが確認されたノードは、どのプロセスで展開しても問題ない。GOHA\&QEは仕事を効率的に分配する為に、重複の確認後に更に各プロセスの仕事の質に応じて仕事の再分配を行う。GOHA及びGOHA\&QEで使われるHash関数はグローバルであり、ノードはあるプロセッサからどのプロセッサにも送信される可能性がある。一般に、並列コンピュータアーキテクチャにおいて、プロセッサ同士の通信コストはペア毎に異なる。よって、このようなHash関数は最適ではない可能性がある。Local Hashing of Nodes and Quality Equalizinig (LOHA\&QE)は探索空間を複数のグループに分割し、隣り合うグループが隣り合うプロセッサに割り当てる手法である。MahapatraとDuttはTravelling Salesperson Problemにおいてこれらの手法が単純なPRA*よりもパフォーマンスに優れることを示した。この手法はコンピュータのアーキテクチャに依存し、かつLOHAは問題ドメインに対して複数の前提を必要とするという問題点がある。
 
 \subsection{Transposition-table driven work scheduling (TDS)}
 \index{Transposition-table driven work scheduling, TDS}
