@@ -37,7 +37,7 @@ template<class D, class hash > class HDAstar: public SearchAlg<D> {
 
 	struct Node {
 		char f, g, pop;
-		char zbr; // zobrist value. stored here for now. Also the size is char for now.
+		unsigned int zbr; // zobrist value. stored here for now. Also the size is char for now.
 		int openind;
 		char thrown; // How many times this node has been outsourced.
 		Node *parent;
@@ -206,7 +206,7 @@ public:
 		// original 512927357
 		// now      200000000
 		// TODO: Must optimize these numbers
-		HashTable<typename D::PackedState, Node> closed(200000000 / tnum);
+		HashTable<typename D::PackedState, Node> closed(512927357);
 //		Heap<Node> open(100, overrun);
 		heap open(150, overrun);
 		Pool<Node> nodes(2048);
@@ -218,7 +218,7 @@ public:
 		// Therefore, not the best optimized way to do.
 		// Also we need to fix it to compile in Clang++.
 		std::vector<std::vector<Node*>> outgo_buffer;
-		outgo_buffer.reserve(8);
+		outgo_buffer.reserve(tnum);
 
 		std::vector<Node*> tmp;
 		tmp.reserve(10); // TODO: ad hoc random number
@@ -336,13 +336,14 @@ public:
 			if (n->thrown == 0) {
 				Node *duplicate = closed.find(n->packed);
 				if (duplicate) {
-#ifdef ANALYZE_DUPLICATE
-					duplicate_here++;
-#endif // ANALYZE_DUPLICATE
 					if (duplicate->f <= n->f) {
 						dbgprintf("Discarded\n");
 						nodes.destruct(n);
 						continue;
+#ifdef ANALYZE_DUPLICATE
+					} else {
+						duplicate_here++;
+#endif // ANALYZE_DUPLICATE
 					}
 					// Node access here is unnecessary duplicates.
 //					printf("Duplicated\n");
@@ -385,8 +386,8 @@ public:
 					printf("isgoal ERROR\n");
 					continue;
 				}
-				printf("GOAL!\n");
-				print_state(state);
+//				print_state(state);
+
 				std::vector<typename D::State> newpath;
 
 				for (Node *p = n; p; p = p->parent) {
@@ -395,7 +396,7 @@ public:
 					newpath.push_back(s); // This triggers the main loop to terminate.
 				}
 				int length = newpath.size();
-				dbgprintf("length = %d\n", length);
+				printf("Goal! length = %d\n", length);
 				// TODO: need to be atomic. Really?
 				if (incumbent > length) {
 					incumbent = length;
@@ -415,6 +416,7 @@ public:
 			closed.add(n);
 #endif
 			expd_here++;
+	//		printf("expd: %d\n", id);
 
 #ifdef ANALYZE_LAPSE
 			startlapse(&lapse);
@@ -427,6 +429,7 @@ public:
 					continue;
 				}
 
+//				printf("gend: %d\n", id);
 				gend_here++;
 
 				useless += uselessCalc(useless);
@@ -437,12 +440,14 @@ public:
 				Edge<D> e = this->dom.apply(state, op);
 
 				Node* next = wrap(state, n, e.cost, e.pop, nodes);
-//				printf("mv blank op = %d %d %d \n", moving_tile, blank, op);
-				//print_state(state);
+				//printf("mv blank op = %d %d %d \n", moving_tile, blank, op);
+//				print_state(state);
+
+				// TODO: Make Zobrist hash appropriate for 24 threads.
 				next->zbr = z.inc_hash(n->zbr, moving_tile, blank, op,
 						state.tiles);
-				unsigned long zbr = next->zbr; // % tnum;
-				//printf("zbr = %d\n", zbr);
+				unsigned int  zbr = next->zbr % tnum;
+//				printf("zbr, zbr_tnum = (%u, %u)\n", next->zbr, zbr);
 
 				// If the node belongs to itself, just push to this open list.
 				if (zbr == id) {
@@ -628,11 +633,21 @@ public:
 #ifdef ANALYZE_OUTSOURCING
 		printf("outsource node pushed = %d\n", outsource_pushed);
 #endif
+
 		printf("openlist size =");
 		for (int id = 0; id < tnum; ++id) {
 			printf(" %d", this->open_sizes[id]);
 		}
 		printf("\n");
+
+		printf("expd + openlist size =");
+				for (int id = 0; id < tnum; ++id) {
+					int sum = expd_distribution[id] + this->open_sizes[id];
+					printf(" %d", sum);
+				}
+				printf("\n");
+
+
 		return path;
 	}
 

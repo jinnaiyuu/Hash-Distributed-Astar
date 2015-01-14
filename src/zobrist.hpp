@@ -8,6 +8,8 @@
 #ifndef ZOBRIST_H_
 #define ZOBRIST_H_
 
+#include <climits>
+
 template<int size>
 class Zobrist {
 public:
@@ -17,6 +19,7 @@ public:
 	Zobrist(int tnum_ = 1, ABST abst = SINGLE) :
 			tnum(tnum_) {
 		initZobrist(abst);
+//		dump_table();
 	}
 
 
@@ -26,13 +29,12 @@ public:
 	 * @param to : Where the number is in child node
 	 * @return the value to XOR to the Zobrist value of parent.
 	 */
-
-	unsigned char inc_hash(unsigned char previous, const int number,
+	unsigned int inc_hash(unsigned int previous, const int number,
 			const int from, const int to, const char* const newBoard) {
-		return (previous ^ inc_zbr[number][from][to]) % tnum;
+		return (previous ^ inc_zbr[number][from][to]);
 	}
 
-	unsigned char hash_tnum(const char* const board) {
+	unsigned int hash_tnum(const char* const board) {
 		return hash(board) % tnum;
 	}
 
@@ -40,7 +42,9 @@ public:
 private:
 	void initZobrist(ABST abst) {
 		gen = std::mt19937(rd());
-		dis = std::uniform_int_distribution<>(0, tnum - 1);
+//		unsigned int max = std::numeric_limits<hashlength>::max();
+//		unsigned int max = UINT_MAX;
+		dis = std::uniform_int_distribution<>(INT_MIN, INT_MAX);
 // Not sure I should initialize it by time as it randomize the results for each run.
 #ifdef RANDOM_ZOBRIST_INITIALIZATION
 		srand(time(NULL));
@@ -142,7 +146,7 @@ private:
 	}
 
 	// The method to return zobrist value for the very first node.
-	unsigned char hash(const char* const board) {
+	unsigned int hash(const char* const board) {
 		unsigned char h = '\0';
 		for (int i = 0; i < 16; ++i) {
 			h = (h ^ zbr[board[i]][i]);
@@ -150,8 +154,8 @@ private:
 		return h;
 	}
 
-	int random() {
-		return dis(gen);
+	unsigned int random() {
+		return dis(gen) + INT_MAX;
 	}
 
 	void dump_table() {
@@ -162,13 +166,13 @@ private:
 		}
 	}
 
-	// Currently hard coding, set to 16.
+
 	int tnum;
-	unsigned char zbr[size][size];
+	unsigned int zbr[size][size];
 	// inc_zbr is the incremental XOR value for zobrist hash function.
 	// The value to XOR when the number moved from a to b is
 	// inc_zbr[number][a][b] or inc_zbr[number][b][a]
-	unsigned char inc_zbr[size][size][size];
+	unsigned int inc_zbr[size][size][size];
 
 
 	std::random_device rd;

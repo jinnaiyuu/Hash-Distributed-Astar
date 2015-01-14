@@ -48,6 +48,7 @@ Tiles::Tiles(FILE *in, int line) {
 
 	for (int i = 0; i < line; ++i) {
 		for (int t = 0; t < Ntiles; t++) {
+
 			int p;
 			int r = fscanf(in, " %u", &p);
 			if (r != 1)

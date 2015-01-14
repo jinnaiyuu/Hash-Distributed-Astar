@@ -65,12 +65,12 @@ void handler(int sig) {
 int main(int argc, const char *argv[]) {
 	try {
 		fflush(stdout);
-/*
- 		if (!(3 <= argc && argc <= 7))
-			throw Fatal(
-					"Usage: tiles <domain (if 24)> <algorithm> <problem number> "
-							"<thread number> <income threshold> <outgo threshold> <abstraction>\n");
-*/
+		/*
+		 if (!(3 <= argc && argc <= 7))
+		 throw Fatal(
+		 "Usage: tiles <domain (if 24)> <algorithm> <problem number> "
+		 "<thread number> <income threshold> <outgo threshold> <abstraction>\n");
+		 */
 		int pnum = 0;
 
 //		printf("pnum = %d\n", pnum);
@@ -78,17 +78,17 @@ int main(int argc, const char *argv[]) {
 //			printf("15 puzzle");
 //			argv++;
 //			argc--;
-/*
-			for (int i = 0; argv[2][i] != '\0'; ++i) {
-				pnum *= 10;
-				pnum += argv[2][i] - '0';
-			}
-*/
-		argv++;
-		argc--;
+			/*
+			 for (int i = 0; argv[2][i] != '\0'; ++i) {
+			 pnum *= 10;
+			 pnum += argv[2][i] - '0';
+			 }
+			 */
+			argv++;
+			argc--;
 			sscanf(argv[2], "%d", &pnum);
 
-			printf("pnum = %d",pnum);
+			printf("pnum = %d", pnum);
 			Tiles tiles(stdin, pnum);
 
 //			tiles.set_weight(2);
@@ -207,10 +207,9 @@ int main(int argc, const char *argv[]) {
 			// 15 Puzzle:  14 1 9 6 4 8 12 5 7 2 3 0 10 11 13 15
 			// 24 Puzzle:
 			// 1 2 0 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25
-			for (int i = 0; argv[2][i] != '\0'; ++i) {
-				pnum *= 10;
-				pnum += argv[2][i] - '0';
-			}
+			sscanf(argv[2], "%d", &pnum);
+//			printf("pnum = %d\n", pnum);
+			dfpair(stdout, "problem number", "%02d", pnum);
 			Tiles24 tiles(stdin, pnum);
 			SearchAlg<Tiles24> *search = NULL;
 			if (strcmp(argv[1], "astar") == 0) {
@@ -218,9 +217,13 @@ int main(int argc, const char *argv[]) {
 			} else if (strcmp(argv[1], "hdastar") == 0) {
 				search = new HDAstar<Tiles24, Zobrist<25> >(tiles,
 						std::stoi(argv[3]));
+			} else if (strcmp(argv[1], "hdastar_overrun") == 0) {
+				search = new HDAstar<Tiles24, Zobrist<25> >(tiles,
+						std::stoi(argv[3]), 1000000, 1000000, 0, std::stoi(argv[4]));
 			} else {
 				throw Fatal("Unknown algorithm: %s", argv[1]);
 			}
+
 
 			Tiles24::State init = tiles.initial();
 			dfheader(stdout);

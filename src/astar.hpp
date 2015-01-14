@@ -39,7 +39,7 @@ public:
 	// closed might be waaaay too big for my memory....
 	// original 512927357
 	// now      200　000　000
-	Astar(D &d) : SearchAlg<D>(d), closed(200000000), open(120) { }
+	Astar(D &d) : SearchAlg<D>(d), closed(512927357), open(120) { }
 
 
 	std::vector<typename D::State> search(typename D::State &init) {

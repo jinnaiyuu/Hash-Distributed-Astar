@@ -33,7 +33,7 @@ cat ${file} | awk 'BEGIN{printf("0 0\n"); cumwall=0} $2<9990{cumwall=cumwall + $
 
 cat ${file} | sort -n -k 3 > ${file}.expdsort
 
-cat ${file}.expdsort | awk 'BEGIN{printf("0 0\n"); pnum=1;} NF>=2&&$2<9990{pnum++;printf("%d %f\n", pnum, $3)}' > ${file}.correctrate.expd
+cat ${file}.expdsort | awk 'BEGIN{printf("0 0\n"); pnum=0;} NF>=2&&$2<9990{pnum++;printf("%d %f\n", pnum, $3)}' > ${file}.correctrate.expd
 
 #gnuplot<<EOF
 #   set terminal postscript

@@ -12,8 +12,8 @@ data9=$9
 
 ./each.sh $data1
 ./each.sh $data2
-#./each.sh $data3
-#./each.sh $data4
+./each.sh $data3
+./each.sh $data4
 #./each.sh $data5
 #./each.sh $data6
 #./each.sh $data7
@@ -30,11 +30,11 @@ gnuplot<<EOF
    set logscale x
 #   set key out vert
    set key left
-   plot "${data1}.correctrate.expd" u 2:1 w steps title "vector"
+   plot "${data1}.correctrate.expd" u 2:1 w steps title "A*"
+   replot "${data2}.correctrate.expd" u 2:1 w steps title "Parallel A*"
+   replot "${data3}.correctrate.expd" u 2:1 w steps title "HDA*"
    set output "${data1}_expd.pdf"
-   replot "${data2}.correctrate.expd" u 2:1 w steps title "heap"
-#   replot "${data3}.correctrate.expd" u 2:1 w steps title "naive, vector"
-#   replot "${data4}.correctrate.expd" u 2:1 w steps title "naive, heap"
+   replot "${data4}.correctrate.expd" u 2:1 w steps title "SafePBNF"
 #   replot "${data5}.correctrate.expd" u 2:1 w steps title "$data5"
 #   replot "${data6}.correctrate.expd" u 2:1 w steps title "$data6"
 #   replot "${data7}.correctrate.expd" u 2:1 w steps title "$data7"
@@ -51,11 +51,11 @@ gnuplot<<EOF
    set logscale x
 #   set key out vert
    set key left
-   plot "${data1}.correctrate" u 2:1 w steps title "vector"
+   plot "${data1}.correctrate" u 2:1 w steps title "A*"
+   replot "${data2}.correctrate" u 2:1 w steps title "Parallel A*"
+   replot "${data3}.correctrate" u 2:1 w steps title "HDA*"
    set output "${data1}_walltime.pdf"
-   replot "${data2}.correctrate" u 2:1 w steps title "heap"
-#   replot "${data3}.correctrate" u 2:1 w steps title "naive, vector"
-#   replot "${data4}.correctrate" u 2:1 w steps title "naive, heap"
+   replot "${data4}.correctrate" u 2:1 w steps title "SafePBNF"
 #   replot "${data5}.correctrate" u 2:1 w steps title "$data5"
 #   replot "${data6}.correctrate" u 2:1 w steps title "$data6"
 #   replot "${data7}.correctrate" u 2:1 w steps title "$data7"
