@@ -427,7 +427,7 @@ Duplicateはノードの重複による探索オーバーヘッドである。HD
 \newline
 \begin{equation}
 	%H(s) = \sum\nolimits_{i = 0}^{15}(16^{i} \times tiles_{i})\; mod\; n
-	H(s) = \sum\nolimits_{i = 0}^{n}x_{i} l_{i}\; mod\; threads
+	H(s) = \sum\nolimits_{i = 0}^{n}x_{i} l_{i}\;\: mod\; threads
 \end{equation}
 \newline
 ただし$threads$はスレッドの数である。Naive Hash分配はうまくいっていないようである。$threads = 2, 4, 8$の場合、Hash値は$x_{i}$の値のみに依存する。このとき、Naive Hashは15 Puzzleドメインの状態空間を均等に分割する。しかしながら、Naive Hashは状態の一部分の情報しか利用していない為、状態空間に対して不偏的に均等な分割をすることが出来ない。探索で現れる状態は15 Puzzleドメインの状態空間に対して非常に小さく、偏りのある部分集合であるので、均等な分配にならないと考えられる。Zobrist HashとNaive Hashの詳細な性能比較は\ref{sec:analysis2}章で行う。
