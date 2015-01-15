@@ -206,7 +206,7 @@ public:
 		// original 512927357
 		// now      200000000
 		// TODO: Must optimize these numbers
-		HashTable<typename D::PackedState, Node> closed(512927357);
+		HashTable<typename D::PackedState, Node> closed(512927357 / tnum);
 //		Heap<Node> open(100, overrun);
 		heap open(150, overrun);
 		Pool<Node> nodes(2048);
