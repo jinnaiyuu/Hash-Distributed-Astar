@@ -238,7 +238,7 @@ HDA*のHash関数はHDA*の性能に非常に重要である。Hash関数に求�
 以上の要件から、多くのドメインにおいて\textbf{Zobrist Hash}\index{Zobrist Hash}が使われる\cite{Zobrist1970}。ノード$s$の状態が整数列$\mathbf{x}$で表現されるとする。状態の$i$番目の整数の取りうる値は$l_{i}$通りあるとする。ノードの状態を$\mathbf{x} = (x_{0}, x_{1}, …, x_{n})$と置く。この時$x_{i}$は$0 \leq x_{i} < l_{i}$である。$R_{i}$を$l_{i}$個の値を持つテーブルとする。$R_{i}$は予めランダムに生成される。ここでZobrist Function $Z(s)$は以下のように定義される。
 \newline
 \begin{equation}
-	Z(s) := R_{0}[x_{0}]\; xor\; R_{1}[x_{1}]\; xor\; …\; xor\; R_{n}[x_{n}] %
+	Z(s) := R_{0}[x_{0}]\; xor\; R_{1}[x_{1}]\; xor\; …\; xor\; R_{n}[x_{n}]\; mod\; threads%
 \end{equation}
 
 $R_{i}$はランダムに生成される為、$Z(s)$は均等な確率で定義域の全ての値が出ると期待される。また、状態の全情報を利用して生成される為、局所的な状態の変化に対しても不偏な分配を行うことが出来る。$xor$によって計算する為、親ノードからの差分のみを計算してHash値を求めることが出来る。加えて、XOR命令は非常に速い計算である。よってZobrist Hashは高速に求めることが出来る。
@@ -427,7 +427,7 @@ Duplicateはノードの重複による探索オーバーヘッドである。HD
 \newline
 \begin{equation}
 	%H(s) = \sum\nolimits_{i = 0}^{15}(16^{i} \times tiles_{i})\; mod\; n
-	H(s) = \sum\nolimits_{i = 0}^{n}(x_{i} \times l_{i})\; mod\; threads
+	H(s) = \sum\nolimits_{i = 0}^{n}(x_{i} l_{i})\; mod\; threads
 \end{equation}
 \newline
 ただし$threads$はスレッドの数である。Naive Hash分配はうまくいっていないようである。$threads = 2, 4, 8$の場合、Hash値は$x_{i}$の値のみに依存する。このとき、Naive Hashは15 Puzzleドメインの状態空間を均等に分割する。しかしながら、Naive Hashは状態の一部分の情報しか利用していない為、状態空間に対して不偏的に均等な分割をすることが出来ない。探索で現れる状態は15 Puzzleドメインの状態空間に対して非常に小さく、偏りのある部分集合であるので、均等な分配にならないと考えられる。Zobrist HashとNaive Hashの詳細な性能比較は\ref{sec:analysis2}章で行う。
