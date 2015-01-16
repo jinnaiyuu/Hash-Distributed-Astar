@@ -578,6 +578,7 @@ Burnsらの比較実験には複数問題点がある\cite{Burns2010}。まず�
 BurnsらはA*探索の15 Puzzleドメインにおける実装の最適化について議論を行い、vectorによるオープンリストがheap実装より3倍程度速いことを示した\cite{Burns2012implementing}。しかしながら並列探索アルゴリズムにおけるパフォーマンスへの影響は調べられていない。
 
 本実験では以上の２つの実装の違いがHDA*の実行時間・探索オーバーヘッドに与える影響を比較する。インスタンスはKorfの100 puzzleを用いた\cite{korf1985depth}。並列アルゴリズムは全て8スレッドの実行による。実行時間の上限は2000秒とした。
+\newline
 
 \begin{figure}
 	\centering
@@ -603,7 +604,7 @@ BurnsらはA*探索の15 Puzzleドメインにおける実装の最適化につ�
 
 HDA*においてvectorによるオープンリストの実装はheapによる実装よりもはるかに速いことが分かった。SafePBNFにおいても高速化が期待される。SafePBNFにおいてもKorfの100 puzzleを対象に比較を行った。
 SafePBNFのパラメータとして、nblockの個数と最小探索ノード数がある。BurnsらはSliding-tile puzzle問題においてnblockへの分割方法がtwo-tile projectionであり、最小探索ノード数が8である場合に最適であると示した。two-tile projectionはブランク、tile-1, tile-2の位置が同じノードを一つのnblockとする分割方法である。このときnblockは3360個になる。Burnsらの実験はdual quad-core Intel Xeon E5320 1.86GHzプロセッサ、16 GB RAMで行われた。本実験の実験環境と類似している為、Burnsらの提案したパラメータを用いた。並列アルゴリズムは全て8スレッドの実行による。実行時間の上限は2000秒とした。
-
+\newline
 
 \begin{figure}
 	\centering
@@ -626,6 +627,7 @@ SafePBNFのパラメータとして、nblockの個数と最小探索ノード数
 \subsection{HDA*とSafePBNFの性能比較実験}
 
 \ref{sec:hdastar_tuning}節より、HDA*はZobrist Hashingとvectorによる実装が最も速いと結論された。\ref{sec:pbnf_tuning}節では、SafePBNFはvectorとheapによる実装で大きなパフォーマンスの違いは見られなかった。一方、vector実装はコストが整数値のドメインでのみ可能な実装であるのに対して、heap実装はコストが実数値のドメインでも有効である。よって、vectorとheapの両方の実装で性能評価をする必要がある。以下、15 Puzzle, 24 Puzzle, Grid Pathfinding, TSPで実験を行った。15 Puzzleはvectorとheapのそれぞれ、24 Puzzle、 Grid Pathfindingはvector, TSPはheapで実装をした。TSPのヒューリスティックはminimum spanning treeとround trip distanceの両方で実験を行った。それぞれの都市の数は20と13とした。HDA*のHash関数はZobrist Hashによる。SafePBNFのnblockへの分割方法はそれぞれ以下である。15 Puzzleはtwo-tile projection (nblock=3360),24 Puzzleも同様にtwo-tile projection (nblock=13820), Grid Pathfindingは100x100のグリッドを一つにまとめた(nblock=2500)。TSPは初めに訪れた３つの都市による(nblock=6840, 1716)。最小探索ノード数は全て8とした。並列アルゴリズムは全て8スレッドの実行による。どのドメイン・インスタンスも実行時間の上限は2000秒とした。
+\newline
 
 \begin{figure}
 	\centering
