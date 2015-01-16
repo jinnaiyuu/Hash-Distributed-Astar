@@ -446,10 +446,11 @@ HDA*はユニットコストドメインにおいてほぼノードの重複が�
 \newline
 \begin{equation}
 	%H(s) = \sum\nolimits_{i = 0}^{15}(16^{i} \times tiles_{i})\; mod\; n
-	H(s) = \sum\nolimits_{i = 0}^{n}x_{i} l_{i}\:\:\: mod\; threads
+	H(s) = \sum\nolimits_{i = 0}^{n}x_{i} l_{i}
 \end{equation}
-\newline
-Naive Hash分配はうまくいっていないようである。$threads = 2, 4, 8$の場合、Naive Hashは15 Puzzleドメインの状態空間を均等に分割する。しかしながら、Hash値は$x_{i}$の値のみに依存する。この時、Naive Hashは状態の一部分の情報しか利用していない為、状態空間に対して不偏的に均等な分割をすることが出来ない。探索で現れる状態は15 Puzzleドメインの状態空間に対して非常に小さく、偏りのある部分集合であるので、均等な分配にならないと考えられる。Zobrist HashとNaive Hashの詳細な性能比較は\ref{sec:analysis2}章で行う。
+
+Naive Hash分配はうまくいっていないようである。
+15 Puzzleドメインの場合、$x_{i}$は各タイルの位置を表し、$l_{i}$は全て16である。スレッドの数が2, 4, 8, 16の場合、Naive Hashは15 Puzzleドメインの状態空間を均等に分割する。しかしながら、この時Hash値は$x_{0}$の値のみに依存する。状態の一部分の情報しか利用していない為、状態空間に対して\textbf{不偏的に}均等な分割をすることが出来ない。探索で現れる状態は15 Puzzleドメインの状態空間に対して非常に小さく、偏りのある部分集合である。よって、Naive HashはA*探索で現れるノードを均等に分配することは出来ないと考えられる。Zobrist HashとNaive Hashの詳細な性能比較は\ref{sec:analysis2}章で行う。
 \newline
 
 \begin{figure}
@@ -467,6 +468,7 @@ Naive Hash分配はうまくいっていないようである。$threads = 2, 4,
 \newline
 
 Bind Effect, Burst Effectは問題サイズが大きくなるに従い相対的に小さくなる。Duplicateは問題となる大きさではない。以上の分析から、Zobrist Hashを用いたHDA*の探索オーバーヘッドは問題サイズが大きくなる程小さくなると推測される。次節にてこれを実験的に検証する。
+
 
 \subsection{問題サイズに対するHDA*の探索オーバーヘッドとパフォーマンスの変化}
 \label{sec:speedup_size}
