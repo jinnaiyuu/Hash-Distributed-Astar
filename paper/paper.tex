@@ -564,7 +564,11 @@ Bind Effect, Burst Effectは問題サイズが大きくなるに従い相対的�
 
 \subsection{先行研究における比較実験の問題点}
 
-Burnsらの比較実験には複数問題点がある\cite{Burns2010}。まず、HDA*のHash関数を汎用なHash関数によって実装しているが、KishimotoらはZobrist Hashを用いて実装した。Hash関数によってアルゴリズムの挙動は異なると考えられるが、その違いは検証されていない。また、Burnsらの実験ではHDA*, SafePBNFのオープンリストをheapで実装している。コストが整数のドメインはオープンリストをvectorで実装することが出来る。heapに対するアクセスが$O(logn)$であるのに対してvectorへのアクセスは$O(1)$である。Burnsらは別の論文で、15 Puzzleドメインを対象にA*探索の最適化を議論しており、heap実装とvector実装の比較実験を行い、vector実装が3倍程度高速であると結論した\cite{Burns2012implementing}。HDA*とSafePBNFは複数のオープンリストがある。HDA*はスレッドの数に分割され、SafePBNFはnblockの数に分割される。nblockは15 Puzzleの場合3360個に分割される。両アルゴリズムは各オープンリストが小さくなるので、高速化の割合はそれぞれ逐次A*における３倍よりも小さくなると推測されるが、まだ検証はされていない。もう一つ重要な問題点として、ベンチマーク問題のサイズが小さいということが挙げられる。\ref{sec:speedup_size}節で議論したように、HDA*の高速化効率は1000秒程度の問題まで向上し続け、ほぼperfect linear speedupになる。しかしながらBurnsらの用いた問題集はA*探索で10秒未満のものが殆どである。よって、ベンチマーク問題の問題サイズを考慮した比較・解析が必要である。
+Burnsらの比較実験には複数問題点がある\cite{Burns2010}。まず、HDA*のHash関数を汎用なHash関数によって実装しているが、KishimotoらはZobrist Hashを用いて実装した。Hash関数によってアルゴリズムの挙動は異なると考えられるが、その違いは検証されていない。
+
+また、Burnsらの実験ではHDA*, SafePBNFのオープンリストをheapで実装している。コストが整数のドメインはオープンリストをvectorで実装することが出来る。heapに対するアクセスが$O(logn)$であるのに対してvectorへのアクセスは$O(1)$である。Burnsらは別の論文で、15 Puzzleドメインを対象にA*探索の最適化を議論しており、heap実装とvector実装の比較実験を行い、vector実装が3倍程度高速であると結論した\cite{Burns2012implementing}。HDA*とSafePBNFは複数のオープンリストがある。HDA*はスレッドの数に分割され、SafePBNFはnblockの数に分割される。nblockは15 Puzzleの場合3360個に分割される。両アルゴリズムは各オープンリストが小さくなるので、高速化の割合はそれぞれ逐次A*における３倍よりも小さくなると推測されるが、まだ検証はされていない。
+
+もう一つ重要な問題点として、ベンチマーク問題のサイズが小さいということが挙げられる。\ref{sec:speedup_size}節で議論したように、HDA*の高速化効率は1000秒程度の問題まで向上し続け、ほぼperfect linear speedupになる。しかしながらBurnsらの用いた問題集はA*探索で10秒未満のものが殆どである。よって、ベンチマーク問題の問題サイズを考慮した比較・解析が必要である。
 \newline
 
 実験マシンはIntel dual-quad Xeon 2.33GHzプロセッサ, 32GB RAMのものを使用した。OSはGNU/Linux Ubuntu 14.04である。スレッドはpthreadライブラリで実装した。なお、本実験は様々な問題ドメインとアルゴリズムを比較するために、\ref{sec:analysis1}章とは異なる実装のコードを利用した。
@@ -626,12 +630,18 @@ SafePBNFのパラメータとして、nblockの個数と最小探索ノード数
 
 \subsection{HDA*とSafePBNFの性能比較実験}
 
-\ref{sec:hdastar_tuning}節より、HDA*はZobrist Hashingとvectorによる実装が最も速いと結論された。\ref{sec:pbnf_tuning}節では、SafePBNFはvectorとheapによる実装で大きなパフォーマンスの違いは見られなかった。一方、vector実装はコストが整数値のドメインでのみ可能な実装であるのに対して、heap実装はコストが実数値のドメインでも有効である。よって、vectorとheapの両方の実装で性能評価をする必要がある。以下、15 Puzzle, 24 Puzzle, Grid Pathfinding, TSPで実験を行った。15 Puzzleはvectorとheapのそれぞれ、24 Puzzle、 Grid Pathfindingはvector, TSPはheapで実装をした。TSPのヒューリスティックはminimum spanning treeとround trip distanceの両方で実験を行った。それぞれの都市の数は20と13とした。HDA*のHash関数はZobrist Hashによる。SafePBNFのnblockへの分割方法はそれぞれ以下である。15 Puzzleはtwo-tile projection (nblock=3360),24 Puzzleも同様にtwo-tile projection (nblock=13820), Grid Pathfindingは100x100のグリッドを一つにまとめた(nblock=2500)。TSPは初めに訪れた３つの都市による(nblock=6840, 1716)。最小探索ノード数は全て8とした。並列アルゴリズムは全て8スレッドの実行による。どのドメイン・インスタンスも実行時間の上限は2000秒とした。
+\ref{sec:hdastar_tuning}節より、HDA*はZobrist Hashingとvectorによる実装が最も速いと結論された。一方\ref{sec:pbnf_tuning}節では、SafePBNFはvectorとheapによる実装で大きなパフォーマンスの違いは見られなかった。よって、vectorとheapの両方の実装で性能評価をする必要がある。また、展開速度の違いによって異なるオーバーヘッドが現れる為、両実装で比較を行うことは有意義である。
+
+以下、15 Puzzle, 24 Puzzle, Grid Pathfinding, TSPで実験を行った。15 Puzzleはvectorとheapのそれぞれ、24 Puzzle、 Grid Pathfindingはvector, TSPはheapで実装をした。TSPのヒューリスティックはminimum spanning treeとround trip distanceの両方で実験を行った。それぞれの都市の数は20と13とした。HDA*のHash関数はZobrist Hashによる。
+
+SafePBNFのnblockへの分割方法はそれぞれ以下である。15 Puzzleはtwo-tile projection (nblock=3360),24 Puzzleも同様にtwo-tile projection (nblock=13820), Grid Pathfindingは100x100のグリッドを一つにまとめた(nblock=2500)。TSPは初めに訪れた３つの都市による(nblock=6840, 1716)。最小探索ノード数は全て8とした。
+
+並列アルゴリズムは全て8スレッドの実行による。どのドメイン・インスタンスも実行時間の上限は2000秒とした。
 \newline
 
 \begin{figure}
 	\centering
-	% TODO: 図表の差し替え
+	% TODO: 何故？PBNFが遅い。何度も確かめたが遅い。
 	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/15puzzle_vector_walltime.pdf}
 		\caption{15 Puzzle (vector)}
@@ -709,12 +719,15 @@ SafePBNFのパラメータとして、nblockの個数と最小探索ノード数
 図\ref{fig:comparison_expd}は展開ノード数の比較である。それぞれの図は、横軸に展開ノード数、縦軸にその展開ノード数以内に解ける問題の数を示してある。実行時間の短いGrid Pathfindingを除き、HDA* vs. SafePBNFの展開ノード数はあまり変わらない。\ref{sec:analysis1}章の結論とこの結果を踏まえると、HDA*は十分に大きな問題に対しては探索オーバーヘッドの殆どない手法であると結論出来るだろう。BurnsらがHDA*の探索オーバーヘッドを指摘したのはHash関数をNaive Hashで実装したからである。図\ref{fig:order_naive_hash}及び図\ref{fig:hdastar_tuning}より、Naive Hashは明らかに不均一なHash関数である。
 \newline
 
-図\ref{fig:15puzzle_heap}は15 Puzzleドメインでオープンリストをvectorで実装した場合の実行時間である。
-
-図\ref{fig:15puzzle_heap}は15 Puzzleドメインでオープンリストをheapで実装した場合の実行時間である。SafePBNFの利点として、Burnsらはオープンリストが小さい為、heapへのアクセスが速いということと挙げた\cite{Burns2010}。しかし、この実験結果はheap実装においてもHDA*がSafePBNFよりもパフォーマンスに優れるということを示す。
-% 加えて、HDA*のheapは複数に分割することが出来る。
-% 分割heapを用いることで実数コストドメインにおけるHDA*, SafePBNFのパフォーマンスを向上させることが出来ると考えられる。これは今後の研究課題である。
+図\ref{fig:15puzzle_heap}は15 Puzzleドメインでオープンリストをvectorで実装した場合の実行時間の比較である。このドメインはノードの展開が非常に高速なドメインである。この場合でもHDA*はA*に対して高速化が可能である。これは\ref{analysis1}章の実験結果と一致する。一方、SafePBNFは逐次A*に対して高速化が見られない。図\ref{fig:15puzzle_heap}は15 Puzzleドメインでオープンリストをheapで実装した場合の実行時間の比較である。この実験結果はheap実装においてもHDA*がSafePBNFよりもパフォーマンスに優れるということを示す。
 \newline
+
+vector実装でSafePBNFが速くならない原因は二つの理由が考えられる。一つは、vector実装によってノードの展開が高速化したことである。ノードの展開が高速であると、並列化のオーバーヘッドによる影響が比較して大きくなる。よって、heap実装時には見られなかったオーバーヘッドの影響を受けていると考えられる。もう一つは、そもそもSafePBNFの高速化は主にheapを分割したことによるものであった可能性があるということである。SafePBNFは15 Puzzleの場合3360個のnblockに分割する。オープンリストは1/3360の大きさであると期待される。この時のheapへのアクセス速度の違いは非常に大きいと考えられる。BurnsらはSafePBNFとHDA*のheapへのアクセスにかかるCPU時間の計測を行い、SafePBNFのそれがほぼ0秒であるのに対してHDA*はおおよそ$1e-05$秒かかることを示している\cite{Burns2010}。これは１回のアクセスにかかる時間なので、実行時間を通しての時間は非常に大きい。
+\newline
+
+HDA*でも各スレッドのheapを分割することは可能である。Hash関数による仕事の分配を各スレッド内のheapに自然に流用することが出来る。よって、HDA*でも分割heapを用いることで実数コストドメインにおけるパフォーマンスを向上させることが出来ると考えられる。これは今後の研究課題である。
+
+% PBNFが速いのは単にheapを分割しているからだけでは？
 
 
 \begin{table}
@@ -734,10 +747,10 @@ SafePBNFのパラメータとして、nblockの個数と最小探索ノード数
 
 % TSPはSafePBNFが得意な問題ドメインであると考えられる。空間を簡単に分割することが出来る為である。
 
-表\ref{hdastar_incumbent}はHDA*とSafePBNFにおいて、解を発見した平均の回数である。SafePBNFの探索方法はAnytime Searchのような特徴を持つ\cite{Burns2010}。すなわち、SafePBNFは最適でない解を素早く見つけ、時間と共により良い解を発見することが出来る。最適でない解を発見した場合、その解のコストよりもコストの大きいノードを生成する必要がなくなる。ノードの生成は探索時間の大きな割合を占める為、生成の回数を減らすことは大きな高速化につながる。TSPは深さが都市の数と同じノードは全て解である。都市が20個の場合は$20!/2$通りの解が存在する。SafePBNFは解が無数にあるTSPでは素早く解を発見でき、その為最適解も高速に見つけられると考えられる。
+SafePBNFはTSPドメインにおいて効率的である。その理由としては以下の二点が考えられる。一つは前述のheapを分割することによる高速化である。もう一つはドメインに解が無数にあるからである。表\ref{hdastar_incumbent}はHDA*とSafePBNFにおいて、解を発見した平均の回数である。SafePBNFの探索方法はAnytime Searchのような特徴を持つ\cite{Burns2010}。すなわち、SafePBNFは最適でない解を素早く見つけ、時間と共により良い解を発見することが出来る。最適でない解を発見した場合、その解のコストよりもコストの大きいノードを生成する必要がなくなる。ノードの生成は探索時間の大きな割合を占める為、生成の回数を減らすことは大きな高速化につながる。TSPは深さが都市の数と同じノードは全て解である。都市が20個の場合は$20!/2$通りの解が存在する。SafePBNFは解が無数にあるTSPでは素早く解を発見でき、その為最適解も高速に見つけられると考えられる。
+\newline
 
-
-シンプルなParallel A*は逐次A*よりも遅くなってしまう。Parallel A*はオープンリストとクローズドリストにロックを必要とする。スレッドはロックが解放されるのを待たなければならない為、大きな同期オーバーヘッドが生じる。この結果はBurnsらの実験と一致する\cite{Burns2010}。なお、Parallel A*の実行結果が省略してあるドメインはParallel A*が殆ど解けなかったドメインである。
+どのドメインにおいてもシンプルなParallel A*は逐次A*よりも遅くなってしまう。Parallel A*はオープンリストとクローズドリストにロックを必要とする。スレッドはロックが解放されるのを待たなければならない為、大きな同期オーバーヘッドが生じる。この結果はBurnsらの実験と一致する\cite{Burns2010}。なお、Parallel A*の実行結果が省略してあるドメインはParallel A*が殆ど解けなかったドメインである。
 \newline
 
 \section{おわりに}
