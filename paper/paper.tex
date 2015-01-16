@@ -256,15 +256,6 @@ PSDDはロックを取得する回数とスレッド間でノードを通信す�
 \subsection{Parallel Best-NBlock First (PBNF, SafePBNF)}
 \index{Parallel Best-NBlock First, PBNF}
 \index{SafePBNF}
-Parallel Best-NBlock First (PBNF)はPSDDのフレームワークを最良優先探索に適応したアルゴリズムである。PBNFは状態空間を複数のNBlock\index{NBlock}に分割し、各スレッドがNBlockを交換しながら探索する\cite{Burns2010}。それぞれのNBlockはオープンリストとクローズドリストを持つ。それぞれのスレッドは最も有望なノードを持つNBlockを占有し、探索を行う。また、占有したNBlockに隣接するNBlockをスレッドのinterference scopeに加える。他のスレッドのinterference scopeに加わったNBlockを探索することは出来ない。同一のNBlockは複数のinterference scopeに入ることが出来る。自分の占有しているNBlockよりも有望なノードを持つNBlockが空いていれば、今探索していたNBlockとinterference scopeを解放し、新しいNBlockを占有して探索を始める。このとき、あまりに頻繁なNBlockの切り替えが生じるのを防ぐために、NBlockを切り替える前に探索する最小のノード数が設定される。これはチューニングの必要なパラメータである。NBlockはスレッドに占有されるので、オープンリスト・クローズドリストに相互排他ロックをかける必要がない。必要なロックは空いているNBlockを保存するheapのみである。
-\newline
-
-% Livelock
-PBNFはLivelockが起こる可能性がある。Livelockは、複数のスレッドが同じ資源を解放する処理を実行しているにも拘らず、どちらのスレッドも資源が獲得出来ない状況である。この時、アルゴリズムは有限時間内に終了しないことになる。あるNBlockが複数のスレッドのinterference scopeに入っている場合、どのスレッドもそのNBlockを探索することが出来ない状態になりうる。Burnsらはこの問題を解決したSafePBNFを提案し、SafePBNFにおいてLivelockが発生しないことを証明した。SafePBNFはLivelockを防ぐ為にNBlockに対してhotというフラグを定義する。あるNBlockが複数のスレッドのinterference scopeに入っている場合、このNBlockをhotとする。hotなNBlockを探索する要求があった場合、そのNBlockをinterference scopeに含むスレッドは現在探索しているNBlockを解放する。これによって、Livelockを防ぐことが出来る。
-\newline
-
-% Why SafePBNF, not PBNF?
-Livelockの可能性のあるアルゴリズムは完全ではない。アルゴリズムが完全であるとは、健全性と停止性を満たすことである。健全性とはアルゴリズムの結果が正しいことであり、停止性とはどのような入力に対しても有限時間内に結果を出力して停止することである。PBNFはLivelockが生じる可能性があるので、停止性を満たさない。PBNFは完全ではないのに対して、SafePBNFは完全である。本研究で扱うA*, Parallel A*, HDA*は全て完全なアルゴリズムである。よって、同じ完全なアルゴリズムであるSafePBNFを比較の対象とする。
 
 \begin{algorithm}                      
 \caption{PBNF search framework}         
@@ -286,6 +277,17 @@ Livelockの可能性のあるアルゴリズムは完全ではない。アルゴ
 \ENDWHILE
 \end{algorithmic}
 \end{algorithm}
+
+Parallel Best-NBlock First (PBNF)はPSDDのフレームワークを最良優先探索に適応したアルゴリズムである。PBNFは状態空間を複数のNBlock\index{NBlock}に分割し、各スレッドがNBlockを交換しながら探索する\cite{Burns2010}。それぞれのNBlockはオープンリストとクローズドリストを持つ。それぞれのスレッドは最も有望なノードを持つNBlockを占有し、探索を行う。また、占有したNBlockに隣接するNBlockをスレッドのinterference scopeに加える。他のスレッドのinterference scopeに加わったNBlockを探索することは出来ない。同一のNBlockは複数のinterference scopeに入ることが出来る。自分の占有しているNBlockよりも有望なノードを持つNBlockが空いていれば、今探索していたNBlockとinterference scopeを解放し、新しいNBlockを占有して探索を始める。このとき、あまりに頻繁なNBlockの切り替えが生じるのを防ぐために、NBlockを切り替える前に探索する最小のノード数が設定される。これはチューニングの必要なパラメータである。NBlockはスレッドに占有されるので、オープンリスト・クローズドリストに相互排他ロックをかける必要がない。必要なロックは空いているNBlockを保存するheapのみである。
+\newline
+
+% Livelock
+PBNFはLivelockが起こる可能性がある。Livelockは、複数のスレッドが同じ資源を解放する処理を実行しているにも拘らず、どちらのスレッドも資源が獲得出来ない状況である。この時、アルゴリズムは有限時間内に終了しないことになる。あるNBlockが複数のスレッドのinterference scopeに入っている場合、どのスレッドもそのNBlockを探索することが出来ない状態になりうる。Burnsらはこの問題を解決したSafePBNFを提案し、SafePBNFにおいてLivelockが発生しないことを証明した。SafePBNFはLivelockを防ぐ為にNBlockに対してhotというフラグを定義する。あるNBlockが複数のスレッドのinterference scopeに入っている場合、このNBlockをhotとする。hotなNBlockを探索する要求があった場合、そのNBlockをinterference scopeに含むスレッドは現在探索しているNBlockを解放する。これによって、Livelockを防ぐことが出来る。
+\newline
+
+% Why SafePBNF, not PBNF?
+Livelockの可能性のあるアルゴリズムは完全ではない。アルゴリズムが完全であるとは、健全性と停止性を満たすことである。健全性とはアルゴリズムの結果が正しいことであり、停止性とはどのような入力に対しても有限時間内に結果を出力して停止することである。PBNFはLivelockが生じる可能性があるので、停止性を満たさない。PBNFは完全ではないのに対して、SafePBNFは完全である。本研究で扱うA*, Parallel A*, HDA*は全て完全なアルゴリズムである。よって、同じ完全なアルゴリズムであるSafePBNFを比較の対象とする。
+
 
 \newpage
 
