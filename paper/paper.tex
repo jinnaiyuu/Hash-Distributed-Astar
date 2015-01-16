@@ -355,7 +355,7 @@ Grid Pathfindingは二次元のグリッドにおいて、障害物を避けつ�
 
 \subsection{Travelling Salesperson Problem (TSP)}
 \index{Travelling Salesperson Problem, TSP}
-Travelling Salesperson Problem (TSP)は、都市の集合とそれぞれの２都市間の距離が与えられたとき、全ての都市を一度ずつ訪れ、出発都市に戻る為の最短経路を求める問題である。TSPで使われるヒューリスティック関数の一つは\textbf{Minimum Spanning Tree}\index{Minimum Spanning Tree, MST}である。Minimum Spanning Treeはグラフの全ての頂点を含む、最も辺の長さが小さい部分グラフである。これはゴールまでの経路よりも短いか同等である。なぜなら、ゴールまでの経路の方が短いならば、それがMinimum Spanning Treeになるはずであるからである。よって、Minimum Spanning Treeはadmissibleなヒューリスティック関数である。より簡単なヒューリスティックとしてRound Trip Distance\index{Round Trip Distance}がある。Round Trip Distanceは現在の都市から最も離れた未訪問の都市までの距離の２倍を返す。このヒューリスティックはMinimum Spanning Treeよりも不正確であるが、非常に素早く計算が出来る。並列化に伴う高速化はノードの展開が速い方が困難である為、Round Trip Distanceでの高速化の方が難しいと考えられる。本研究ではこれらの２つのヒューリスティックを用いる。本研究では$1\times1$の盤に対してランダムに都市を配置し、都市間の直線距離をコストとした。
+Travelling Salesperson Problem (TSP)は、都市の集合とそれぞれの２都市間の距離が与えられたとき、全ての都市を一度ずつ訪れ、出発都市に戻る為の最短経路を求める問題である。TSPで使われるヒューリスティック関数の一つは\textbf{Minimum Spanning Tree}\index{Minimum Spanning Tree, MST}である。Minimum Spanning Treeはグラフの全ての頂点を含む、最も辺の長さが小さい部分グラフである。これはゴールまでの経路よりも短いか同等である。なぜなら、ゴールまでの経路の方が短いならば、それがMinimum Spanning Treeになるはずであるからである。よって、Minimum Spanning Treeはadmissibleなヒューリスティック関数である。より簡単なヒューリスティックとしてRound Trip Distance\index{Round Trip Distance}がある。Round Trip Distanceは現在の都市から最も離れた未訪問の都市までの距離の２倍を返す。このヒューリスティックはMinimum Spanning Treeよりも不正確であるが、非常に素早く計算が出来る。並列化に伴う高速化はノードの展開が速い方が困難である為、Round Trip Distanceでの高速化の方が難しいと考えられる。本研究は並列化の効率を調べることが目的である為、Round Trip Distanceをヒューリスティックを用いる。本研究では$1\times1$の盤に対してランダムに都市を配置し、都市間の直線距離をコストとした。
 
 \newpage
 
@@ -475,7 +475,12 @@ Kobayashiらがノードの重複が問題となるシーケンスアライメ�
 	\label{fig:order_naive_hash}
 \end{figure}
 % Naive hash is bad.
-上述の探索オーバーヘッドの分類はHash関数が十分な性能を持つ場合のみ有効であると考えられる。図\ref{fig:order_naive_hash}はBurnsらHDA*の性能評価に用いたNaive Hash\index{Naive Hash}によるHDA*の探索順である。状態$s$は整数列$\mathbf{x} = (x_{0}, x_{1}, …, x_{n})$で表せられるとする。Naive Hashは状態$s$をに対して以下の式で与えられる。
+上述の探索オーバーヘッドの分類はHash関数が十分な性能を持つ場合のみ有効であると考えられる。図\ref{fig:order_naive_hash}はBurnsらHDA*の性能評価に用いたNaive Hash\index{Naive Hash}によるHDA*の探索順である。Naive Hashはクローズドリストの為のHash関数をそのまま利用したものである。クローズドリストのHash関数はKorfとSchultzeによるPerfect Hashingである\cite{korf2005large}。
+
+このNaive Hashによる分配はうまくいっていないようである。Perfect Hashingであるので、全てのHash値の値が一つの状態に対応する。これをスレッドの数で割れば状態空間を均等に分割出来る。しかしながら、探索で現れる状態は15 Puzzleドメインの状態空間に対して非常に小さく、偏りのある部分集合である。よって、Naive HashはA*探索で現れるノードを均等に分配することは出来ないと考えられる。一方、Zobrist Hashはノードの各状態の情報を利用してHash値を計算する為、より不偏的に均等な分配が可能であると考えられる。Zobrist HashとNaive Hashの詳細な性能比較は\ref{sec:analysis2}章で行う。
+
+\begin{comment}
+状態$s$は整数列$\mathbf{x} = (x_{0}, x_{1}, …, x_{n})$で表せられるとする。Naive Hashは状態$s$をに対して以下の式で与えられる。
 \newline
 \begin{equation}
 	%H(s) = \sum\nolimits_{i = 0}^{15}(16^{i} \times tiles_{i})\; mod\; n
@@ -485,6 +490,7 @@ Kobayashiらがノードの重複が問題となるシーケンスアライメ�
 Naive Hash分配はうまくいっていないようである。
 15 Puzzleドメインの場合、$x_{i}$は各タイルの位置を表し、$l_{i}$は全て16である。スレッドの数が2, 4, 8, 16の場合、Naive Hashは15 Puzzleドメインの状態空間を均等に分割する。しかしながら、この時Hash値は$x_{0}$の値のみに依存する。状態の一部分の情報しか利用していない為、状態空間に対して\textbf{不偏的に}均等な分割をすることが出来ない。探索で現れる状態は15 Puzzleドメインの状態空間に対して非常に小さく、偏りのある部分集合である。よって、Naive HashはA*探索で現れるノードを均等に分配することは出来ないと考えられる。Zobrist HashとNaive Hashの詳細な性能比較は\ref{sec:analysis2}章で行う。
 \newline
+\end{comment}
 
 \begin{figure}
 	\centering
@@ -632,10 +638,13 @@ SafePBNFのパラメータとして、nblockの個数と最小探索ノード数
 
 \ref{sec:hdastar_tuning}節より、HDA*はZobrist Hashingとvectorによる実装が最も速いと結論された。一方\ref{sec:pbnf_tuning}節では、SafePBNFはvectorとheapによる実装で大きなパフォーマンスの違いは見られなかった。よって、vectorとheapの両方の実装で性能評価をする必要がある。また、展開速度の違いによって異なるオーバーヘッドが現れる為、両実装で比較を行うことは有意義である。
 
-以下、15 Puzzle, 24 Puzzle, Grid Pathfinding, TSPで実験を行った。15 Puzzleはvectorとheapのそれぞれ、24 Puzzle、 Grid Pathfindingはvector, TSPはheapで実装をした。TSPのヒューリスティックはminimum spanning treeとround trip distanceの両方で実験を行った。それぞれの都市の数は20と13とした。HDA*のHash関数はZobrist Hashによる。
+以下、15 Puzzle, 24 Puzzle, Grid Pathfinding, TSPで実験を行った。15 Puzzleはvectorとheapのそれぞれ、24 Puzzle、 Grid Pathfindingはvector, TSPはheapで実装をした。TSPのヒューリスティックはRound Trip Distance、都市の数は13とした。HDA*のHash関数はZobrist Hashによる。
+%minimum spanning treeとround trip distanceの両方で実験を行った。それぞれの都市の数は20と13とした。
 
-SafePBNFのnblockへの分割方法はそれぞれ以下である。15 Puzzleはtwo-tile projection (nblock=3360),24 Puzzleも同様にtwo-tile projection (nblock=13820), Grid Pathfindingは100x100のグリッドを一つにまとめた(nblock=2500)。TSPは初めに訪れた３つの都市による(nblock=6840, 1716)。最小探索ノード数は全て8とした。
 
+SafePBNFのnblockへの分割方法はそれぞれ以下である。15 Puzzleはtwo-tile projection (nblock=3360),24 Puzzleも同様にtwo-tile projection (nblock=13820), Grid Pathfindingは100x100のグリッドを一つにまとめた(nblock=2500)。TSPは初めに訪れた３つの都市による(nblock=1716)。最小探索ノード数は全て8とした。
+
+% 20都市のnblockは6840, 
 並列アルゴリズムは全て8スレッドの実行による。どのドメイン・インスタンスも実行時間の上限は2000秒とした。
 \newline
 
@@ -662,11 +671,11 @@ SafePBNFのnblockへの分割方法はそれぞれ以下である。15 Puzzleは
 		\caption{Grid Pathfinding (vector)}
 		\label{fig:grid}
 	\end{subfigure}
-	\begin{subfigure}{0.4\columnwidth}
-		\includegraphics[width=\columnwidth]{eps/tsp_20_walltime.pdf}
-		\caption{TSP20 minimum spanning tree (heap)}
-		\label{fig:tsp_20_mst}
-	\end{subfigure}
+%	\begin{subfigure}{0.4\columnwidth}
+%		\includegraphics[width=\columnwidth]{eps/tsp_20_walltime.pdf}
+%		\caption{TSP20 minimum spanning tree (heap)}
+%		\label{fig:tsp_20_mst}
+%	\end{subfigure}
 	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/tsp_13_walltime.pdf}
 		\caption{TSP13 round trip distance (heap)}
@@ -698,11 +707,11 @@ SafePBNFのnblockへの分割方法はそれぞれ以下である。15 Puzzleは
 		\caption{Grid Pathfinding (vector)}
 		\label{fig:grid_expd}
 	\end{subfigure}
-	\begin{subfigure}{0.4\columnwidth}
-		\includegraphics[width=\columnwidth]{eps/tsp_20_expd.pdf}
-		\caption{TSP20 minimum spanning tree (heap)}
-		\label{fig:tsp_20_mst_expd}
-	\end{subfigure}
+%	\begin{subfigure}{0.4\columnwidth}
+%		\includegraphics[width=\columnwidth]{eps/tsp_20_expd.pdf}
+%		\caption{TSP20 minimum spanning tree (heap)}
+%		\label{fig:tsp_20_mst_expd}
+%	\end{subfigure}
 	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{eps/tsp_13_expd.pdf}
 		\caption{TSP13 round trip distance (heap)}
@@ -729,6 +738,7 @@ HDA*でも各スレッドのheapを分割することは可能である。Hash�
 
 % PBNFが速いのは単にheapを分割しているからだけでは？
 
+%Minimum Spanning Treeは計算時間の大きいヒューリスティックである。その為TSP20はノードの展開が遅い。この時、
 
 \begin{table}
 	\centering
@@ -738,7 +748,7 @@ HDA*でも各スレッドのheapを分割することは可能である。Hash�
 		15 Puzzle (vector)& 1 & 14.56 & 1.14 & 20.73 \\ 
 		24 Puzzle & 1 & 59.82 & 1 & 67.04 \\ 
 		Grid Pathfinding & 1.02 & 3.45 & 1.02 & 3.30 \\ 
-		TSP20　MST & 1 & 5.18 & \textbf{2.25} & \textbf{1.23} \\ 
+%		TSP20　MST & 1 & 5.18 & \textbf{2.25} & \textbf{1.23} \\ 
 		TSP13　RTD & 1 & 16.80 & \textbf{2.60} & \textbf{8.56} \\ \hline
 	\end{tabular}
 	\caption{解の発見回数と最初の解の発見時間の平均}
