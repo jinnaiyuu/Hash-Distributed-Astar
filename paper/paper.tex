@@ -287,7 +287,7 @@ Livelockの可能性のあるアルゴリズムは完全ではない。アルゴ
 \end{algorithmic}
 \end{algorithm}
 
-
+\newpage
 
 \section{問題ドメイン}
 \label{sec:domain}
@@ -321,6 +321,8 @@ Grid Pathfindingは二次元のグリッドにおいて、障害物を避けつ�
 \subsection{Travelling Salesperson Problem (TSP)}
 \index{Travelling Salesperson Problem, TSP}
 Travelling Salesperson Problem (TSP)は、都市の集合とそれぞれの２都市間の距離が与えられたとき、全ての都市を一度ずつ訪れ、出発都市に戻る為の最短経路を求める問題である。TSPで使われるヒューリスティック関数の一つは\textbf{Minimum Spanning Tree}\index{Minimum Spanning Tree, MST}である。Minimum Spanning Treeはグラフの全ての頂点を含む、最も辺の長さが小さい部分グラフである。これはゴールまでの経路よりも短いか同等である。なぜなら、ゴールまでの経路の方が短いならば、それがMinimum Spanning Treeになるはずであるからである。よって、Minimum Spanning Treeはadmissibleなヒューリスティック関数である。より簡単なヒューリスティックとしてRound Trip Distance\index{Round Trip Distance}がある。Round Trip Distanceは現在の都市から最も離れた未訪問の都市までの距離の２倍を返す。このヒューリスティックはMinimum Spanning Treeよりも不正確であるが、非常に素早く計算が出来る。並列化に伴う高速化はノードの展開が速い方が困難である為、Round Trip Distanceでの高速化の方が難しいと考えられる。本研究ではこれらの２つのヒューリスティックを用いる。本研究では$1\times1$の盤に対してランダムに都市を配置し、都市間の直線距離をコストとした。
+
+\newpage
 
 \section{並列化に伴う探索オーバーヘッドの定性的な解析}
 \label{sec:analysis1}
@@ -512,6 +514,8 @@ Bind Effect, Burst Effectは問題サイズが大きくなるに従い相対的�
 \newline
 
 アルゴリズムの性能評価は平均の実行時間や探索ノード数を論じることが殆どである。これは偶然的な要素を取り除く為である。しかしながら、並列探索における高速化効率は問題サイズに対して依存する。然るに本質的な高速化効率への知見を得るためには、平均化した高速化効率による議論ではなく、問題サイズ毎に検討をする必要がある。その為、次章の議論において実行時間と探索オーバーヘッドは平均値ではなく、問題インスタンス毎に示す。
+
+\newpage
 
 \section{HDA*とSafePBNFの性能比較実験}
 \label{sec:analysis2}
