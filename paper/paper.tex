@@ -5,12 +5,7 @@
 
 % Font
 \usepackage[uplatex]{otf}
-%\renewcommand{\textbf}[1]{{\bfseries\sffamily#1}}
 % \usepackage{times}
-%\usepackage[deluxe,expert]{otf}
-%\renewcommand{\textbf}[1]{{\bfseries\sffamily#1}}
-
-%\renewcommand{\textbf}{} % TODO: enable blod font for japanese.
 
 % Graphics
 \usepackage[dvipdfmx,hiresbb]{graphicx}
@@ -346,25 +341,31 @@ Kishimotoらは24 PuzzleドメインにおいてHDA*の探索オーバーヘッ�
 	\begin{subfigure}{0.45\columnwidth}
 		\centering
 		\includegraphics[width=\columnwidth]{order/2_threads.pdf}
-		\caption{HDA* 2 threads}
+		\caption{2 threads}
 		\label{fig:order_2_threads}
 	\end{subfigure}
 	\begin{subfigure}{0.45\columnwidth}
 		\centering
 		\includegraphics[width=\columnwidth]{order/4_threads.pdf}
-		\caption{HDA* 4 threads}
+		\caption{4 threads}
 		\label{fig:order_4_threads}
 	\end{subfigure}
 	\begin{subfigure}{0.45\columnwidth}
 		\centering
 		\includegraphics[width=\columnwidth]{order/8_threads.pdf}
-		\caption{HDA* 8 threads}
+		\caption{8 threads}
 		\label{fig:order_8_threads}
 	\end{subfigure}
 	\begin{subfigure}{0.45\columnwidth}
 		\centering
+		\includegraphics[width=\columnwidth]{order/8_threads_easy.pdf}
+		\caption{8 threads, bigger instance}
+		\label{fig:order_8_threads_easy}
+	\end{subfigure}
+	\begin{subfigure}{0.45\columnwidth}
+		\centering
 		\includegraphics[width=\columnwidth]{order/delay.pdf}
-		\caption{delayed expanding HDA*}
+		\caption{delayed expansion}
 		\label{fig:order_delay}
 	\end{subfigure}
 	\caption{HDA*の探索順}
@@ -381,11 +382,14 @@ Kishimotoらは24 PuzzleドメインにおいてHDA*の探索オーバーヘッ�
 	\label{hdastar_duplication}
 \end{table}
 
-図\ref{fig:order_2_threads}は、ある状態がA*において何番目に展開されたかを横軸に、HDA*において何番目に展開されたかを縦軸に取ってある。これらの結果はそれぞれ1インスタンスのものを代表的に示したが、実験対象とした100問のどのインスタンスに対しても同様のパターンを確認することが出来た。
+図\ref{fig:hdastar_orders}は、ある状態がA*において何番目に展開されたかを横軸に、HDA*において何番目に展開されたかを縦軸に取ってある。Strict Orderは$y = x$の直線である。もし、A*とHDA*の展開順が完全に一致していた場合、全ての点はこの線の上に並ぶ。図のGoalは最適解となるゴールノードが展開された点である。この点がStrict Orderよりも上にあれば、その差だけ探索オーバーヘッドが生じているということである。
+
 % bind effect
-HDA*のノードの展開順は大きな流れとしてはA*のそれと一致するようである。しかしながら「幅」が存在し、その範囲内で展開順が前後する。また、この幅はスレッド数が大きくなると広がる。この幅は実行時間を通して大きくなっていくが、展開ノード数が増加する割合に対して小さい。その為、問題サイズが大きいほど、展開ノード数に対する相対的な幅の大きさは小さくなる。
+HDA*のノードの展開順は大きな流れとしてはA*のそれと一致するようである。しかしながら「幅」が存在し、その範囲内で展開順が前後する。この幅はスレッド数が大きい程広い。この幅は実行時間を通して大きくなっていくが、展開ノード数が増加する割合に対して小さい。その為、問題サイズが大きくなっても、展開ノード数に対する相対的な幅の大きさは変わらない。図\ref{fig:order_8_threads_easy}はより大きなインスタンス
+
 % burst effect
 また、探索の冒頭に展開順が大きくA*から外れる部分がある。これは初期化の終わっていないスレッドがある時間帯に当たる。初期化の終わっていないスレッドがある場合限られた探索空間の中で展開を進めることになる。探索空間が異なるので、展開順もA*から外れてしまうと考えられる。また、ここで展開されたノードは殆どが重複したノードになる。限られた探索空間内を迂回して展開したノードであるので、殆どのノードは最短ではない経路で生成される為である。図\ref{fig:order_delay}はノードの展開に無関係の計算を挿入し、展開速度をた場合の実行結果である。無関係の計算を挿入しない場合の展開速度は1019080.6ノード/秒である(100問の平均値)のに対して、図\ref{fig:order_delay}の実行の展開速度は39854.8ノード/秒である。ノードの展開が遅い場合にはこの現象は起こらないという結果を得た。
+
 % duplicate
 表\ref{hdastar_duplication}は全インスタンスの平均のノードの重複率である。ノードの重複率は以下のように定義される。
 
@@ -395,6 +399,8 @@ HDA*のノードの展開順は大きな流れとしてはA*のそれと一致�
 \newline
 
 HDA*はユニットコストドメインにおいてほぼノードの重複がないことが知られている\cite{Kishimoto2013}。本実験においてもノードの重複は殆どなかった。HDA*は探索済のノードの全てをクローズドリストに保存する。殆どの場合において同じノードを再展開することはない。HDA*において重複が生じる場合は、ある状態に対して複数の経路があり、より長い経路が先に探索された場合のみである。HDA*は探索済ノードの一部しか保存しないTDSと比較してノードの重複率が非常に小さい\cite{romein1999transposition}。Kobayashiらがノードの重複が問題となるシーケンスアライメント問題において、ノードの重複による探索オーバーヘッドついて議論しているのでこちらを参照されたい\cite{kobayashi2011evaluations}。
+
+これらの結果はそれぞれ1インスタンスのものを代表的に示したが、実験対象とした100問のどのインスタンスに対しても同様のパターンを確認することが出来た。
 
 
 \subsection{探索オーバーヘッドの分類}
