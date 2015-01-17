@@ -233,10 +233,7 @@ MahapatraとDuttはPRA*で提案されたHash関数による仕事の分配を�
 
 \subsection{Transposition-table driven work scheduling (TDS)}
 \index{Transposition-table driven work scheduling, TDS}
-% TODO: TDSの説明を詳しく
-\textbf{Transposition-table driven work scheduling (TDS)}は分散メモリ環境におけるIDA*の並列アルゴリズムである\cite{romein1999transposition}。
-TDSはPRA*同様にHash関数によって仕事を分配する。Transposition-tableはノードの重複を調べる為に使われるキャッシュであり、プロセッサの数だけ分割されている。Transposition-tableによる重複の確認により、TDSは逐次のIDA*よりも余剰に展開するノード数が非常に小さい。TDSは分散メモリ環境で、特に15 PuzzleやRubik's cubeなどの問題で効率的であると示されている。また、TDSの基礎となるアイディアは二人零和ゲームにも応用されている。
-
+\textbf{Transposition-table driven work scheduling (TDS)}は分散メモリ環境におけるIDA*の並列アルゴリズムである\cite{romein1999transposition}。\textbf{Iterative Deepening A* (IDA*)}\index{Iterative Deepening A*, IDA*}はメモリ効率に優れたA*探索の派生である\cite{Korf1985depth}。IDA*は反復的に深さ優先探索を行う。反復の度に最大深度を大きくしながら、解が見つかるまで深さ優先探索を繰り返す。TDSはPRA*のようにHash関数を使ってIDA*を並列化する。Transposition-tableはノードの重複を調べる為に使われるキャッシュであり、プロセッサの数だけ分割されている。Transposition-tableによる重複の確認により、TDSは逐次のIDA*よりも余剰に展開するノード数が非常に小さい。IDA*およびTDSは繰り返し探索を行う為、反復の度に多くのノードを再展開する必要がある。PRA*などのA*探索をベースとする並列探索の場合はこのような反復的な再展開はない。TDSは分散メモリ環境で、特に15 PuzzleやRubik's cubeなどの問題で効率的であると示されている。これらの問題ドメインはIDA*で再展開を必要とするノードの割合が非常に小さいことで知られている。TDSの基礎となるアイディアは主に二人零和ゲームに応用されている。
 
 
 % HDA*の定義
@@ -649,7 +646,7 @@ SafePBNFのnblockへの分割方法とnblockの数はそれぞれ以下である
 
 \begin{figure}
 	\centering
-	% TODO: 何故？PBNFが遅い。何度も確かめたが遅い。
+	% 何故？PBNFが遅い。何度も確かめたが遅い。
 	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{competition/15puzzle_vector_walltime.pdf}
 		\caption{15 Puzzle (vector)}
