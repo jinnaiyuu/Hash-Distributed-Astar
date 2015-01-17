@@ -200,13 +200,13 @@ public:
 	void* thread_search(void * arg) {
 
 		int id = thread_id.fetch_add(1);
-		printf("id = %d\n", id);
 
-		// closed might be waaaay too big for my memory....
+		// closed list is waaaay too big for my computer.
 		// original 512927357
-		// now      200000000
 		// TODO: Must optimize these numbers
-		HashTable<typename D::PackedState, Node> closed(512927357 / tnum);
+//		HashTable<typename D::PackedState, Node> closed(512927357 / tnum);
+		HashTable<typename D::PackedState, Node> closed(9999943);
+
 //		Heap<Node> open(100, overrun);
 		heap open(150, overrun);
 		Pool<Node> nodes(2048);
@@ -238,6 +238,9 @@ public:
 		int fval = -1;
 
 		//		while (path.size() == 0) {
+
+		printf("id = %d\n", id);
+
 		while (true) {
 			Node *n;
 
