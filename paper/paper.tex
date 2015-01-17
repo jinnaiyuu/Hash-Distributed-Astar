@@ -364,7 +364,7 @@ Livelockの可能性のあるアルゴリズムは完全ではない。アルゴ
 
 \subsection{先行研究における探索オーバーヘッドの解析}
 % Why need more in depth research?
-Kishimotoらはノードの$f$値によって探索ノードの分類を行うことでHDA*の探索オーバーヘッドの分析を行った\cite{Kishimoto2013}。$c*$を最適解のコストとする。展開したノードのうち、$f$値が$f < c*$となるノードの割合を$R_{<}$, $f = c*$となるノードの割合を$R_{=}$, $f > c*$となるノードの割合を$R_{>}$, 重複して展開されたノードの割合を$R_{r}$とおく。逐次A*で探索されるノードの$f$値は$f < c*$または$f = c*$である。$f > c*$となるノードは展開されない。同じ状態のノードが複数回展開されることもない。対してHDA*を含む並列アルゴリズムは同じノードを複数回展開しうる。また、$f > c*$のノードも展開しうる。$f = c*$の展開ノード数もA*と異なる。よって、$R_{=}$, $R_{>}$, $R_{r}$の割合によって探索オーバーヘッドを分類することが出来る。
+Kishimotoらはノードの$f$値によって探索ノードの分類を行うことでHDA*の探索オーバーヘッドの分析を行った\cite{Kishimoto2013}。$c^*$を最適解のコストとする。展開したノードのうち、$f$値が$f < c*$となるノードの割合を$R_{<}$, $f = c*$となるノードの割合を$R_{=}$, $f > c*$となるノードの割合を$R_{>}$, 重複して展開されたノードの割合を$R_{r}$とおく。逐次A*で探索されるノードの$f$値は$f < c*$または$f = c*$である。$f > c*$となるノードは展開されない。同じ状態のノードが複数回展開されることもない。対してHDA*を含む並列アルゴリズムは同じノードを複数回展開しうる。また、$f > c*$のノードも展開しうる。$f = c*$の展開ノード数もA*と異なる。よって、$R_{=}$, $R_{>}$, $R_{r}$の割合によって探索オーバーヘッドを分類することが出来る。
 Kishimotoらは24 PuzzleドメインにおいてHDA*の探索オーバーヘッドの殆どが$R_{=}$, $R_{>}$によるものであり、$R_{r}$は僅かであると示した。しかしながらこれらの探索オーバーヘッドの原因に対する分析はまだ行われていない。すなわち、$R_{=}$, $R_{>}$, $R_{r}$となるノードがなぜ多くなるのかは分析されていない。
 
 \subsection{HDA*のノードの探索順}
@@ -641,7 +641,7 @@ SafePBNFのパラメータとして、nblockの個数と最小探索ノード数
 以下、15 Puzzle, 24 Puzzle, Grid Pathfinding, TSPで実験を行った。15 Puzzleはvectorとheapのそれぞれ、24 Puzzle、 Grid Pathfindingはvector, TSPはheapで実装をした。TSPのヒューリスティックはRound Trip Distance、都市の数は13とした。HDA*のHash関数はZobrist Hashによる。
 %minimum spanning treeとround trip distanceの両方で実験を行った。それぞれの都市の数は20と13とした。
 
-SafePBNFのnblockへの分割方法とnblockの数はそれぞれ以下である。15 Puzzleはtwo-tile projection (nblock=3360),24 Puzzleも同様にtwo-tile projection (nblock=13820), Grid Pathfindingは100x100のグリッドを一つのnblockとした(nblock=2500)。TSPは初めに訪れた３つの都市による(nblock=1716)。最小探索ノード数は全て8とした。
+SafePBNFのnblockへの分割方法とnblockの数はそれぞれ以下である。15 Puzzleはtwo-tile projection (nblock=3360),24 Puzzleも同様にtwo-tile projection (nblock=13820), Grid Pathfindingは100$\times$100のグリッドを一つのnblockとした(nblock=2500)。TSPは初めに訪れた３つの都市による(nblock=1716)。最小探索ノード数は全て8とした。
 
 % 20都市のnblockは6840, 
 並列アルゴリズムは全て8スレッドの実行による。15 Puzzleの実行時間の上限は8000秒、他のドメインの実行時間の上限は2000秒とした。
