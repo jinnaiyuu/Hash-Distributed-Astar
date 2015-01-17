@@ -6,6 +6,8 @@
 
 #cd /home/yuu/workspace/ethan
 
+if false
+then
 if [ $# -ne 0 ]
 then 
     dat1=$1
@@ -23,13 +25,13 @@ fi
 #if false
 #then 
 echo "start ${dat1}"
-awk 'BEGIN{isData = 0;} $3=="wall"&&$4=="time"{isData = 0} $1=="openlist"{isData = 0} $1!="incumbent"{if (isData) {printf("1 "); if(NF!=5) {printf("%d %d %d %s %d 0\n", $1,$2,$3,$4,$5)} else {print}} } /incumbent/{isData = 1}' $dat1 | sort -k 4 > ${dat1}.buf
+awk 'BEGIN{isData = 0;} $3=="wall"&&$4=="time"{isData = 0} $1=="openlist"{isData = 0} $1!="incumbent"{if (isData) {printf("1 "); printf("%d %d %d %s %d 0\n", $1,$2,$3,$4,$5)} } /incumbent/{isData = 1}' $dat1 | sort -k 4 > ${dat1}.buf
 echo "dat1 done"
-awk 'BEGIN{isData = 0;} $3=="wall"&&$4=="time"{isData = 0} $1=="openlist"{isData = 0} $1!="incumbent"{if (isData) {printf("2 "); if(NF!=5) {printf("%d %d %d %s %d 0\n", $1,$2,$3,$4,$5)} else {print}}}  /incumbent/{isData = 1}' $dat2 | sort -k 4 > ${dat2}.buf
+awk 'BEGIN{isData = 0;} $3=="wall"&&$4=="time"{isData = 0} $1=="openlist"{isData = 0} $1!="incumbent"{if (isData) {printf("2 "); printf("%d %d %d %s %d 0\n", $1,$2,$3,$4,$5)} } /incumbent/{isData = 1}' $dat2 | sort -k 4 > ${dat2}.buf
 echo "dat2 done"
-awk 'BEGIN{isData = 0;} $3=="wall"&&$4=="time"{isData = 0} $1=="openlist"{isData = 0} $1!="incumbent"{if (isData) {printf("4 "); if(NF!=5) {printf("%d %d %d %s %d 0\n", $1,$2,$3,$4,$5)} else {print}}} /incumbent/{isData = 1}' $dat3 | sort -k 4 > ${dat3}.buf
+awk 'BEGIN{isData = 0;} $3=="wall"&&$4=="time"{isData = 0} $1=="openlist"{isData = 0} $1!="incumbent"{if (isData) {printf("4 "); printf("%d %d %d %s %d 0\n", $1,$2,$3,$4,$5)} } /incumbent/{isData = 1}' $dat3 | sort -k 4 > ${dat3}.buf
 echo "dat3 done"
-awk 'BEGIN{isData = 0;} $3=="wall"&&$4=="time"{isData = 0} $1=="openlist"{isData = 0} $1!="incumbent"{if (isData) {printf("8 "); if(NF!=5) {printf("%d %d %d %s %d 0\n", $1,$2,$3,$4,$5)} else {print}}} /incumbent/{isData = 1}' $dat4 | sort -k 4 > ${dat4}.buf
+awk 'BEGIN{isData = 0;} $3=="wall"&&$4=="time"{isData = 0} $1=="openlist"{isData = 0} $1!="incumbent"{if (isData) {printf("8 "); printf("%d %d %d %s %d 0\n", $1,$2,$3,$4,$5)} } /incumbent/{isData = 1}' $dat4 | sort -k 4 > ${dat4}.buf
 echo "dat4 done"
 
 # The size of open list for each experiments
@@ -130,7 +132,6 @@ fi
 
 
 # Get Highlights
-sed -n '1p' ${dat1}.joined > ${dat1}.first
 astarnodes=`awk '{print $4}' ${dat1}.first`
 #uniq -D -w 32 ${dat1}.2joined > ${dat1}.2dup
 #uniq -D -w 32 ${dat1}.4joined > ${dat1}.4dup
@@ -138,39 +139,30 @@ astarnodes=`awk '{print $4}' ${dat1}.first`
 
 # 3. Plot
 
+fi
+
+dat1=$1
+sed -n '1p' ${dat1} > ${dat1}.first
 echo "Ready to plot"
-
-length=`wc -l ${dat1}.joined | awk '{print $1}'`
-freq=`expr $length / 50000 + 1`
-echo "file length =" $length
-echo "plot frequency =" $freq
-
-#cat ${dat1}.joined | awk '$4>0{print}' > ${dat1}.parse
-#mv ${dat1}.joined ${dat1}.joined_
-#mv ${dat1}.parse ${dat1}.joined
 
 gnuplot<<EOF
   set terminal pdf
   set xrange[0:]
   set yrange[0:]
-  set xtics 2000
-  set ytics 2000
-#  set logscale x
-#  set logscale y
-
   set size ratio -1
   set key out right
-  freq = $freq
-  plot "${dat1}.joined" using 4:(\$4>0&&\$8==0&&\$9>0?\$9:1/0) every freq w p pt 0 lc rgb"red" notitle
+  freq = 60
+
+  plot "${dat1}" using 3:(\$5==0?\$6:1/0) every freq w p pt 0 lc rgb"red" notitle
   replot 1/0 w p pt 7 ps 1 lc rgb"red"  title "Thread 1"
-  replot "${dat1}.joined" using 4:(\$8==1&&\$9>0?\$9:1/0) every freq  w p pt 0 lc rgb"blue" notitle,\
+  replot "${dat1}" using 3:(\$5==1?\$6:1/0) every freq  w p pt 0 lc rgb"blue" notitle,\
        1/0 w p pt 7 ps 1 lc rgb"blue" title "Thread 2"
 
 #  set xr[0:40000]
   replot x lw 2 lc "black" title "Strict Order"
 
   set output "2_threads_draft.pdf"
-  replot "${dat1}.first"  using 4:9 w p pt 14 lc "black" ps 4 notitle,\
+  replot "${dat1}.first"  using 3:6 w p pt 14 lc "black" ps 4 notitle,\
        1/0  w p pt 14 lc "black" ps 1 title "Goal"
 #  set terminal png size 1280,960
 
@@ -183,51 +175,49 @@ gnuplot<<EOF
 #       "${dat1}.joined" using 4:(\$8==1?\$9:1/0):(0):(-\$11) every 30 w xerrorbars pt 0 lc rgb"blue" notitle,\
 #       "${dat1}.2dup"   using 4:9 w p pt -1 ps -1 notitle,\                
 
-EOF
+#EOF
 
-evince 2_threads_draft.pdf
+#evince 2_threads_draft.pdf
 
-exit 0
+#exit 0
 
 #  set title "Thread 1-4 Nodes Searched $astarnodes-$length3"
   set output "4_threads_draft.pdf"
-  plot "${dat1}.joined" using 4:(\$13==0?\$14:1/0) every freq w p pt 0 lc rgb"red" notitle,\
+  plot "${dat1}" using 3:(\$8==0?\$9:1/0) every freq w p pt 0 lc rgb"red" notitle,\
        1/0 w p pt 7 ps 1 lc rgb"red" title "Thread 1",\
-       "${dat1}.joined" using 4:(\$13==1?\$14:1/0) every freq w p pt 0 lc rgb"blue" notitle,\
+       "${dat1}" using 3:(\$8==1?\$9:1/0) every freq w p pt 0 lc rgb"blue" notitle,\
        1/0 w p pt 7 ps 1 lc rgb"blue" title "Thread 2",\
-       "${dat1}.joined" using 4:(\$13==2?\$14:1/0) every freq w p pt 0 lc rgb"green" notitle,\
+       "${dat1}" using 3:(\$8==2?\$9:1/0) every freq w p pt 0 lc rgb"green" notitle,\
        1/0 w p pt 7 ps 1 lc rgb"green" title "Thread 3",\
-       "${dat1}.joined" using 4:(\$13==3?\$14:1/0) every freq w p pt 0 lc rgb"yellow" notitle,\
+       "${dat1}" using 3:(\$8==3?\$9:1/0) every freq w p pt 0 lc rgb"yellow" notitle,\
        1/0 w p pt 7 ps 1 lc rgb"yellow" title "Thread 4",\
 \
        x lw 2 lc "black" title "Strict Order",\
 \
-       "${dat1}.first"  using 4:14 w p pt 14 lc "black" ps 4 notitle,\
+       "${dat1}.first"  using 3:9 w p pt 14 lc "black" ps 4 notitle,\
        1/0  w p pt 14 lc "black" ps 1 title "Goal"
 
   set output "8_threads_draft.pdf"
-  set xtics 10000
-  set ytics 10000
-  plot "${dat1}.joined" using 4:(\$18==0?\$19:1/0) every freq w p pt 0 lc rgb"red" notitle,\
+  plot "${dat1}" using 3:(\$11==0?\$12:1/0) every freq w p pt 0 lc rgb"red" notitle,\
        1/0 w p pt 7 ps 1 lc rgb"red" title "Thread 1",\
-       "${dat1}.joined" using 4:(\$18==1?\$19:1/0) every freq w p pt 0 lc rgb"blue" notitle,\
+       "${dat1}" using 3:(\$11==1?\$12:1/0) every freq w p pt 0 lc rgb"blue" notitle,\
        1/0 w p pt 7 ps 1 lc rgb"blue" title "Thread 2",\
-       "${dat1}.joined" using 4:(\$18==2?\$19:1/0) every freq w p pt 0 lc rgb"green" notitle,\
+       "${dat1}" using 3:(\$11==2?\$12:1/0) every freq w p pt 0 lc rgb"green" notitle,\
        1/0 w p pt 7 ps 1 lc rgb"green" title "Thread 3",\
-       "${dat1}.joined" using 4:(\$18==3?\$19:1/0) every freq w p pt 0 lc rgb"yellow" notitle,\
+       "${dat1}" using 3:(\$11==3?\$12:1/0) every freq w p pt 0 lc rgb"yellow" notitle,\
        1/0 w p pt 7 ps 1 lc rgb"yellow" title "Thread 4",\
-       "${dat1}.joined" using 4:(\$18==4?\$19:1/0) every freq w p pt 0 lc rgb"indigo" notitle,\
+       "${dat1}" using 3:(\$11==4?\$12:1/0) every freq w p pt 0 lc rgb"indigo" notitle,\
        1/0 w p pt 7 ps 1 lc rgb"magenta" title "Thread 5",\
-       "${dat1}.joined" using 4:(\$18==5?\$19:1/0) every freq w p pt 0 lc rgb"maroon" notitle,\
+       "${dat1}" using 3:(\$11==5?\$12:1/0) every freq w p pt 0 lc rgb"maroon" notitle,\
        1/0 w p pt 7 ps 1 lc rgb"cyan" title "Thread 6",\
-       "${dat1}.joined" using 4:(\$18==6?\$19:1/0) every freq w p pt 0 lc rgb"orange" notitle,\
+       "${dat1}" using 3:(\$11==6?\$12:1/0) every freq w p pt 0 lc rgb"orange" notitle,\
        1/0 w p pt 7 ps 1 lc rgb"orange" title "Thread 7",\
-       "${dat1}.joined" using 4:(\$18==7?\$19:1/0) every freq w p pt 0 lc rgb"teal" notitle,\
+       "${dat1}" using 3:(\$11==7?\$12:1/0) every freq w p pt 0 lc rgb"teal" notitle,\
        1/0 w p pt 7 ps 1 lc rgb"brown" title "Thread 8",\
 \
        x lw 2 lc "black" title "Strict Order",\
 \
-       "${dat1}.first"  using 4:19 w p pt 14 lc "black" ps 4 notitle,\
+       "${dat1}.first"  using 3:12 w p pt 14 lc "black" ps 4 notitle,\
        1/0  w p pt 14 lc "black" ps 1 title "Goal"
 
 EOF

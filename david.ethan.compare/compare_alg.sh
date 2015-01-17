@@ -4,11 +4,11 @@ data1=$1
 data2=$2
 data3=$3
 data4=$4
-data5=$5
-data6=$6
-data7=$7
-data8=$8
-data9=$9
+#data5=$5
+#data6=$6
+#data7=$7
+#data8=$8
+#data9=$9
 
 ./each.sh $data1
 ./each.sh $data2
