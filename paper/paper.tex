@@ -534,6 +534,8 @@ Bind Effect, Burst Effectは問題サイズが大きくなるに従い相対的�
 	\label{fig:15_david}
 \end{figure}
 
+% TODO: Print this if we could experiment with more than 10 instances. I think we can.
+\begin{comment}
 \begin{figure}
 	\centering
 	\begin{subfigure}{0.45\columnwidth}
@@ -549,11 +551,13 @@ Bind Effect, Burst Effectは問題サイズが大きくなるに従い相対的�
 	\caption{24 Puzzle}
 	\label{fig:24_david}
 \end{figure}
+\end{comment}
+
 % Brief but the most important conclusion
-図\ref{fig:david_so}は横軸に逐次A*探索における実行時間、縦軸に探索オーバーヘッドを取っている。この図を見ると、問題サイズが大きくなるほど、探索オーバーヘッドが1に近づいているのが分かる。
+図\ref{fig:david_so}は横軸にそのインスタンスの逐次A*における実行時間、縦軸にHDA*の探索オーバーヘッドを取っている。この図を見ると、問題サイズが大きくなるほど、探索オーバーヘッドが1に近づいているのが分かる。
 % 同様の傾向が図\ref{fig:david_so_24}でも見られる。
 % 見られないやないかい
-図\ref{fig:david_speedup}は横軸に逐次A*探索における実行時間、縦軸に高速化効率を取っている。全体の傾向として問題サイズが大きくなる程に高速化効率が大きくなることが分かる。
+図\ref{fig:david_speedup}は横軸にそのインスタンスの逐次A*における実行時間、縦軸にHDA*の高速化効率を取っている。問題サイズが小さいと、やや高速化効率は低くなるようである。一方、10秒程度以上の大きさであれば高速化効率はおおよそ一定である。これは探索オーバーヘッドの逓減と合致しているだろう。
 \newline
 
 % Why superlinear speedup? Verify it.
@@ -738,7 +742,7 @@ SafePBNFのnblockへの分割方法とnblockの数はそれぞれ以下である
 図\ref{fig:15puzzle_heap}は15 Puzzleドメインでオープンリストをvectorで実装した場合の実行時間の比較である。このドメインはノードの展開が非常に高速なドメインである。この場合でもHDA*はA*に対して高速化が可能である。これは\ref{sec:analysis1}章の実験結果と一致する。一方、SafePBNFは逐次A*に対して高速化が見られない。図\ref{fig:15puzzle_heap}は15 Puzzleドメインでオープンリストをheapで実装した場合の実行時間の比較である。この実験結果はheap実装においてもHDA*がSafePBNFよりもパフォーマンスに優れるということを示す。
 \newline
 
-vector実装でSafePBNFが速くならない原因は二つの理由が考えられる。一つは、vector実装によってノードの展開が高速化したことである。ノードの展開が高速であると、並列化のオーバーヘッドによる影響が比較して大きくなる。よって、heap実装時には見られなかったオーバーヘッドの影響を受けていると考えられる。もう一つは、そもそもSafePBNFの高速化は主にheapを分割したことによるものであった可能性があるということである。SafePBNFは15 Puzzleの場合3360個のnblockに分割する。オープンリストは1/3360の大きさであると期待される。この時のheapへのアクセス速度の違いは非常に大きいと考えられる。BurnsらはSafePBNFとHDA*のheapへのアクセスにかかるCPU時間の計測を行い、SafePBNFのそれがほぼ0秒であるのに対してHDA*はおおよそ$1e-05$秒かかることを示している\cite{Burns2010}。これは１回のアクセスにかかる時間なので、実行時間を通しての時間は非常に大きい。
+vector実装でSafePBNFが速くならない原因は二つの理由が考えられる。一つは、vector実装によってノードの展開が高速化したことである。ノードの展開が高速であると、並列化のオーバーヘッドによる影響が比較して大きくなる。よって、heap実装時には見られなかったオーバーヘッドの影響を受けていると考えられる。もう一つは、そもそもSafePBNFの高速化は主にheapを分割したことによるものであった可能性があるということである。SafePBNFは15 Puzzleの場合3360個のnblockに分割する。オープンリストは1/3360の大きさであると期待される。この時のheapへのアクセス速度の違いは非常に大きいと考えられる。BurnsらはSafePBNFとHDA*のheapへのアクセスにかかるCPU時間の計測を行い、SafePBNFのそれがほぼ0秒であるのに対してHDA*はおおよそ$1^{-5}$秒かかることを示している\cite{Burns2010}。これは１回のアクセスにかかる時間なので、実行時間を通しての時間は非常に大きい。
 \newline
 
 HDA*でも各スレッドのheapを分割することは可能である。Hash関数による仕事の分配を各スレッド内のheapに自然に流用することが出来る。よって、HDA*でも分割heapを用いることで実数コストドメインにおけるパフォーマンスを向上させることが出来ると考えられる。これは今後の研究課題である。
