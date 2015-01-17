@@ -474,24 +474,24 @@ Kobayashiらがノードの重複が問題となるシーケンスアライメ�
 \begin{figure}
 	\centering
 	\includegraphics[width=0.45\columnwidth]{order/naive.pdf}
-	\caption{HDA* with naive hash}
+	\caption{HDA* with simple hash}
 	\label{fig:order_naive_hash}
 \end{figure}
 % Naive hash is bad.
-上述の探索オーバーヘッドの分類はHash関数が十分な性能を持つ場合のみ有効であると考えられる。図\ref{fig:order_naive_hash}はBurnsらHDA*の性能評価に用いたNaive Hash\index{Naive Hash}によるHDA*の探索順である。Naive Hashはクローズドリストの為のHash関数をそのまま利用したものである。クローズドリストのHash関数はKorfとSchultzeによるPerfect Hashingである\cite{korf2005large}。
+上述の探索オーバーヘッドの分類はHash関数が十分な性能を持つ場合のみ有効であると考えられる。図\ref{fig:order_naive_hash}はBurnsらHDA*の性能評価に用いたSimple Hash\index{Simple Hash}によるHDA*の探索順である。Simple Hashはクローズドリストの為のHash関数をそのまま利用したものである。クローズドリストのHash関数はKorfとSchultzeによるPerfect Hashingである\cite{korf2005large}。
 
-このNaive Hashによる分配はうまくいっていないようである。Perfect Hashingであるので、全てのHash値の値が一つの状態に対応する。これをスレッドの数で割れば状態空間を均等に分割出来る。しかしながら、探索で現れる状態は15 Puzzleドメインの状態空間に対して非常に小さく、偏りのある部分集合である。Naive Hashは状態空間を均等に分割するが、不偏的に均等ではないと考えられる。一方、Zobrist Hashはノードの各状態の情報を利用してHash値を計算する為、より不偏的に均等な分配が可能であると考えられる。Zobrist HashとNaive Hashの詳細な性能比較は\ref{sec:analysis2}章で行う。
+このSimple Hashによる分配はうまくいっていないようである。Perfect Hashingであるので、全てのHash値の値が一つの状態に対応する。これをスレッドの数で割れば状態空間を均等に分割出来る。しかしながら、探索で現れる状態は15 Puzzleドメインの状態空間に対して非常に小さく、偏りのある部分集合である。Simple Hashは状態空間を均等に分割するが、不偏的に均等ではないと考えられる。一方、Zobrist Hashはノードの各状態の情報を利用してHash値を計算する為、より不偏的に均等な分配が可能であると考えられる。Zobrist HashとSimple Hashの詳細な性能比較は\ref{sec:analysis2}章で行う。
 
 \begin{comment}
-状態$s$は整数列$\mathbf{x} = (x_{0}, x_{1}, …, x_{n})$で表せられるとする。Naive Hashは状態$s$をに対して以下の式で与えられる。
+状態$s$は整数列$\mathbf{x} = (x_{0}, x_{1}, …, x_{n})$で表せられるとする。Simple Hashは状態$s$をに対して以下の式で与えられる。
 \newline
 \begin{equation}
 	%H(s) = \sum\nolimits_{i = 0}^{15}(16^{i} \times tiles_{i})\; mod\; n
 	H(s) = \sum\nolimits_{i = 0}^{n}x_{i} l_{i}
 \end{equation}
 
-Naive Hash分配はうまくいっていないようである。
-15 Puzzleドメインの場合、$x_{i}$は各タイルの位置を表し、$l_{i}$は全て16である。スレッドの数が2, 4, 8, 16の場合、Naive Hashは15 Puzzleドメインの状態空間を均等に分割する。しかしながら、この時Hash値は$x_{0}$の値のみに依存する。状態の一部分の情報しか利用していない為、状態空間に対して\textbf{不偏的に}均等な分割をすることが出来ない。探索で現れる状態は15 Puzzleドメインの状態空間に対して非常に小さく、偏りのある部分集合である。よって、Naive HashはA*探索で現れるノードを均等に分配することは出来ないと考えられる。Zobrist HashとNaive Hashの詳細な性能比較は\ref{sec:analysis2}章で行う。
+Simple Hash分配はうまくいっていないようである。
+15 Puzzleドメインの場合、$x_{i}$は各タイルの位置を表し、$l_{i}$は全て16である。スレッドの数が2, 4, 8, 16の場合、Simple Hashは15 Puzzleドメインの状態空間を均等に分割する。しかしながら、この時Hash値は$x_{0}$の値のみに依存する。状態の一部分の情報しか利用していない為、状態空間に対して\textbf{不偏的に}均等な分割をすることが出来ない。探索で現れる状態は15 Puzzleドメインの状態空間に対して非常に小さく、偏りのある部分集合である。よって、Simple HashはA*探索で現れるノードを均等に分配することは出来ないと考えられる。Zobrist HashとSimple Hashの詳細な性能比較は\ref{sec:analysis2}章で行う。
 \newline
 \end{comment}
 
@@ -592,7 +592,7 @@ Burnsらの比較実験には複数問題点がある\cite{Burns2010}。まず�
 
 本節ではHDA*のHash関数とオープンリストの実装の与える影響を実験的に示す。
 
-\ref{sec:analysis1}章にて、Naive Hashは分配に問題があると分かった。Naive HashとZobrist Hashによる実装の実行時間と展開ノード数を比較した。
+\ref{sec:analysis1}章にて、Simple Hashは分配に問題があると分かった。Simple HashとZobrist Hashによる実装の実行時間と展開ノード数を比較した。
 BurnsらはA*探索の15 Puzzleドメインにおける実装の最適化について議論を行い、vectorによるオープンリストがheap実装より3倍程度速いことを示した\cite{Burns2012implementing}。しかしながら並列探索アルゴリズムにおけるパフォーマンスへの影響は調べられていない。
 
 本実験では以上の２つの実装の違いがHDA*の実行時間・探索オーバーヘッドに与える影響を比較する。インスタンスはKorfの100 puzzleを用いた\cite{korf1985depth}。並列アルゴリズムは全て8スレッドの実行による。実行時間の上限は2000秒とした。
@@ -614,7 +614,7 @@ BurnsらはA*探索の15 Puzzleドメインにおける実装の最適化につ�
 	\label{fig:hdastar_tuning}
 \end{figure}
 
-図\ref{fig:hdastar_tuning_walltime}は横軸に実行時間、縦軸にその時間内に解けた問題の数を取っている。どの問題サイズにおいても、Zobrist Hashとvectorによる実装が一番速いと結論出来る。特にZobrist Hashを用いた実装はNaive Hashによる実装よりも2倍程度速い。図\ref{fig:hdastar_tuning_expd}は横軸を展開ノード数にしたものである。図によると、Zobrist HashはNaive Hashよりも展開ノード数が小さい。Naive Hashはどの問題サイズでもおおよそZobrist Hashの２倍の展開ノード数になっている。よってZobrist Hashの実装の方が高速であるのは展開ノード数の違いによるものであると結論出来る。Zobrist HashがNaive Hashよりも大きく性能が優れるという結果は\ref{sec:analysis1}における分析結果とも一致する。
+図\ref{fig:hdastar_tuning_walltime}は横軸に実行時間、縦軸にその時間内に解けた問題の数を取っている。どの問題サイズにおいても、Zobrist Hashとvectorによる実装が一番速いと結論出来る。特にZobrist Hashを用いた実装はSimple Hashによる実装よりも2倍程度速い。図\ref{fig:hdastar_tuning_expd}は横軸を展開ノード数にしたものである。図によると、Zobrist HashはSimple Hashよりも展開ノード数が小さい。Simple Hashはどの問題サイズでもおおよそZobrist Hashの２倍の展開ノード数になっている。よってZobrist Hashの実装の方が高速であるのは展開ノード数の違いによるものであると結論出来る。Zobrist HashがSimple Hashよりも大きく性能が優れるという結果は\ref{sec:analysis1}における分析結果とも一致する。
 
 
 \subsection{SafePBNFのチューニング}
@@ -732,7 +732,7 @@ SafePBNFのnblockへの分割方法とnblockの数はそれぞれ以下である
 図\ref{fig:comparison}が実行速度の比較である。それぞれの図は、横軸に実行時間、縦軸にその実行時間内に解ける問題の数を示してある。これらの結果から、特に実行時間の大きい問題ドメイン・インスタンスにおいて、HDA*はSafePBNFよりもパフォーマンスに優れると結論出来る。一方、実行時間が5秒未満程度の小さい問題に対してはSafePBNFの方が優れる場合が多い。\ref{sec:analysis1}章で述べたように、HDA*は実行時間の冒頭と末尾に探索オーバーヘッドがある。実行時間が短い場合、これらのオーバーヘッドの割合が大きくなる。よって、小さな問題インスタンスに対しては探索オーバーヘッドが大きく、SafePBNFの方が速いと考えられる。特にGrid Pathfindingの１秒程度の問題においてHDA*は大きな探索オーバーヘッドを持つ。
 \newline
 
-図\ref{fig:comparison_expd}は展開ノード数の比較である。それぞれの図は、横軸に展開ノード数、縦軸にその展開ノード数以内に解ける問題の数を示してある。実行時間の短いGrid Pathfindingを除き、HDA* vs. SafePBNFの展開ノード数はあまり変わらない。\ref{sec:analysis1}章の結論とこの結果を踏まえると、HDA*は十分に大きな問題に対しては探索オーバーヘッドの殆どない手法であると結論出来るだろう。BurnsらがHDA*の探索オーバーヘッドを指摘したのはHash関数をNaive Hashで実装したからである。図\ref{fig:order_naive_hash}及び図\ref{fig:hdastar_tuning}より、Naive Hashは明らかに不均一なHash関数である。
+図\ref{fig:comparison_expd}は展開ノード数の比較である。それぞれの図は、横軸に展開ノード数、縦軸にその展開ノード数以内に解ける問題の数を示してある。実行時間の短いGrid Pathfindingを除き、HDA* vs. SafePBNFの展開ノード数はあまり変わらない。\ref{sec:analysis1}章の結論とこの結果を踏まえると、HDA*は十分に大きな問題に対しては探索オーバーヘッドの殆どない手法であると結論出来るだろう。BurnsらがHDA*の探索オーバーヘッドを指摘したのはHash関数をSimple Hashで実装したからである。図\ref{fig:order_naive_hash}及び図\ref{fig:hdastar_tuning}より、Simple Hashは明らかに不均一なHash関数である。
 \newline
 
 図\ref{fig:15puzzle_heap}は15 Puzzleドメインでオープンリストをvectorで実装した場合の実行時間の比較である。このドメインはノードの展開が非常に高速なドメインである。この場合でもHDA*はA*に対して高速化が可能である。これは\ref{sec:analysis1}章の実験結果と一致する。一方、SafePBNFは逐次A*に対して高速化が見られない。図\ref{fig:15puzzle_heap}は15 Puzzleドメインでオープンリストをheapで実装した場合の実行時間の比較である。この実験結果はheap実装においてもHDA*がSafePBNFよりもパフォーマンスに優れるということを示す。
