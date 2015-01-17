@@ -279,14 +279,14 @@ HDA*のHash関数はHDA*の性能に大きな影響を与える。Hash関数に�
 	Z(s) := R_{0}[x_{0}]\; xor\; R_{1}[x_{1}]\; xor\; …\; xor\; R_{n}[x_{n}]%
 \end{equation}
 
-$R_{i}$はランダムに生成される為、$Z(s)$は均等な確率で定義域の全ての値が出ると期待される。また、状態の全情報を利用して生成される為、局所的な状態の変化に対しても不偏な分配を行うことが出来る。$xor$によって計算する為、親ノードからの差分のみを計算してHash値を求めることが出来る。加えて、XOR命令は非常に速い計算である。よってZobrist Hashは高速に求めることが出来る。
+$R_{i}$はランダムに生成される為、$Z(s)$は均等な確率で値域の全ての値が出ると期待される。また、状態の全情報を利用して生成される為、局所的な状態の変化に対しても不偏な分配を行うことが出来る。$xor$によって計算する為、親ノードからの差分のみを計算してHash値を求めることが出来る。加えて、XOR命令は非常に速い計算である。よってZobrist Hashは高速に求めることが出来る。
 
 % アルゴリズムの停止方法
 
 \subsection{Parallel Structured Duplicate Detection}
 \index{Parallel Structured Duplicate Detection, PSDD}
 \textbf{Parallel Structured Duplicate Detection (PSDD)}はPRA*とは異なる並列化のフレームワークである\cite{zhou2007parallel}。
-PSDDはロックを取得する回数とスレッド間でノードを通信する回数を減らすことを目的として設計された。PSDDはstructured duplicate detection (SDD)で提案されたアイディアに基づく手法である\cite{zhou2004structured}。SDDはabstract functionによって複数のノードを１つのグループにまとめ、これをnblockと呼ぶ。それぞれのnblockはオープンリストとクローズドリストを持つ。nblockで展開されたノードの子が分配されうるnblockの集合を、そのnblockのduplicate detection scopeと呼ぶ。各スレッドはnblockの探索する時に、このduplicate detection scopeを排他的に専有する。よって、PSDDはノードの展開時にロックを必要としない。ノードの展開は最も多い処理の一つであるので、これにロックを必要としないことは大きな利点である。加えて、生成されたノードはスレッドの専有するduplicate detection scope内のnblockに配置される為、他のスレッドと通信をする必要がない。
+PSDDはロックを取得する回数とスレッド間でノードを通信する回数を減らすことを目的として設計された。PSDDはstructured duplicate detection (SDD)で提案されたアイディアに基づく\cite{zhou2004structured}。SDDはabstract functionによって複数のノードを１つのグループにまとめ、これをnblockと呼ぶ。それぞれのnblockはオープンリストとクローズドリストを持つ。nblockで展開されたノードの子が分配されうるnblockの集合を、そのnblockのduplicate detection scopeと呼ぶ。各スレッドはnblockの探索する時に、このduplicate detection scopeを排他的に専有する。よって、PSDDはノードの展開時にロックを必要としない。ノードの展開は最も多い処理の一つであるので、これにロックを必要としないことは大きな利点である。加えて、生成されたノードはスレッドの専有するduplicate detection scope内のnblockに配置される為、他のスレッドと通信をする必要がない。
 
 \subsection{Parallel Best-NBlock First (PBNF, SafePBNF)}
 \index{Parallel Best-NBlock First, PBNF}
@@ -313,7 +313,7 @@ PSDDはロックを取得する回数とスレッド間でノードを通信す�
 \end{algorithmic}
 \end{algorithm}
 
-\textbf{Parallel Best-nblock First (PBNF)}はPSDDのフレームワークを最良優先探索に適応したアルゴリズムである。PBNFは状態空間を複数のnblock\index{nblock}に分割し、各スレッドがnblockを交換しながら探索する\cite{Burns2010}。それぞれのnblockはオープンリストとクローズドリストを持つ。それぞれのスレッドは最も有望なノードを持つnblockを占有し、探索を行う。また、占有したnblockに隣接するnblockをスレッドのinterference scopeに加える。他のスレッドのinterference scopeに加わったnblockを探索することは出来ない。同一のnblockは複数のinterference scopeに入ることが出来る。自分の占有しているnblockよりも有望なノードを持つnblockが空いていれば、今探索していたnblockとinterference scopeを解放し、新しいnblockを占有して探索を始める。このとき、あまりに頻繁なnblockの切り替えが生じるのを防ぐために、nblockを切り替える前に探索する最小のノード数(最小展開ノード数)\index{最小展開ノード数}が設定される。これはチューニングの必要なパラメータである。nblockはスレッドに占有されるので、オープンリスト・クローズドリストに相互排他ロックをかける必要がない。必要なロックは空いているnblockを保存するheapのみである。PBNFは分散メモリ環境では有効ではないが、現在共有メモリ環境で最もパフォーマンスの良いstate-of-the-artの手法であるとされている。PBNFの問題点として、その複雑さが挙げられる。すなわち、PBNFのパフォーマンスを引き出す為には空間をnblockに分割する方法・粒度と最小展開ノード数をドメインに対して最適化をする必要がある。
+\textbf{Parallel Best-nblock First (PBNF)}はPSDDのフレームワークをA*探索に適応したアルゴリズムである。PBNFは状態空間を複数のnblock\index{nblock}に分割し、各スレッドがnblockを交換しながら探索する\cite{Burns2010}。それぞれのnblockはオープンリストとクローズドリストを持つ。それぞれのスレッドは最も有望なノードを持つnblockを占有し、探索を行う。また、占有したnblockに隣接するnblockをスレッドのinterference scopeに加える。他のスレッドのinterference scopeに加わったnblockを探索することは出来ない。同一のnblockは複数のinterference scopeに入ることが出来る。自分の占有しているnblockよりも有望なノードを持つnblockが空いていれば、今探索していたnblockとinterference scopeを解放し、新しいnblockを占有して探索を始める。このとき、あまりに頻繁なnblockの切り替えが生じるのを防ぐために、nblockを切り替える前に探索する最小のノード数(最小展開ノード数)\index{最小展開ノード数}が設定される。これはチューニングの必要なパラメータである。nblockはスレッドに占有されるので、オープンリスト・クローズドリストに相互排他ロックをかける必要がない。必要なロックは空いているnblockを保存するheapのみである。PBNFは分散メモリ環境では有効ではないが、現在共有メモリ環境で最もパフォーマンスの良いstate-of-the-artの手法であるとされている。PBNFの問題点として、その複雑さが挙げられる。すなわち、PBNFのパフォーマンスを引き出す為には空間をnblockに分割する方法・粒度と最小展開ノード数をドメインに対して最適化をする必要がある。
 \newline
 
 % Livelock
