@@ -348,7 +348,7 @@ Livelockの可能性のあるアルゴリズムは完全ではない。アルゴ
 
 \subsection{Travelling Salesperson Problem (TSP)}
 \index{Travelling Salesperson Problem, TSP}
-\textbf{Travelling Salesperson Problem (TSP)}は、都市の集合とそれぞれの２都市間の距離が与えられたとき、全ての都市を一度ずつ訪れ、出発都市に戻る為の最短経路を求める問題である。TSPで使われるヒューリスティック関数の一つは\textbf{Minimum Spanning Tree}\index{Minimum Spanning Tree, MST}である。Minimum Spanning Treeはグラフの全ての頂点を含む、最も辺の長さが小さい部分グラフである。これはゴールまでの経路よりも短いか同等である。なぜなら、ゴールまでの経路の方が短いならば、それがMinimum Spanning Treeになるはずであるからである。よって、Minimum Spanning Treeはadmissibleなヒューリスティック関数である。より簡単なヒューリスティックとして\textbf{Round Trip Distance}\index{Round Trip Distance}がある。Round Trip Distanceは現在の都市から最も離れた未訪問の都市までの距離の２倍を返す。このヒューリスティックはMinimum Spanning Treeよりも不正確であるが、非常に素早く計算が出来る。並列化に伴う高速化はノードの展開が速い方が困難である為、Round Trip Distanceでの高速化の方が難しいと考えられる。本研究は並列化の効率を調べることが目的である為、Round Trip Distanceをヒューリスティックに用いる。本研究では$1.0\times1.0$の範囲にランダムに都市を配置し、都市間の直線距離をコストとした。
+\textbf{Travelling Salesperson Problem (TSP)}は、都市の集合とそれぞれの２都市間の距離が与えられたとき、全ての都市を一度ずつ訪れ、出発都市に戻る為の最短経路を求める問題である。TSPで使われるヒューリスティック関数の一つは\textbf{Minimum Spanning Tree}\index{Minimum Spanning Tree, MST}である。Minimum Spanning Treeはグラフの全ての頂点を含む、最も辺の長さが小さい部分グラフである。これはゴールまでの経路よりも短いか同等である。なぜなら、ゴールまでの経路の方が短いならば、それがMinimum Spanning Treeになるはずであるからである。よって、Minimum Spanning Treeはadmissibleなヒューリスティック関数である。より簡単なヒューリスティックとして\textbf{Round Trip Distance}\index{Round Trip Distance}がある。Round Trip Distanceは現在の都市から最も離れた未訪問の都市までの距離の２倍を返す。このヒューリスティックはMinimum Spanning Treeよりも不正確であるが、非常に素早く計算が出来る。並列化に伴う高速化はノードの展開が速い方が困難である為、Round Trip Distanceでの高速化の方が難しいと考えられる。本研究は並列化の効率を調べることが目的である為、Round Trip Distanceをヒューリスティックに用いる。本研究では正方形内にランダムに都市を配置し、都市間の直線距離をコストとした。
 
 \newpage
 
