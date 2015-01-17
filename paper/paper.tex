@@ -330,7 +330,7 @@ Livelockの可能性のあるアルゴリズムは完全ではない。アルゴ
 \subsection{Sliding-tile Puzzle (15 Puzzle, 24 Puzzle)}
 \index{Sliding-tile Puzzle, 15 Puzzle, 24 Puzzle}
 
-\begin{figure}
+\begin{figure}[h]
 	\centering
 	\includegraphics[width=0.3\columnwidth]{others/15puzzle.png}
 	\caption{Sliding-tile Puzzle}
@@ -373,7 +373,7 @@ HDA*の探索オーバーヘッドは、A*とノードの展開順が異なる�
 本実験では15 Puzzleドメインを対象にA*とHDA*においてある状態が展開された順番を記録した。同時に、重複して展開されたノードの数を記録した。インスタンスはランダムに生成した100問を対象とした。実験環境はIntel dual-quad Xeon 2.33GHz, 32GB RAM, OSはGNU/Linux Ubuntu 14.04である。本実験では15 Puzzleドメインに最適化したコードを利用した。KishimotoらはMPI message passing libraryでプロセス間通信を実装したが、本実験では共有メモリ環境においてMPIよりも高速なpthreadライブラリを用いた。非同期通信はtry\_lockで実装した。オープンリストはvectorで実装した。なお、オープンリストをheapで実装した場合も概ね同様の結果が得られた。
 \newline
 
-\begin{figure}
+\begin{figure}[h]
 	\centering
 	\begin{subfigure}{0.45\columnwidth}
 		\centering
@@ -409,10 +409,10 @@ HDA*の探索オーバーヘッドは、A*とノードの展開順が異なる�
 	\label{fig:hdastar_orders}
 \end{figure}
 
-図\ref{fig:hdastar_orders}は、ある状態がA*において何番目に展開されたかを横軸に、HDA*において何番目に展開されたかを縦軸に取ってある。Strict Orderは$y = x$の直線である。もし、A*とHDA*の展開順が完全に一致していた場合、全ての点はこの線の上に並ぶ。図のGoalは最適解となるゴールノードが展開された点である。この点がStrict Orderよりも上にあれば、その差だけ探索オーバーヘッドが生じているということである。
+図\ref{fig:hdastar_orders}は、ある状態が逐次A*において何番目に展開されたかを横軸に、HDA*において何番目に展開されたかを縦軸に取ってある。Strict Orderは$y = x$の直線である。もし、逐次A*とHDA*の展開順が完全に一致していた場合、全ての点はこの線の上に並ぶ。図のGoalは最適解が展開された点である。この点がStrict Orderよりも上にあれば、その差だけ探索オーバーヘッドが生じているということである。
 
 % bind effect
-HDA*のノードの展開順は大きな流れとしてはA*のそれと一致するようである。しかしながら「幅」が存在し、その範囲内で展開順が前後する。この幅はスレッド数が大きい程広い。図\ref{fig:order_8_threads_easy}は図\ref{fig:order_8_threads}よりも大きなインスタンスの展開順である。幅は実行時間を通して大きくなっていくが、展開ノード数が増加する割合に対して小さい。その為、問題サイズが大きくなる程、展開ノード数に対する相対的な幅の大きさは小さくなると考えられる。
+HDA*のノードの展開順は大きな流れとしてはA*のそれと一致するようである。しかしながら「幅」が存在し、その範囲内で展開順が前後する。この幅はスレッド数が大きい程広い。幅は実行時間を通して大きくなっていくが、展開ノード数が増加する割合に対して小さい。その為、問題サイズが大きくなる程、展開ノード数に対する相対的な幅の大きさは小さくなると考えられる。図\ref{fig:order_8_threads_easy}はより大きなインスタンスでの実験である。このように、問題サイズが大きくなってもHDA*の展開順はA*と類似する。
 
 % burst effect
 特にスレッドの数が大きい場合に、探索の冒頭で展開順がA*から大きく外れる。これは初期化の終わっていないスレッドがある時間帯に当たる。初期化の終わっていないスレッドがある場合、それらのスレッドの担当するノードを迂回した、限られた探索空間の中で展開を進めることになる。探索空間が異なるので、展開順もA*から外れてしまうと考えられる。また、ここで展開されたノードは殆どが重複したノードになる。限られた探索空間内を迂回して展開したノードであるので、殆どのノードは最短ではない経路で生成される為である。ノードの展開が遅い場合、スレッドの初期化にかかる時間は相対的に小さくなる。この現象はノードの展開が非常に速い場合にのみ生じると考えられる。図\ref{fig:order_delay}はノードの展開に無関係の計算を挿入し、展開速度を遅くした場合の実行結果である。無関係の計算を挿入しない場合の展開速度はおよそ$10^7$ノード/秒(100問の平均値)であるのに対して、図\ref{fig:order_delay}の実行の展開速度はおよそ$10^4$ノード/秒である。
@@ -471,7 +471,7 @@ Kobayashiらがノードの重複が問題となるシーケンスアライメ�
 
 \end{enumerate}
 
-\begin{figure}
+\begin{figure}[h]
 	\centering
 	\includegraphics[width=0.45\columnwidth]{order/naive.pdf}
 	\caption{HDA* with simple hash}
@@ -495,7 +495,7 @@ Simple Hash分配はうまくいっていないようである。
 \newline
 \end{comment}
 
-\begin{figure}
+\begin{figure}[h]
 	\centering
 	\includegraphics[width=0.45\columnwidth]{order/pbnf.pdf}
 	\caption{SafePBNF}
@@ -503,7 +503,7 @@ Simple Hash分配はうまくいっていないようである。
 \end{figure}
 
 
-図\ref{fig:order_safepbnf}はSafePBNFの展開順である。この図のみ、縦軸と横軸のスケールが異なることに注意されたい。A*の展開順とは大きく異なる順番でノードを展開していることが伺える。
+図\ref{fig:order_safepbnf}はSafePBNFの展開順である。この図のみ、縦軸と横軸のスケールが異なることに注意されたい。逐次A*の展開順とは大きく異なる順番でノードを展開していることが伺える。
 % PBNFのやっていることはよくわからん
 % PBNFは最もf値の良いノードを優先して展開することを目的に設計された。しかしながら、HDA*の方がその目的に沿っているようである。理由として、HDA*の方が探索空間を細かく分割するため、より均等な分配が可能であるからだと考えられる。
 % PBNFは実はweighted searchに近い効果があるのでは？今後の研究課題である。
@@ -518,7 +518,7 @@ Bind Effect, Burst Effectは問題サイズが大きくなるに従い相対的�
 前節の分析にて、問題サイズが大きくなるほど探索オーバーヘッドが小さくなるという仮説を議論した。本節ではこの仮説を実験的に検証する。15 Puzzle, 24 Puzzleドメインを対象に、問題毎の展開ノード数と高速化効率の分析を行った。15 Puzzleのインスタンスはランダムに生成した200問を対象にした。これらの問題は逐次A*で10～3000秒の実行時間で解ける問題である。24 PuzzleはKorfによる50問のうち、25, 32, 34, 38, 40番の問題を対象とした\cite{Korf2002}。実験環境はIntel Xeon E5-2670 2.33GHz (24 core), 64GB RAM, OSはGNU/Linux Ubuntu 14.04である。なお、前節の実験環境であるIntel dual-quad Xeon 2.33GHz, 32GB RAMでも実験を行い、概ね同様の結果が得られた。
 
 % TODO for IJCAI: それぞれのインスタンスに対して何回か(5回？)実験を行いその平均を取るべきか。
-\begin{figure}
+\begin{figure}[h]
 	\centering
 	\begin{subfigure}{0.45\columnwidth}
 		\includegraphics[width=\columnwidth]{efficiency/search_overhead_micro.pdf}	
@@ -536,7 +536,7 @@ Bind Effect, Burst Effectは問題サイズが大きくなるに従い相対的�
 
 % TODO: Print this if we could experiment with more than 10 instances. I think we can.
 \begin{comment}
-\begin{figure}
+\begin{figure}[h]
 	\centering
 	\begin{subfigure}{0.45\columnwidth}
 		\includegraphics[width=\columnwidth]{efficiency/search_overhead_24puzzle_micro.pdf}	
@@ -600,7 +600,7 @@ Burnsらは逐次A*の15 Puzzleドメインにおける実装の最適化につ�
 本実験では以上の２つの実装の違いがHDA*の実行時間・探索オーバーヘッドに与える影響を比較する。インスタンスはKorfの100 puzzleを用いた\cite{korf1985depth}。並列アルゴリズムは全て8スレッドの実行による。実行時間の上限は2000秒とした。
 \newline
 
-\begin{figure}
+\begin{figure}[h]
 	\centering
 	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{tuning/hdastar_tuning_walltime.pdf}
@@ -626,7 +626,7 @@ HDA*においてvectorによるオープンリストの実装はheapによる実
 SafePBNFのパラメータとして、nblockの個数と最小探索ノード数がある。BurnsらはSliding-tile puzzle問題においてnblockへの分割方法がtwo-tile projectionであり、最小探索ノード数が8である場合に最適であると示した。two-tile projectionはブランク、tile-1, tile-2の位置が同じノードを一つのnblockとする分割方法である。このときnblockは3360個になる。Burnsらの実験はdual quad-core Intel Xeon E5320 1.86GHzプロセッサ、16 GB RAMで行われた。本実験の実験環境と類似している為、Burnsらの提案したパラメータを用いた。並列アルゴリズムは全て8スレッドの実行による。実行時間の上限は2000秒とした。
 \newline
 
-\begin{figure}
+\begin{figure}[h]
 	\centering
 	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{tuning/safepbnf_tuning_walltime.pdf}
@@ -657,7 +657,7 @@ SafePBNFのnblockへの分割方法とnblockの数はそれぞれ以下である
 並列アルゴリズムは全て8スレッドの実行による。15 Puzzleの実行時間の上限は8000秒、他のドメインの実行時間の上限は2000秒とした。
 \newline
 
-\begin{figure}
+\begin{figure}[h]
 	\centering
 	% 何故？PBNFが遅い。何度も確かめたが遅い。
 	\begin{subfigure}{0.4\columnwidth}
@@ -694,7 +694,7 @@ SafePBNFのnblockへの分割方法とnblockの数はそれぞれ以下である
 	\label{fig:comparison}
 \end{figure}
 
-\begin{figure}
+\begin{figure}[h]
 	\centering
 	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{competition/15puzzle_vector_expd.pdf}
@@ -737,10 +737,10 @@ SafePBNFのnblockへの分割方法とnblockの数はそれぞれ以下である
 図\ref{fig:comparison_expd}は展開ノード数の比較である。それぞれの図は、横軸に展開ノード数、縦軸にその展開ノード数以内に解ける問題の数を示してある。実行時間の短いGrid Pathfindingを除き、HDA* vs. SafePBNFの展開ノード数はあまり変わらない。\ref{sec:analysis1}章の結論とこの結果を踏まえると、HDA*は十分に大きな問題に対しては探索オーバーヘッドの殆どない手法であると結論出来るだろう。BurnsらがHDA*の探索オーバーヘッドを指摘したのはHash関数をSimple Hashで実装したからである。図\ref{fig:order_naive_hash}及び図\ref{fig:hdastar_tuning}より、Simple Hashは明らかに不均一なHash関数である。
 \newline
 
-図\ref{fig:15puzzle_heap}は15 Puzzleドメインでオープンリストをvectorで実装した場合の実行時間の比較である。このドメインはノードの展開が非常に高速なドメインである。この場合でもHDA*はA*に対して高速化が可能である。これは\ref{sec:analysis1}章の実験結果と一致する。一方、SafePBNFは逐次A*に対して高速化が見られない。図\ref{fig:15puzzle_heap}は15 Puzzleドメインでオープンリストをheapで実装した場合の実行時間の比較である。この実験結果はheap実装においてもHDA*がSafePBNFよりもパフォーマンスに優れるということを示す。
+図\ref{fig:15puzzle_heap}は15 Puzzleドメインでオープンリストをvectorで実装した場合の実行時間の比較である。このドメインはノードの展開が非常に高速なドメインである。この場合でもHDA*は逐次A*に対して高速化が可能である。これは\ref{sec:analysis1}章の実験結果と一致する。一方、SafePBNFは逐次A*に対して高速化が見られない。図\ref{fig:15puzzle_heap}は15 Puzzleドメインでオープンリストをheapで実装した場合の実行時間の比較である。この実験結果はheap実装においてもHDA*がSafePBNFよりもパフォーマンスに優れるということを示す。
 \newline
 
-vector実装でSafePBNFが速くならない原因は二つの理由が考えられる。一つは、vector実装によってノードの展開が高速化したことである。ノードの展開が高速であると、並列化のオーバーヘッドによる影響が比較して大きくなる。よって、heap実装時には見られなかったオーバーヘッドの影響を受けていると考えられる。もう一つは、そもそもSafePBNFの高速化は主にheapを分割したことによるものであった可能性があるということである。SafePBNFは15 Puzzleの場合3360個のnblockに分割する。オープンリストは1/3360の大きさであると期待される。この時のheapへのアクセス速度の違いは非常に大きいと考えられる。BurnsらはSafePBNFとHDA*のheapへのアクセスにかかるCPU時間の計測を行い、SafePBNFのそれがほぼ0秒であるのに対してHDA*はおおよそ$0.00001$秒かかることを示している\cite{Burns2010}。これは１回のアクセスにかかる時間なので、実行時間を通しての遅延は非常に大きい。
+vector実装でSafePBNFが速くならない原因は二つの理由が考えられる。一つは、vector実装によってノードの展開が高速化したことである。ノードの展開が高速であると、並列化のオーバーヘッドによる影響が比較して大きくなる。よって、heap実装時には見られなかったオーバーヘッドの影響を受けていると考えられる。もう一つに、そもそもSafePBNFの高速化は主にheapを分割することによるものであった可能性がある。SafePBNFは15 Puzzleの場合3360個のnblockに分割する。よって、オープンリストは1/3360の大きさであると期待される。この時のheapへのアクセス速度の違いは非常に大きいと考えられる。BurnsらはSafePBNF (3360 nblocks)とHDA* (8 threads)のheapへのアクセスにかかるCPU時間の計測を行い、SafePBNFのそれがほぼ0秒であるのに対してHDA*はおおよそ$0.00001$秒(中央値)かかることを示している\cite{Burns2010}。これは１回のアクセスにかかる時間なので、実行時間を通しての合計は非常に大きい。
 \newline
 
 HDA*でも各スレッドのheapを分割することは可能である。Hash関数による仕事の分配を各スレッド内のheapに自然に流用することが出来る。よって、HDA*でも分割heapを用いることで実数コストドメインにおけるパフォーマンスを向上させることが出来ると考えられる。これは今後の研究課題である。
@@ -769,7 +769,7 @@ HDA*でも各スレッドのheapを分割することは可能である。Hash�
 SafePBNFはTSPドメインにおいて効率的である。その理由としては以下の二点が考えられる。一つは前述のheapを分割することによる高速化である。もう一つはドメインに解が無数にあるからである。表\ref{hdastar_incumbent}はHDA*とSafePBNFにおいて、解を発見した平均の回数である。SafePBNFの探索方法はAnytime Searchのような特徴を持つ\cite{Burns2010}。すなわち、SafePBNFは最適でない解を素早く見つけ、時間と共により良い解を発見することが出来る。最適でない解を発見した場合、その解のコストよりもコストの大きいノードを生成する必要がなくなる。ノードの生成は探索時間の大きな割合を占める為、生成の回数を減らすことは大きな高速化につながる。TSPは深さが都市の数と同じノードは全て解である。都市が20個の場合は$20!/2$通りの解が存在する。SafePBNFは解が無数にあるTSPでは素早く解を発見でき、その為最適解も高速に見つけられると考えられる。
 \newline
 
-どのドメインにおいてもシンプルなParallel A*は逐次A*よりも遅くなってしまう。Parallel A*はオープンリストとクローズドリストにロックを必要とする。スレッドはロックが解放されるのを待たなければならない為、大きな同期オーバーヘッドが生じる。この結果はBurnsらの実験と一致する\cite{Burns2010}。なお、Parallel A*の実行結果が省略してあるドメインはParallel A*が殆ど解けなかったドメインである。
+どのドメインにおいてもシンプルなParallel A*は逐次A*よりも遅くなってしまう。Parallel A*はオープンリストとクローズドリストにロックを必要とする。スレッドはロックが解放されるのを待たなければならない為、大きな同期オーバーヘッドが生じる。この結果はBurnsらの実験と一致する\cite{Burns2010}。なお、Parallel A*は24 Puzzleを解けなかった為実行結果を省略してある。
 \newline
 
 \section{おわりに}
