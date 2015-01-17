@@ -480,7 +480,7 @@ Kobayashiらがノードの重複が問題となるシーケンスアライメ�
 % Naive hash is bad.
 上述の探索オーバーヘッドの分類はHash関数が十分な性能を持つ場合のみ有効であると考えられる。図\ref{fig:order_naive_hash}はBurnsらHDA*の性能評価に用いたNaive Hash\index{Naive Hash}によるHDA*の探索順である。Naive Hashはクローズドリストの為のHash関数をそのまま利用したものである。クローズドリストのHash関数はKorfとSchultzeによるPerfect Hashingである\cite{korf2005large}。
 
-このNaive Hashによる分配はうまくいっていないようである。Perfect Hashingであるので、全てのHash値の値が一つの状態に対応する。これをスレッドの数で割れば状態空間を均等に分割出来る。しかしながら、探索で現れる状態は15 Puzzleドメインの状態空間に対して非常に小さく、偏りのある部分集合である。よって、Naive HashはA*探索で現れるノードを均等に分配することは出来ないと考えられる。一方、Zobrist Hashはノードの各状態の情報を利用してHash値を計算する為、より不偏的に均等な分配が可能であると考えられる。Zobrist HashとNaive Hashの詳細な性能比較は\ref{sec:analysis2}章で行う。
+このNaive Hashによる分配はうまくいっていないようである。Perfect Hashingであるので、全てのHash値の値が一つの状態に対応する。これをスレッドの数で割れば状態空間を均等に分割出来る。しかしながら、探索で現れる状態は15 Puzzleドメインの状態空間に対して非常に小さく、偏りのある部分集合である。Naive Hashは状態空間を均等に分割するが、不偏的に均等ではないと考えられる。一方、Zobrist Hashはノードの各状態の情報を利用してHash値を計算する為、より不偏的に均等な分配が可能であると考えられる。Zobrist HashとNaive Hashの詳細な性能比較は\ref{sec:analysis2}章で行う。
 
 \begin{comment}
 状態$s$は整数列$\mathbf{x} = (x_{0}, x_{1}, …, x_{n})$で表せられるとする。Naive Hashは状態$s$をに対して以下の式で与えられる。
