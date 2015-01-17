@@ -183,7 +183,7 @@ int main(int argc, const char *argv[]) {
 			std::vector<Tiles::State> path = search->search(init);
 
 			double wtime = search->wtime - wall0, ctime = search->ctime - cpu0;
-			sleep(2);
+//			sleep(2);
 			dfpair(stdout, "total wall time", "%g", wtime);
 			dfpair(stdout, "total cpu time", "%g", ctime);
 			dfpair(stdout, "total nodes expanded", "%lu", search->expd);

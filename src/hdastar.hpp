@@ -204,8 +204,12 @@ public:
 		// closed list is waaaay too big for my computer.
 		// original 512927357
 		// TODO: Must optimize these numbers
+													  //  9999943
+													  // 14414443
+		                                              //129402307
 //		HashTable<typename D::PackedState, Node> closed(512927357 / tnum);
-		HashTable<typename D::PackedState, Node> closed(9999943);
+		HashTable<typename D::PackedState, Node> closed(129402307);
+
 
 //		Heap<Node> open(100, overrun);
 		heap open(150, overrun);
@@ -216,7 +220,7 @@ public:
 		// TODO: Array of dynamic sized objects.
 		// This array would be allocated in heap rather than stack.
 		// Therefore, not the best optimized way to do.
-		// Also we need to fix it to compile in Clang++.
+		// Also we need to fix it to compile in clang++.
 		std::vector<std::vector<Node*>> outgo_buffer;
 		outgo_buffer.reserve(tnum);
 
