@@ -525,7 +525,7 @@ Bind Effect, Burst Effectは問題サイズが大きくなるに従い相対的�
 \subsection{問題サイズに対するHDA*の探索オーバーヘッドとパフォーマンスの変化}
 \label{sec:speedup_size}
 % Why experiment this?
-前節の分析にて、問題サイズが大きくなるほど探索オーバーヘッドが小さくなるという仮説を議論した。本節ではこの仮説を実験的に検証する。15 Puzzle, 24 Puzzleドメインを対象に、問題毎の展開ノード数と高速化効率の分析を行った。15 Puzzleのインスタンスはランダムに生成した200問を対象にした。これらの問題は逐次A*で10～3000秒の実行時間で解ける問題である。24 PuzzleはKorfによる50問のうち、25, 32, 34, 38, 40番の問題を対象とした\cite{Korf2002}。実験環境はIntel Xeon E5-2670 2.33GHz (24 core), 64GB RAM, OSはGNU/Linux Ubuntu 14.04である。なお、前節の実験環境であるIntel dual-quad Xeon 2.33GHz, 32GB RAMでも実験を行い、概ね同様の結果が得られた。
+前節の分析にて、問題サイズが大きくなるほど探索オーバーヘッドが小さくなるという仮説を議論した。本節ではこの仮説を実験的に検証する。15 Puzzle, 24 Puzzleドメインを対象に、問題毎の展開ノード数と高速化効率の分析を行った。15 Puzzleのインスタンスはランダムに生成した200問を対象にした。これらの問題は逐次A*で10～3000秒の実行時間で解ける問題である。24 PuzzleはKorfによる50問のうち、25, 32, 34, 38, 40番の問題を対象とした\cite{Korf1985depth}。実験環境はIntel Xeon E5-2670 2.33GHz (24 core), 64GB RAM, OSはGNU/Linux Ubuntu 14.04である。なお、前節の実験環境であるIntel dual-quad Xeon 2.33GHz, 32GB RAMでも実験を行い、概ね同様の結果が得られた。
 
 % TODO for IJCAI: それぞれのインスタンスに対して何回か(5回？)実験を行いその平均を取るべきか。
 \begin{figure}[h]
@@ -632,7 +632,7 @@ Burnsらは逐次A*の15 Puzzleドメインにおける実装の最適化につ�
 \label{sec:pbnf_tuning}
 
 HDA*においてvectorによるオープンリストの実装はheapによる実装よりもはるかに速いことが分かった。SafePBNFにおいても高速化が期待される。SafePBNFにおいてもKorfの100 puzzleを対象に比較を行った。
-SafePBNFのパラメータとして、nblockの個数と最小探索ノード数がある。BurnsらはSliding-tile puzzle問題においてnblockへの分割方法がtwo-tile projectionであり、最小探索ノード数が8である場合に最適であると示した。two-tile projectionはブランク、tile-1, tile-2の位置が同じノードを一つのnblockとする分割方法である。このときnblockは3360個になる。Burnsらの実験はdual quad-core Intel Xeon E5320 1.86GHzプロセッサ、16 GB RAMで行われた。本実験の実験環境と類似している為、Burnsらの提案したパラメータを用いた。並列アルゴリズムは全て8スレッドの実行による。実行時間の上限は2000秒とした。
+SafePBNFのパラメータとして、nblockの個数と最小探索ノード数がある。BurnsらはSliding-tile puzzle問題において、nblockへの分割方法がtwo-tile projectionであり、最小探索ノード数が8である場合に最適であると示した。two-tile projectionはブランク、tile-1, tile-2の位置が同じノードを一つのnblockとする分割方法である。このときnblockは3360個になる。Burnsらの実験はdual quad-core Intel Xeon E5320 1.86GHzプロセッサ、16 GB RAMで行われた。本実験の実験環境と類似している為、Burnsらの提案したパラメータを用いた。並列アルゴリズムは全て8スレッドの実行による。実行時間の上限は2000秒とした。
 \newline
 
 \begin{figure}[h]
@@ -663,7 +663,7 @@ SafePBNFのパラメータとして、nblockの個数と最小探索ノード数
 SafePBNFのnblockへの分割方法とnblockの数はそれぞれ以下である。15 Puzzleはtwo-tile projection (nblock=3360),24 Puzzleも同様にtwo-tile projection (nblock=13820), Grid Pathfindingは100$\times$100のグリッドを一つのnblockとした(nblock=2500)。TSPは初めに訪れた３つの都市による(nblock=1716)。最小探索ノード数は全て8とした。
 
 % 20都市のnblockは6840, 
-並列アルゴリズムは全て8スレッドの実行による。15 Puzzleの実行時間の上限は8000秒、他のドメインの実行時間の上限は2000秒とした。
+並列アルゴリズムは全て8スレッドの実行による。15 Puzzleの実行時間の上限は6000秒、他のドメインの実行時間の上限は2000秒とした。
 \newline
 
 \begin{figure}[h]
