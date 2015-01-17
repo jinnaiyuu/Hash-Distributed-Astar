@@ -228,12 +228,15 @@ Efficiencyは理想的には1になるが、上述のオーバーヘッドがか
 \textbf{Parallel Retracting A* (PRA*)}は各スレッドにローカルにオープンリストとクローズドリストを持つ\cite{evett1995massively}。グラフのノードはHash関数によって均等かつ無作為に分割し各スレッドに割り当てられる。各スレッドは自分に割り当てられたノードのみを探索し、他スレッドに割り当てられたノードを生成した場合はそのスレッドにノードを同期的に送信する。Hash関数が均等かつ無作為な分割であれば、仕事の分配は均等であり、全てのスレッドが効率的に仕事をすることが出来る。また、クローズドリストをローカルに置くことが出来るので、分散メモリ環境においても効率的に重複の確認が可能である。ノードの送信時、送信側のスレッドは受信側のスレッドが受信の態勢に入るのを待ち、受信側スレッドは受信に成功したら送信側スレッドにそれを報告する。送信側スレッドはその報告を受け取るまで待機しなければならない。この為PRA*は同期オーバーヘッドが大きいという問題がある。
 \newline
 
+%\subsection{Parallel Retracting A*の派生}
+
 MahapatraとDuttはPRA*で提案されたHash関数による仕事の分配をより深く研究した\cite{mahapatra1997scalable}。
 彼らはまず、PRA*で提案されたHash関数による分配をSEL\_SEQ\_A*に適応したアルゴリズムを\textbf{Global Hashing of Nodes (GOHA)}と定義して実装をした。SEL\_SEQ\_A*はA*探索の変化形であり、ノードの展開時に$f$値の大きいノードの生成を後周しにする手法である。その上で、彼らはGOHAの変化形として２つの手法を提案した。一つはGOHAにQuality Equalizingのメカニズムを適応した\textbf{Global Hashing of Nodes and Quality Equalizing (GOHA\&QE)}である。この手法は異なるメカニズムで重複の確認と仕事の分配を行う。一度オーナーに重複がないことが確認されたノードは、どのプロセスで展開しても問題ない。GOHA\&QEは仕事を効率的に分配する為に、重複の確認後に更に各プロセスの仕事の質に応じて仕事の再分配を行う。GOHA及びGOHA\&QEで使われるHash関数はグローバルであり、ノードはあるプロセッサからどのプロセッサにも送信される可能性がある。一般に、並列コンピュータアーキテクチャにおいて、プロセッサ同士の通信コストはペア毎に異なる。よって、このようなHash関数は最適ではない可能性がある。\textbf{Local Hashing of Nodes and Quality Equalizinig (LOHA\&QE)}は探索空間を複数のグループに分割し、隣り合うグループが隣り合うプロセッサに割り当てる手法である。MahapatraとDuttはTravelling Salesperson Problemにおいてこれらの手法が単純なPRA*よりもパフォーマンスに優れることを示した。この手法はコンピュータのアーキテクチャと問題ドメインに対して複数の前提を必要とするという問題点がある。
 
 \subsection{Transposition-table driven work scheduling (TDS)}
 \index{Transposition-table driven work scheduling, TDS}
-\textbf{Transposition-table driven work scheduling (TDS)}は分散メモリ環境におけるIDA*の並列アルゴリズムである\cite{romein1999transposition}。\textbf{Iterative Deepening A* (IDA*)}\index{Iterative Deepening A*, IDA*}はメモリ効率に優れたA*探索の派生である\cite{Korf1985depth}。IDA*は反復的に深さ優先探索を行う。反復の度に最大深度を大きくしながら、解が見つかるまで深さ優先探索を繰り返す。TDSはPRA*のようにHash関数を使ってIDA*を並列化する。Transposition-tableはノードの重複を調べる為に使われるキャッシュであり、プロセッサの数だけ分割されている。Transposition-tableによる重複の確認により、TDSは逐次のIDA*よりも余剰に展開するノード数が非常に小さい。IDA*およびTDSは繰り返し探索を行う為、反復の度に多くのノードを再展開する必要がある。PRA*などのA*探索をベースとする並列探索の場合はこのような反復的な再展開はない。TDSは分散メモリ環境で、特に15 PuzzleやRubik's cubeなどの問題で効率的であると示されている。これらの問題ドメインはIDA*で再展開を必要とするノードの割合が非常に小さいことで知られている。TDSの基礎となるアイディアは主に二人零和ゲームに応用されている。
+\textbf{Transposition-table driven work scheduling (TDS)}は分散メモリ環境におけるIDA*の並列アルゴリズムである\cite{romein1999transposition}。\textbf{Iterative Deepening A* (IDA*)}\index{Iterative Deepening A*, IDA*}はメモリ効率に優れたA*探索の派生である\cite{Korf1985depth}。IDA*は反復的に深さ優先探索を行う。反復の度に最大深度を大きくしながら、解が見つかるまで深さ優先探索を繰り返す。TDSはPRA*のようにHash関数を使ってIDA*を並列化する。Transposition-tableはノードの重複を調べる為に使われるキャッシュであり、プロセッサの数だけ分割されている。Transposition-tableによる重複の確認により、TDSの展開ノード数はIDA*よりも大きくならない。
+IDA*およびTDSは繰り返し探索を行う為、反復の度に多くのノードを再展開する必要がある。PRA*などのA*探索をベースとする並列探索の場合はこのような反復的な再展開はない。TDSは分散メモリ環境で、特に15 PuzzleやRubik's cubeなどの問題で効率的であると示されている。これらの問題ドメインはIDA*で再展開を必要とするノードの割合が非常に小さいことで知られている。TDSの基礎となるアイディアは主に二人零和ゲームに応用されている。
 
 
 % HDA*の定義
@@ -241,8 +244,10 @@ MahapatraとDuttはPRA*で提案されたHash関数による仕事の分配を�
 \index{Hash Distributed A*, HDA*}
 \textbf{Hash Distributed A* (HDA*)}はPRA*で提案されたHashによる仕事の分配メカニズムに基づく手法である。
 HDA*は各スレッドにローカルにオープンリストとクローズドリストを持つ。グラフのノードはHash関数によって均等かつ無作為に分割し各スレッドに割り当てられる。各スレッドは自分に割り当てられたノードのみを展開し、他スレッドに割り当てられたノードを生成した場合はそのスレッドにノードを非同期的に送信する。
+
 PRA*がノードの授受を確認する為に同期的な通信を行うのに対して、HDA*は非同期的にノードを送信する。その為HDA*はPRA*と異なり、同期オーバーヘッドが殆どない。HDA*は同期オーバーヘッドが殆どなく、スレッド間で大きな情報の通信を必要としないので、特に分散メモリ環境で有効な手法である。
-TDSと比較すると、TDSは探索深度を更新するイテレーション毎に多くのノードが再展開される。HDA*にはこのような再展開はない。HDA*はTDSと比較して展開ノード数が小さいというメリットがある。
+TDSと比較すると、TDSは探索深度を更新するイテレーション毎に多くのノードが再展開されるのに対して、HDA*にはこのような再展開はない。すなわち、HDA*はTDSと比較して展開ノード数が小さいというメリットがある。
+
 HDA*はアルゴリズムが非常にシンプルであるという利点もある。HDA*は逐次A*と比較してHash関数による分配が必要なだけであり、各スレッドの処理は逐次A*と殆ど同様である。並列アルゴリズムはデバッグが難しい為、シンプルであるということは非常に価値がある。
 \newline
 
