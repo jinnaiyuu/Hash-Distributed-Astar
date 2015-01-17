@@ -696,7 +696,7 @@ SafePBNFのnblockへの分割方法とnblockの数はそれぞれ以下である
 %	\end{subfigure}
 	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{competition/tsp_13_walltime.pdf}
-		\caption{TSP13 round trip distance (heap)}
+		\caption{TSP (heap)} % 13 round trip distance
 		\label{fig:tsp_13}
 	\end{subfigure}
 	\caption{HDA*とSafePBNFの実行速度の比較}
@@ -732,7 +732,7 @@ SafePBNFのnblockへの分割方法とnblockの数はそれぞれ以下である
 %	\end{subfigure}
 	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{competition/tsp_13_expd.pdf}
-		\caption{TSP13 round trip distance (heap)}
+		\caption{TSP (heap)} % 13 round trip distance
 		\label{fig:tsp_13_expd}
 	\end{subfigure}
 	\caption{HDA*とSafePBNFの展開ノード数の比較}
@@ -790,7 +790,7 @@ SafePBNFはTSPドメインにおいて効率的である。その理由として
 \item HDA*の探索オーバーヘッドの定性的な分析
 \vspace{3mm}
 
-HDA*の探索オーバーヘッドの原因を３つに分類を行い、十分問題サイズが大きい場合に探索オーバーヘッドが無視出来る程度に小さいことを理論的に示した。また、高速化効率と探索オーバーヘッドを問題インスタンス毎に示すことで、それを実験的にも証明した。本実験は共有メモリ環境において行われたが、分散メモリ環境においても同様の結果が得られると推測している。その実験的な実証は今後の研究課題である。また、本研究は新しい探索オーバーヘッドの分析手法を示した。これは他の並列探索においても有効な分析方法であると考えられる。
+HDA*の探索オーバーヘッドの原因を三つに分類を行い、十分問題サイズが大きい場合に探索オーバーヘッドが無視出来る程度に小さいことを理論的に示した。また、高速化効率と探索オーバーヘッドを問題インスタンス毎に示すことで、それを実験的にも証明した。本研究は共有メモリ環境において行われたが、分散メモリ環境においても同様の結果が得られると推測している。その実験的な実証は今後の研究課題である。また、本研究は新しい探索オーバーヘッドの分析手法を示した。これは他の並列探索においても有効な分析方法であると考えられる。
 \newline
 
 \item HDA*とPBNFの再評価
