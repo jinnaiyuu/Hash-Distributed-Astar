@@ -470,13 +470,37 @@ Kobayashiらがノードの重複が問題となるシーケンスアライメ�
 \textbf{Duplicate}はノードの重複による探索オーバーヘッドである。HDA*は探索済ノードの全てをクローズドリストに保存するので、ノードの重複は少ない。重複が生じる場合は、ある状態に対して複数の経路があり、より長い経路が先に探索された場合のみである。本研究のドメインでは殆ど発生しない為、本分析の対象外とする。
 
 \end{enumerate}
-
+\begin{comment}
 \begin{figure}[h]
 	\centering
 	\includegraphics[width=0.45\columnwidth]{order/naive.pdf}
 	\caption{HDA* with simple hash}
 	\label{fig:order_naive_hash}
 \end{figure}
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=0.45\columnwidth]{order/pbnf.pdf}
+	\caption{SafePBNF}
+	\label{fig:order_safepbnf}
+\end{figure}
+\end{comment}
+
+\begin{figure}[h]
+	\centering
+	\begin{minipage}{0.45\columnwidth}
+		\centering
+		\includegraphics[width=\columnwidth]{order/naive.pdf}
+		\caption{HDA* with simple hash}
+		\label{fig:order_naive_hash}
+	\end{minipage}
+	\begin{minipage}{0.45\columnwidth}
+		\centering
+		\includegraphics[width=\columnwidth]{order/pbnf.pdf}
+		\caption{SafePBNF}
+		\label{fig:order_safepbnf}
+	\end{minipage}
+\end{figure}
+
 % Naive hash is bad.
 上述の探索オーバーヘッドの分類はHash関数が十分な性能を持つ場合のみ有効であると考えられる。図\ref{fig:order_naive_hash}はBurnsらHDA*の性能評価に用いたSimple Hash\index{Simple Hash}によるHDA*の展開順である。Simple Hashはクローズドリストの為のHash関数をそのまま利用したものである。クローズドリストのHash関数はKorfとSchultzeによるPerfect Hashingである\cite{korf2005large}。
 
@@ -494,13 +518,6 @@ Simple Hash分配はうまくいっていないようである。
 15 Puzzleドメインの場合、$x_{i}$は各タイルの位置を表し、$l_{i}$は全て16である。スレッドの数が2, 4, 8, 16の場合、Simple Hashは15 Puzzleドメインの状態空間を均等に分割する。しかしながら、この時Hash値は$x_{0}$の値のみに依存する。状態の一部分の情報しか利用していない為、状態空間に対して\textbf{不偏的に}均等な分割をすることが出来ない。探索で現れる状態は15 Puzzleドメインの状態空間に対して非常に小さく、偏りのある部分集合である。よって、Simple HashはA*探索で現れるノードを均等に分配することは出来ないと考えられる。Zobrist HashとSimple Hashの詳細な性能比較は\ref{sec:analysis2}章で行う。
 \newline
 \end{comment}
-
-\begin{figure}[h]
-	\centering
-	\includegraphics[width=0.45\columnwidth]{order/pbnf.pdf}
-	\caption{SafePBNF}
-	\label{fig:order_safepbnf}
-\end{figure}
 
 
 図\ref{fig:order_safepbnf}はSafePBNFの展開順である。この図のみ、縦軸と横軸のスケールが異なることに注意されたい。逐次A*の展開順とは大きく異なる順番でノードを展開していることが伺える。
