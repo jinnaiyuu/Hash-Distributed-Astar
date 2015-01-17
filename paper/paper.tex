@@ -518,12 +518,12 @@ Bind Effect, Burst Effectは問題サイズが大きくなるに従い相対的�
 \begin{figure}
 	\centering
 	\begin{subfigure}{0.45\columnwidth}
-		\includegraphics[width=\columnwidth]{eps/search_overhead_micro.pdf}	
+		\includegraphics[width=\columnwidth]{efficiency/search_overhead_micro.pdf}	
 		\caption{Search Overhead}
 		\label{fig:david_so}
 	\end{subfigure}
 	\begin{subfigure}{0.45\columnwidth}
-		\includegraphics[width=\columnwidth]{eps/efficiency_micro.pdf}	
+		\includegraphics[width=\columnwidth]{efficiency/efficiency_micro.pdf}	
 		\caption{Efficiency}
 		\label{fig:david_speedup}
 	\end{subfigure}
@@ -534,12 +534,12 @@ Bind Effect, Burst Effectは問題サイズが大きくなるに従い相対的�
 \begin{figure}
 	\centering
 	\begin{subfigure}{0.45\columnwidth}
-		\includegraphics[width=\columnwidth]{eps/search_overhead_24puzzle_micro.pdf}	
+		\includegraphics[width=\columnwidth]{efficiency/search_overhead_24puzzle_micro.pdf}	
 		\caption{Search Overhead}
 		\label{fig:david_so_24}
 	\end{subfigure}
 	\begin{subfigure}{0.45\columnwidth}
-		\includegraphics[width=\columnwidth]{eps/efficiency_24puzzle_micro.pdf}	
+		\includegraphics[width=\columnwidth]{efficiency/efficiency_24puzzle_micro.pdf}	
 		\caption{Efficiency}
 		\label{fig:david_speedup_24}
 	\end{subfigure}
@@ -593,12 +593,12 @@ BurnsらはA*探索の15 Puzzleドメインにおける実装の最適化につ�
 \begin{figure}
 	\centering
 	\begin{subfigure}{0.4\columnwidth}
-		\includegraphics[width=\columnwidth]{eps/hdastar_tuning_walltime.pdf}
+		\includegraphics[width=\columnwidth]{tuning/hdastar_tuning_walltime.pdf}
 		\caption{tuning HDA* (walltime)}
 		\label{fig:hdastar_tuning_walltime}
 	\end{subfigure}
 	\begin{subfigure}{0.4\columnwidth}
-		\includegraphics[width=\columnwidth]{eps/hdastar_tuning_expd.pdf}
+		\includegraphics[width=\columnwidth]{tuning/hdastar_tuning_expd.pdf}
 		\caption{tuning HDA* (search overhead)}
 		\label{fig:hdastar_tuning_expd}
 	\end{subfigure}
@@ -619,12 +619,12 @@ SafePBNFのパラメータとして、nblockの個数と最小探索ノード数
 \begin{figure}
 	\centering
 	\begin{subfigure}{0.4\columnwidth}
-		\includegraphics[width=\columnwidth]{eps/safepbnf_tuning_walltime.pdf}
+		\includegraphics[width=\columnwidth]{tuning/safepbnf_tuning_walltime.pdf}
 		\caption{tuning SafePBNF (walltime)}
 		\label{fig:safepbnf_tuning_walltime}
 	\end{subfigure}
 	\begin{subfigure}{0.4\columnwidth}
-		\includegraphics[width=\columnwidth]{eps/safepbnf_tuning_expd.pdf}
+		\includegraphics[width=\columnwidth]{tuning/safepbnf_tuning_expd.pdf}
 		\caption{tuning SafePBNF (search overhead)}
 		\label{fig:safepbnf_tuning_expd}
 	\end{subfigure}
@@ -641,43 +641,42 @@ SafePBNFのパラメータとして、nblockの個数と最小探索ノード数
 以下、15 Puzzle, 24 Puzzle, Grid Pathfinding, TSPで実験を行った。15 Puzzleはvectorとheapのそれぞれ、24 Puzzle、 Grid Pathfindingはvector, TSPはheapで実装をした。TSPのヒューリスティックはRound Trip Distance、都市の数は13とした。HDA*のHash関数はZobrist Hashによる。
 %minimum spanning treeとround trip distanceの両方で実験を行った。それぞれの都市の数は20と13とした。
 
-
-SafePBNFのnblockへの分割方法はそれぞれ以下である。15 Puzzleはtwo-tile projection (nblock=3360),24 Puzzleも同様にtwo-tile projection (nblock=13820), Grid Pathfindingは100x100のグリッドを一つにまとめた(nblock=2500)。TSPは初めに訪れた３つの都市による(nblock=1716)。最小探索ノード数は全て8とした。
+SafePBNFのnblockへの分割方法とnblockの数はそれぞれ以下である。15 Puzzleはtwo-tile projection (nblock=3360),24 Puzzleも同様にtwo-tile projection (nblock=13820), Grid Pathfindingは100x100のグリッドを一つのnblockとした(nblock=2500)。TSPは初めに訪れた３つの都市による(nblock=1716)。最小探索ノード数は全て8とした。
 
 % 20都市のnblockは6840, 
-並列アルゴリズムは全て8スレッドの実行による。どのドメイン・インスタンスも実行時間の上限は2000秒とした。
+並列アルゴリズムは全て8スレッドの実行による。15 Puzzleの実行時間の上限は8000秒、他のドメインの実行時間の上限は2000秒とした。
 \newline
 
 \begin{figure}
 	\centering
 	% TODO: 何故？PBNFが遅い。何度も確かめたが遅い。
 	\begin{subfigure}{0.4\columnwidth}
-		\includegraphics[width=\columnwidth]{eps/15puzzle_vector_walltime.pdf}
+		\includegraphics[width=\columnwidth]{competition/15puzzle_vector_walltime.pdf}
 		\caption{15 Puzzle (vector)}
 		\label{fig:15puzzle_vector}
 	\end{subfigure}
 	\begin{subfigure}{0.4\columnwidth}
-		\includegraphics[width=\columnwidth]{eps/15puzzle_heap_walltime.pdf}
+		\includegraphics[width=\columnwidth]{competition/15puzzle_heap_walltime.pdf}
 		\caption{15 Puzzle (heap)}
 		\label{fig:15puzzle_heap}
 	\end{subfigure}
 	\begin{subfigure}{0.4\columnwidth}
-		\includegraphics[width=\columnwidth]{eps/24_walltime.pdf}
+		\includegraphics[width=\columnwidth]{competition/24_walltime.pdf}
 		\caption{24 Puzzle (vector)}
 		\label{fig:24puzzle_vector}
 	\end{subfigure}
 	\begin{subfigure}{0.4\columnwidth}
-		\includegraphics[width=\columnwidth]{eps/grid_walltime.pdf}
+		\includegraphics[width=\columnwidth]{competition/grid_walltime.pdf}
 		\caption{Grid Pathfinding (vector)}
 		\label{fig:grid}
 	\end{subfigure}
 %	\begin{subfigure}{0.4\columnwidth}
-%		\includegraphics[width=\columnwidth]{eps/tsp_20_walltime.pdf}
+%		\includegraphics[width=\columnwidth]{competition/tsp_20_walltime.pdf}
 %		\caption{TSP20 minimum spanning tree (heap)}
 %		\label{fig:tsp_20_mst}
 %	\end{subfigure}
 	\begin{subfigure}{0.4\columnwidth}
-		\includegraphics[width=\columnwidth]{eps/tsp_13_walltime.pdf}
+		\includegraphics[width=\columnwidth]{competition/tsp_13_walltime.pdf}
 		\caption{TSP13 round trip distance (heap)}
 		\label{fig:tsp_13}
 	\end{subfigure}
@@ -688,32 +687,32 @@ SafePBNFのnblockへの分割方法はそれぞれ以下である。15 Puzzleは
 \begin{figure}
 	\centering
 	\begin{subfigure}{0.4\columnwidth}
-		\includegraphics[width=\columnwidth]{eps/15puzzle_vector_expd.pdf}
+		\includegraphics[width=\columnwidth]{competition/15puzzle_vector_expd.pdf}
 		\caption{15 Puzzle (vector)}
 		\label{fig:15puzzle_vector_expd}
 	\end{subfigure}
 	\begin{subfigure}{0.4\columnwidth}
-		\includegraphics[width=\columnwidth]{eps/15puzzle_heap_expd.pdf}
+		\includegraphics[width=\columnwidth]{competition/15puzzle_heap_expd.pdf}
 		\caption{15 Puzzle (heap)}
 		\label{fig:15puzzle_heap_expd}
 	\end{subfigure}
 	\begin{subfigure}{0.4\columnwidth}
-		\includegraphics[width=\columnwidth]{eps/24_expd.pdf}
+		\includegraphics[width=\columnwidth]{competition/24_expd.pdf}
 		\caption{24 Puzzle (vector)}
 		\label{fig:24puzzle_vector_expd}
 	\end{subfigure}
 	\begin{subfigure}{0.4\columnwidth}
-		\includegraphics[width=\columnwidth]{eps/grid_expd.pdf}
+		\includegraphics[width=\columnwidth]{competition/grid_expd.pdf}
 		\caption{Grid Pathfinding (vector)}
 		\label{fig:grid_expd}
 	\end{subfigure}
 %	\begin{subfigure}{0.4\columnwidth}
-%		\includegraphics[width=\columnwidth]{eps/tsp_20_expd.pdf}
+%		\includegraphics[width=\columnwidth]{competition/tsp_20_expd.pdf}
 %		\caption{TSP20 minimum spanning tree (heap)}
 %		\label{fig:tsp_20_mst_expd}
 %	\end{subfigure}
 	\begin{subfigure}{0.4\columnwidth}
-		\includegraphics[width=\columnwidth]{eps/tsp_13_expd.pdf}
+		\includegraphics[width=\columnwidth]{competition/tsp_13_expd.pdf}
 		\caption{TSP13 round trip distance (heap)}
 		\label{fig:tsp_13_expd}
 	\end{subfigure}
