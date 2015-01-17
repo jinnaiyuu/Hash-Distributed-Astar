@@ -450,19 +450,16 @@ Kobayashiらがノードの重複が問題となるシーケンスアライメ�
 
 \begin{enumerate}
 \item Bind Effect
-\vspace{3mm}
 \index{Bind Effect}
 \textbf{Bind Effect}はHDA*とA*の展開順が幅の中で前後する為に生じる探索オーバーヘッドである。A*と展開順が前後するので、実行時間の最後に、逐次A*であれば展開しないノードを展開してしまう。ここで余剰に展開するノードの数は幅の大きさに従う。幅の大きさは問題サイズが大きいほど相対的に小さくなるので、Bind Effectによる探索オーバーヘッドは問題サイズが大きくなるほど小さくなる。なお、Bind Effectによって逐次A*よりも最適解の展開順が速くなることがある。$f < c^*$のノードが全て展開されていれば、その時点で探索を終了することが出来る。
 \newline
 
 \item Burst Effect
-\vspace{3mm}
 \index{Burst Effect}
 \textbf{Burst Effect}はスレッドの初期化にかかる時間の為に生じる探索オーバーヘッドである。Burst Effectは探索の冒頭にしか生じない為、問題サイズが大きいほど、Burst Effectによる探索オーバーヘッドの割合は小さくなる。この現象はノードの展開速度が速い場合にのみ起こると考えられる。
 \newline
 
 \item Duplicate
-\vspace{3mm}
 \index{Duplicate}
 \textbf{Duplicate}はノードの重複による探索オーバーヘッドである。HDA*は探索済ノードの全てをクローズドリストに保存するので、ノードの重複は少ない。重複が生じる場合は、ある状態に対して複数の経路があり、より長い経路が先に探索された場合のみである。本研究のドメインでは殆ど発生しない為、本分析の対象外とする。
 
