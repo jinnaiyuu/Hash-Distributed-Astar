@@ -657,7 +657,7 @@ SafePBNFのパラメータとして、nblockの個数と最小探索ノード数
 以下、15 Puzzle, 24 Puzzle, Grid Pathfinding, TSPで実験を行った。15 Puzzleはnested bucketとheapのそれぞれ、24 Puzzle、 Grid Pathfindingはnested bucket, TSPはheapで実装をした。TSPのヒューリスティックはRound Trip Distance、都市の数は13とした。HDA*のHash関数はZobrist Hashによる。
 %minimum spanning treeとround trip distanceの両方で実験を行った。それぞれの都市の数は20と13とした。
 
-SafePBNFのnblockへの分割方法とnblockの数はそれぞれ以下である。15 Puzzleはtwo-tile projection (nblock=3360),24 Puzzleも同様にtwo-tile projection (nblock=13820), Grid Pathfindingは100$\times$100のグリッドを一つのnblockとした(nblock=2500)。TSPは初めに訪れた３つの都市による(nblock=1716)。最小探索ノード数は全て8とした。
+SafePBNFのnblockへの分割方法とnblockの数はそれぞれ以下である。15 Puzzleはtwo-tile projection (nblock=3360), 24 Puzzleも同様にtwo-tile projection (nblock=13820)による。Grid Pathfindingは100$\times$100のグリッドを一つのnblockとした(nblock=2500)。TSPは初めに訪れた３つの都市による(nblock=1716)。最小探索ノード数は全て8とした。
 
 % 20都市のnblockは6840, 
 並列アルゴリズムは全て8スレッドの実行による。15 Puzzleの実行時間の上限は6000秒、他のドメインの実行時間の上限は2000秒とした。
@@ -769,7 +769,6 @@ HDA*でも各スレッドのheapを分割することは可能である。Hash�
 % TSPはSafePBNFが得意な問題ドメインであると考えられる。空間を簡単に分割することが出来る為である。
 
 SafePBNFはTSPドメインにおいて効率的である。その理由としては以下の二点が考えられる。一つは前述のheapを分割することによる高速化である。もう一つはドメインに解が無数にあるからである。表\ref{hdastar_incumbent}はHDA*とSafePBNFにおいて、解を発見した平均の回数である。SafePBNFの探索方法はAnytime Searchのような特徴を持つ\cite{Burns2010}。すなわち、SafePBNFは最適でない解を素早く見つけ、時間と共により良い解を発見することが出来る。最適でない解を発見した場合、その解のコストよりもコストの大きいノードを生成する必要がなくなる。ノードの生成は探索時間の大きな割合を占める為、生成の回数を減らすことは大きな高速化につながる。TSPは深さが都市の数と同じノードは全て解である。都市が13個の場合は$12!$通りの解が存在する。SafePBNFは解が無数にあるTSPでは素早く解を発見でき、その為最適解も高速に見つけられると考えられる。
-\newline
 
 どのドメインにおいてもシンプルなParallel A*は逐次A*よりも遅くなってしまう。Parallel A*はオープンリストとクローズドリストにロックを必要とする。スレッドはロックが解放されるのを待たなければならない為、大きな同期オーバーヘッドが生じる。この結果はBurnsらの実験と一致する\cite{Burns2010}。なお、Parallel A*は24 Puzzleを解けなかった為実行結果を省略してある。
 \newline
