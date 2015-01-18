@@ -160,7 +160,7 @@ Burnsらの性能評価実験には二点問題があった。それらの問題
 
 \textbf{オープンリスト}\index{オープンリスト}は未探索のノード、\textbf{クローズドリスト}\index{クローズドリスト}は探索済のノードが保存されるデータ構造である。あるノード$n$からゴール状態までの見積り$f(n)$は$f(n) = g(n) + h(n)$で計算される。$g(n)$は初期状態からノード$n$までの経路にかかったコストである。$h(n)$は状態からゴール状態までの距離を推定する\textbf{ヒューリスティック関数}\index{ヒューリスティック、ヒューリスティック関数}である。ヒューリスティック関数が\textbf{admissible}\index{admissible}であるならば、A*探索の解の最適性が保証される。ヒューリスティック関数がadmissibleであるとは、ゴール状態までの推定コストを過小に見積もることがないということである。
 
-オープンリストのデータ構造はドメインに対して様々なものが選択される。heapはあらゆるドメインに対して汎用的に使うことの出来る実装である。heapへのアクセスにかかる時間は$O(logn)$である。一方、ドメインのコストが全て整数であればnested vector (vector)で実装することが出来る。全ての$f$, $h$の組み合わせに対して一つのvector配列を用意することで$O(1)$のコストでアクセスが可能になる。すなわち、vectorの方がheapよりも高速であるが、適応出来るドメインが狭い。
+オープンリストのデータ構造はドメインに応じて様々なものが選択される。heapはあらゆるドメインに対して汎用的に使うことの出来る実装である。heapへのアクセスにかかる時間は$O(logn)$である。一方、ドメインのコストが全て整数であればnested bucketで実装することが出来る。nested bucketは$f, h$の取りうる組み合わせの全てに対して一つの配列を用意する。配列に対しては$O(1)$のコストでアクセスが可能になる。すなわち、nested bucketの方がheapよりも高速であるが、適応出来るドメインが狭い。本研究はnested bucketとheapの両方で実験を行う。
 \newline
 
 以降の議論では、並列手法と区別する為に\textbf{逐次A*}と呼ぶ。
@@ -363,7 +363,7 @@ Kishimotoらは24 PuzzleドメインにおいてHDA*の探索オーバーヘッ�
 \subsection{HDA*のノードの展開順}
 % Why this method works?
 HDA*の探索オーバーヘッドは、逐次A*とノードの展開順が異なることが原因であると考えることが出来る。ノードの展開する順番が逐次A*と完全に一致するならば、探索オーバーヘッドは全く生じない。裏を返せば、逐次A*と展開順が異なる場合に探索オーバーヘッドが生じると考えられる。よって、HDA*の状態の展開順を逐次A*のそれと比較をすることで、どのようなパターンで探索オーバーヘッドが生じるのかを分析することが出来ると考えられる。
-本実験では15 Puzzleドメインを対象に逐次A*とHDA*においてある状態が展開された順番を記録した。同時に、重複して展開されたノードの数を記録した。インスタンスはランダムに生成した100問を対象とした。実験環境はIntel dual-quad Xeon 2.33GHz, 32GB RAM, OSはGNU/Linux Ubuntu 14.04である。本実験では15 Puzzleドメインに最適化したコードを利用した。KishimotoらはMPI message passing libraryでプロセス間通信を実装したが、本実験では共有メモリ環境においてMPIよりも高速なpthreadライブラリを用いた。非同期通信はtry\_lockで実装した。オープンリストはvectorで実装した。なお、オープンリストをheapで実装した場合も概ね同様の結果が得られた。
+本実験では15 Puzzleドメインを対象に逐次A*とHDA*においてある状態が展開された順番を記録した。同時に、重複して展開されたノードの数を記録した。インスタンスはランダムに生成した100問を対象とした。実験環境はIntel dual-quad Xeon 2.33GHz, 32GB RAM, OSはGNU/Linux Ubuntu 14.04である。本実験では15 Puzzleドメインに最適化したコードを利用した。KishimotoらはMPI message passing libraryでプロセス間通信を実装したが、本実験では共有メモリ環境においてMPIよりも高速なpthreadライブラリを用いた。非同期通信はtry\_lockで実装した。オープンリストはnested bucketで実装した。なお、オープンリストをheapで実装した場合も概ね同様の結果が得られた。
 \newline
 
 \begin{figure}[h]
@@ -525,7 +525,8 @@ Bind Effect, Burst Effectは問題サイズが大きくなるに従い相対的�
 \subsection{問題サイズに対するHDA*の探索オーバーヘッドとパフォーマンスの変化}
 \label{sec:speedup_size}
 % Why experiment this?
-前節の分析にて、問題サイズが大きくなるほど探索オーバーヘッドが小さくなるという仮説を議論した。本節ではこの仮説を実験的に検証する。15 Puzzle, 24 Puzzleドメインを対象に、問題毎の展開ノード数と高速化効率の分析を行った。15 Puzzleのインスタンスはランダムに生成した200問を対象にした。これらの問題は逐次A*で1～1000秒の実行時間で解ける問題である。24 PuzzleはKorfによる50問のうち、25, 32, 34, 38, 40番の問題を対象とした\cite{Korf2002}。実験環境はIntel Xeon E5-2670 2.33GHz (24 core), 64GB RAM, OSはGNU/Linux Ubuntu 14.04である。なお、前節の実験環境であるIntel dual-quad Xeon 2.33GHz, 32GB RAMでも実験を行い、概ね同様の結果が得られた。
+前節の分析にて、問題サイズが大きくなるほど探索オーバーヘッドが小さくなるという仮説を議論した。本節ではこの仮説を実験的に検証する。15 Puzzleを対象に、問題毎の展開ノード数と高速化効率の分析を行った。15 Puzzleのインスタンスはランダムに生成した200問を対象にした。これらの問題は逐次A*で1～1000秒の実行時間で解ける問題である。%24 PuzzleはKorfによる50問のうち、25, 32, 34, 38, 40番の問題を対象とした\cite{Korf2002}。
+実験環境はIntel Xeon E5-2670 2.33GHz (24 core), 64GB RAM, OSはGNU/Linux Ubuntu 14.04である。なお、前節の実験環境であるIntel dual-quad Xeon 2.33GHz, 32GB RAMでも実験を行い、概ね同様の結果が得られた。
 
 % TODO for IJCAI: それぞれのインスタンスに対して何回か(5回？)実験を行いその平均を取るべきか。
 \begin{figure}[h]
@@ -570,11 +571,11 @@ Bind Effect, Burst Effectは問題サイズが大きくなるに従い相対的�
 % 16, 24スレッドの真の性能評価をする為には1スレッドでは実行出来ない大きさの問題が必要であるだろう。
 % Why superlinear speedup? Verify it.
 興味深い現象として、特に大きな問題インスタンスに対してしばしばsuperlinear speedupが生じる。多くのインスタンスにおいて発生している為、偶然的な要素だけでは説明されないと考えられる。逐次A*と1スレッドのHDA*の実行時間はほぼ同じであるので、本実験のA*の実装に問題があるとは考えにくい。また、Kishimotoらの分散メモリ環境における24 Puzzleの実験においても、一部のインスタンスでsuperlinear speedupが生じている\cite{Kishimoto2013}。
-高速化効率の大きいインスタンスは、スレッドの数が変化しても大きい場合が多いようである。高速化効率の大きさはインスタンスに強く依存しているのではないかと推察される。高速化効率がインスタンスのどのような特徴に依存しているかは今後の研究課題である。
+加えて、高速化効率の大きいインスタンスは、スレッドの数が変化しても大きい場合が多いようである。高速化効率の大きさはインスタンスに強く依存しているのではないかと推察される。高速化効率がインスタンスのどのような特徴に依存しているかは今後の研究課題である。
 % 大きな問題インスタンスはコンスタントにsuperlinear speedupが生じている。スレッドの数が大きい場合、Weighted A*のような性質を持つのではないだろうか。すなわち、incumbentな解を早めに見つけることが出来る。あるいは、最適解が複数ある場合、確率的に早くなる。Sliding-tile Puzzleは探索深度に対して幾何的に展開ノード数が増えるドメインである。その為、R=のノードが展開の多くを占める。
 % \newline
 
-スレッド数が12, 24のときの探索オーバーヘッドは他のスレッド数の場合よりも大きい。Zobrist Hashは、スレッドの数が$2^n$でない場合、スレッドの数で除算しなければならない。このとき、ノードの分配は不均一になる。%すなわち、各スレッドに割り当てられるZobrist Hashのキーの数がスレッドによって1だけ異なる。
+スレッド数が12, 24のときの探索オーバーヘッドは他のスレッド数の場合よりも大きい。Zobrist Hashは、スレッドの数が$2^n$でない場合、Hash値をスレッドの数で除算しなければならない。このとき、ノードの分配は僅かに不均一になる。%すなわち、各スレッドに割り当てられるZobrist Hashのキーの数がスレッドによって1だけ異なる。
 不均一性はZobrist Hashのデータ長とトレードオフになる。データ長が長いほどスレッド間の分配は均一になるが、各ノードに必要な情報が増える。本実験では4 Bytesをビット列の長さとした。スレッド数が24の場合、スレッド間のHash値の割り当ては最大で1/178956971だけ偏る。%は、多いスレッドが178956971キー、小さいスレッドが178956970キーである。
 ほぼ無視出来る差であるように考えられるが、スレッド数が12, 24の場合は$2^n$の場合と比較して多少探索オーバーヘッドが大きい。この探索オーバーヘッドの増加のメカニズムやビット列の長さとのトレードオフは今後の研究課題である。
 % 計算機のアーキテクチャは12 core * 2であるので、アーキテクチャによる探索オーバーヘッドではないと考えられる。
@@ -591,7 +592,7 @@ Bind Effect, Burst Effectは問題サイズが大きくなるに従い相対的�
 
 Burnsらの比較実験には複数問題点がある\cite{Burns2010}。まず、HDA*のHash関数を汎用なHash関数によって実装しているが、KishimotoらはZobrist Hashを用いて実装した。Hash関数によってアルゴリズムの挙動は異なると考えられるが、その違いは検証されていない。
 
-また、Burnsらの実験ではHDA*, SafePBNFのオープンリストをheapで実装している。コストが整数のドメインはオープンリストをvectorで実装することが出来る。heapに対するアクセスが$O(logn)$であるのに対してvectorへのアクセスは$O(1)$である。Burnsらは別の論文で、15 Puzzleドメインを対象に逐次A*の最適化を議論しており、heap実装とvector実装の比較実験を行い、vector実装が3倍程度高速であると結論した\cite{Burns2012implementing}。HDA*とSafePBNFは複数のオープンリストがある。HDA*はスレッドの数に分割され、SafePBNFはnblockの数に分割される。nblockは15 Puzzleの場合3360個に分割される。両アルゴリズムは各オープンリストが小さくなるので、高速化の割合はそれぞれ逐次A*における３倍よりも小さくなると推測されるが、まだ検証はされていない。
+また、Burnsらの実験ではHDA*, SafePBNFのオープンリストをheapで実装している。コストが整数のドメインはオープンリストをvnested bucketで実装することが出来る。heapに対するアクセスが$O(logn)$であるのに対してnested bucketへのアクセスは$O(1)$である。Burnsらは別の論文で、15 Puzzleドメインを対象に逐次A*の最適化を議論しており、heap実装とnested bucket実装の比較実験を行い、nested bucket実装が3倍程度高速であることを示した\cite{Burns2012implementing}。HDA*とSafePBNFは複数のオープンリストがある。HDA*はスレッドの数に分割され、SafePBNFはnblockの数に分割される。nblockは15 Puzzleの場合3360個に分割される。両アルゴリズムは各オープンリストが小さくなるので、高速化の割合はそれぞれ逐次A*における３倍よりも小さくなると推測されるが、まだ検証はされていない。
 
 もう一つ重要な問題点として、ベンチマーク問題のサイズが小さいということが挙げられる。\ref{sec:speedup_size}節で議論したように、HDA*の高速化効率は1000秒程度の問題まで向上し続け、ほぼperfect linear speedupになる。しかしながらBurnsらの用いた問題集は逐次A*で10秒未満のものが殆どである。よって、ベンチマーク問題の問題サイズを考慮した比較・解析が必要である。
 
@@ -602,10 +603,7 @@ Burnsらの比較実験には複数問題点がある\cite{Burns2010}。まず�
 
 本節ではHDA*のHash関数とオープンリストの実装の与える影響を実験的に示す。
 
-\ref{sec:analysis1}章にて、Simple Hashは分配に問題があると分かった。Simple HashとZobrist Hashによる実装の実行時間と展開ノード数を比較した。
-Burnsらは逐次A*の15 Puzzleドメインにおける実装の最適化について議論を行い、vectorによるオープンリストがheap実装より3倍程度速いことを示した\cite{Burns2012implementing}。しかしながら並列探索アルゴリズムにおけるパフォーマンスへの影響は調べられていない。
-
-本実験では以上の２つの実装の違いがHDA*の実行時間・探索オーバーヘッドに与える影響を比較する。インスタンスはKorfの100 puzzleを用いた\cite{Korf1985depth}。並列アルゴリズムは全て8スレッドの実行による。実行時間の上限は2000秒とした。
+\ref{sec:analysis1}章にて、Simple Hashは分配に問題があると分かった。Simple HashとZobrist Hashによる実装の実行時間と展開ノード数を比較した。本実験では以上の２つの実装の違いがHDA*の実行時間・探索オーバーヘッドに与える影響を比較する。インスタンスはKorfの100 puzzleを用いた\cite{Korf1985depth}。並列アルゴリズムは全て8スレッドの実行による。実行時間の上限は2000秒とした。
 \newline
 
 \begin{figure}[h]
@@ -620,17 +618,17 @@ Burnsらは逐次A*の15 Puzzleドメインにおける実装の最適化につ�
 		\caption{tuning HDA* (search overhead)}
 		\label{fig:hdastar_tuning_expd}
 	\end{subfigure}
-	\caption{zobrist vs haive hash, vector vs heap open list}
+	\caption{zobrist vs haive hash, nested bucket vs heap open list}
 	\label{fig:hdastar_tuning}
 \end{figure}
 
-図\ref{fig:hdastar_tuning_walltime}は横軸に実行時間、縦軸にその時間内に解けた問題の数を取っている。どの問題サイズにおいても、Zobrist Hashとvectorによる実装が一番速いと結論出来る。特にZobrist Hashを用いた実装はSimple Hashによる実装よりも2倍程度速い。図\ref{fig:hdastar_tuning_expd}は横軸を展開ノード数にしたものである。図によると、Zobrist HashはSimple Hashよりも展開ノード数が小さい。Simple Hashはどの問題サイズでもおおよそZobrist Hashの２倍の展開ノード数になっている。よってZobrist Hashの実装の方が高速であるのは展開ノード数の違いによるものであると結論出来る。Zobrist HashがSimple Hashよりも大きく性能が優れるという結果は\ref{sec:analysis1}章における分析結果とも一致する。
+図\ref{fig:hdastar_tuning_walltime}は横軸に実行時間、縦軸にその時間内に解けた問題の数を取っている。どの問題サイズにおいても、Zobrist Hashとnested bucketによる実装が一番速いと結論出来る。特にZobrist Hashを用いた実装はSimple Hashによる実装よりも2倍程度速い。図\ref{fig:hdastar_tuning_expd}は横軸を展開ノード数にしたものである。図によると、Zobrist HashはSimple Hashよりも展開ノード数が小さい。Simple Hashはどの問題サイズでもおおよそZobrist Hashの２倍の展開ノード数になっている。よってZobrist Hashの実装の方が高速であるのは展開ノード数の違いによるものであると結論出来る。Zobrist HashがSimple Hashよりも大きく性能が優れるという結果は\ref{sec:analysis1}章における分析結果とも一致する。
 
 
 \subsection{SafePBNFのチューニング}
 \label{sec:pbnf_tuning}
 
-HDA*においてvectorによるオープンリストの実装はheapによる実装よりもはるかに速いことが分かった。SafePBNFにおいても高速化が期待される。SafePBNFにおいてもKorfの100 puzzleを対象に比較を行った。
+HDA*においてnested bucketによるオープンリストの実装はheapによる実装よりもはるかに速いことが分かった。SafePBNFにおいても高速化が期待される。SafePBNFにおいてもKorfの100 puzzleを対象に比較を行った。
 SafePBNFのパラメータとして、nblockの個数と最小探索ノード数がある。BurnsらはSliding-tile puzzle問題において、nblockへの分割方法がtwo-tile projectionであり、最小探索ノード数が8である場合に最適であると示した。two-tile projectionはブランク、tile-1, tile-2の位置が同じノードを一つのnblockとする分割方法である。このときnblockは3360個になる。Burnsらの実験はdual quad-core Intel Xeon E5320 1.86GHzプロセッサ、16 GB RAMで行われた。本実験の実験環境と類似している為、Burnsらの提案したパラメータを用いた。並列アルゴリズムは全て8スレッドの実行による。実行時間の上限は2000秒とした。
 \newline
 
@@ -646,17 +644,17 @@ SafePBNFのパラメータとして、nblockの個数と最小探索ノード数
 		\caption{tuning SafePBNF (search overhead)}
 		\label{fig:safepbnf_tuning_expd}
 	\end{subfigure}
-	\caption{vector vs heap}
+	\caption{nested bucket vs heap}
 	\label{fig:safepbnf_tuning}
 \end{figure}
 
-図\ref{fig:safepbnf_tuning}が実行結果である。SafePBNFにおいては、HDA*ほどの高速化が得られないようである。heapに対するアクセスは$O(logn)$であるのに対してvectorは$O(1)$である。本実験でSafePBNFは3360個のオープンリストに分割されている。その為各オープンリストが小さく、$O(logn)$と$O(1)$の差が小さい為、vector実装による高速化が小さいと考えられる。翻って、SafePBNFはheap実装による遅延の影響が小さいとも言える。
+図\ref{fig:safepbnf_tuning}が実行結果である。SafePBNFにおいては、HDA*ほどの高速化が得られないようである。heapに対するアクセスは$O(logn)$であるのに対してnested bucketは$O(1)$である。本実験でSafePBNFは3360個のオープンリストに分割されている。その為各オープンリストが小さく、$O(logn)$と$O(1)$の差が小さい為、nested bucket実装による高速化が小さいと考えられる。翻って、SafePBNFはheap実装による遅延の影響が小さいとも言える。
 
 \subsection{HDA*とSafePBNFの性能比較実験}
 
-\ref{sec:hdastar_tuning}節より、HDA*はZobrist Hashingとvectorによる実装が最も速いと結論された。一方\ref{sec:pbnf_tuning}節では、SafePBNFはvectorとheapによる実装で大きなパフォーマンスの違いは見られなかった。よって、vectorとheapの両方の実装で性能評価をする必要がある。また、展開速度の違いによって異なるオーバーヘッドが現れる為、両実装で比較を行うことは有意義である。
+\ref{sec:hdastar_tuning}節より、HDA*はZobrist Hashingとnested bucketによる実装が最も速いと結論された。一方\ref{sec:pbnf_tuning}節では、SafePBNFはnested bucketとheapによる実装で大きなパフォーマンスの違いは見られなかった。よって、nested bucketとheapの両方の実装で性能評価をする必要がある。また、展開速度の違いによって異なるオーバーヘッドが現れる為、両実装で比較を行うことは有意義である。
 
-以下、15 Puzzle, 24 Puzzle, Grid Pathfinding, TSPで実験を行った。15 Puzzleはvectorとheapのそれぞれ、24 Puzzle、 Grid Pathfindingはvector, TSPはheapで実装をした。TSPのヒューリスティックはRound Trip Distance、都市の数は13とした。HDA*のHash関数はZobrist Hashによる。
+以下、15 Puzzle, 24 Puzzle, Grid Pathfinding, TSPで実験を行った。15 Puzzleはnested bucketとheapのそれぞれ、24 Puzzle、 Grid Pathfindingはnested bucket, TSPはheapで実装をした。TSPのヒューリスティックはRound Trip Distance、都市の数は13とした。HDA*のHash関数はZobrist Hashによる。
 %minimum spanning treeとround trip distanceの両方で実験を行った。それぞれの都市の数は20と13とした。
 
 SafePBNFのnblockへの分割方法とnblockの数はそれぞれ以下である。15 Puzzleはtwo-tile projection (nblock=3360),24 Puzzleも同様にtwo-tile projection (nblock=13820), Grid Pathfindingは100$\times$100のグリッドを一つのnblockとした(nblock=2500)。TSPは初めに訪れた３つの都市による(nblock=1716)。最小探索ノード数は全て8とした。
@@ -670,7 +668,7 @@ SafePBNFのnblockへの分割方法とnblockの数はそれぞれ以下である
 	% 何故？PBNFが遅い。何度も確かめたが遅い。
 	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{competition/15puzzle_vector_walltime.pdf}
-		\caption{15 Puzzle (vector)}
+		\caption{15 Puzzle (nested bucket)}
 		\label{fig:15puzzle_vector}
 	\end{subfigure}
 	\begin{subfigure}{0.4\columnwidth}
@@ -680,12 +678,12 @@ SafePBNFのnblockへの分割方法とnblockの数はそれぞれ以下である
 	\end{subfigure}
 	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{competition/24_walltime.pdf}
-		\caption{24 Puzzle (vector)}
+		\caption{24 Puzzle (nested bucket)}
 		\label{fig:24puzzle_vector}
 	\end{subfigure}
 	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{competition/grid_walltime.pdf}
-		\caption{Grid Pathfinding (vector)}
+		\caption{Grid Pathfinding (nested bucket)}
 		\label{fig:grid}
 	\end{subfigure}
 %	\begin{subfigure}{0.4\columnwidth}
@@ -706,7 +704,7 @@ SafePBNFのnblockへの分割方法とnblockの数はそれぞれ以下である
 	\centering
 	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{competition/15puzzle_vector_expd.pdf}
-		\caption{15 Puzzle (vector)}
+		\caption{15 Puzzle (nested bucket)}
 		\label{fig:15puzzle_vector_expd}
 	\end{subfigure}
 	\begin{subfigure}{0.4\columnwidth}
@@ -716,12 +714,12 @@ SafePBNFのnblockへの分割方法とnblockの数はそれぞれ以下である
 	\end{subfigure}
 	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{competition/24_expd.pdf}
-		\caption{24 Puzzle (vector)}
+		\caption{24 Puzzle (nested bucket)}
 		\label{fig:24puzzle_vector_expd}
 	\end{subfigure}
 	\begin{subfigure}{0.4\columnwidth}
 		\includegraphics[width=\columnwidth]{competition/grid_expd.pdf}
-		\caption{Grid Pathfinding (vector)}
+		\caption{Grid Pathfinding (nested bucket)}
 		\label{fig:grid_expd}
 	\end{subfigure}
 %	\begin{subfigure}{0.4\columnwidth}
@@ -745,10 +743,10 @@ SafePBNFのnblockへの分割方法とnblockの数はそれぞれ以下である
 図\ref{fig:comparison_expd}は展開ノード数の比較である。それぞれの図は、横軸に展開ノード数、縦軸にその展開ノード数以内に解ける問題の数を示してある。実行時間の短いGrid Pathfindingを除き、HDA* vs. SafePBNFの展開ノード数はあまり変わらない。\ref{sec:analysis1}章の結論とこの結果を踏まえると、HDA*は十分に大きな問題に対しては探索オーバーヘッドの殆どない手法であると結論出来るだろう。BurnsらがHDA*の探索オーバーヘッドを指摘したのはHash関数をSimple Hashで実装したからである。図\ref{fig:order_naive_hash}及び図\ref{fig:hdastar_tuning}より、Simple Hashは明らかに不均一なHash関数である。
 \newline
 
-図\ref{fig:15puzzle_heap}は15 Puzzleドメインでオープンリストをvectorで実装した場合の実行時間の比較である。このドメインはノードの展開が非常に高速なドメインである。この場合でもHDA*は逐次A*に対して高速化が可能である。これは\ref{sec:analysis1}章の実験結果と一致する。一方、SafePBNFは逐次A*に対して高速化が見られない。図\ref{fig:15puzzle_heap}は15 Puzzleドメインでオープンリストをheapで実装した場合の実行時間の比較である。この実験結果はheap実装においてもHDA*がSafePBNFよりもパフォーマンスに優れるということを示す。
+図\ref{fig:15puzzle_heap}は15 Puzzleドメインでオープンリストをnested bucketで実装した場合の実行時間の比較である。このドメインはノードの展開が非常に高速なドメインである。この場合でもHDA*は逐次A*に対して高速化が可能である。これは\ref{sec:analysis1}章の実験結果と一致する。一方、SafePBNFは逐次A*に対して高速化が見られない。図\ref{fig:15puzzle_heap}は15 Puzzleドメインでオープンリストをheapで実装した場合の実行時間の比較である。この実験結果はheap実装においてもHDA*がSafePBNFよりもパフォーマンスに優れるということを示す。
 \newline
 
-vector実装でSafePBNFが速くならない原因は二つの理由が考えられる。一つは、vector実装によってノードの展開が高速化したことである。ノードの展開が高速であると、並列化のオーバーヘッドによる影響が比較して大きくなる。よって、heap実装時には見られなかったオーバーヘッドの影響を受けていると考えられる。もう一つに、そもそもSafePBNFの高速化は主にheapを分割することによるものであった可能性がある。SafePBNFは15 Puzzleの場合3360個のnblockに分割する。よって、オープンリストは1/3360の大きさであると期待される。この時のheapへのアクセス速度の違いは非常に大きいと考えられる。BurnsらはSafePBNF (3360 nblocks)とHDA* (8 threads)のheapへのアクセスにかかるCPU時間の計測を行い、SafePBNFのそれがほぼ0秒であるのに対してHDA*はおおよそ$0.00001$秒(中央値)かかることを示している\cite{Burns2010}。これは１回のアクセスにかかる時間なので、実行時間を通しての合計は非常に大きい。
+nested bucket実装でSafePBNFが速くならない原因は二つの理由が考えられる。一つは、nested bucket実装によってノードの展開が高速化したことである。ノードの展開が高速であると、並列化のオーバーヘッドによる影響が比較して大きくなる。よって、heap実装時には見られなかったオーバーヘッドの影響を受けていると考えられる。もう一つに、そもそもSafePBNFの高速化は主にheapを分割することによるものであった可能性がある。SafePBNFは15 Puzzleの場合3360個のnblockに分割する。よって、オープンリストは1/3360の大きさであると期待される。この時のheapへのアクセス速度の違いは非常に大きいと考えられる。BurnsらはSafePBNF (3360 nblocks)とHDA* (8 threads)のheapへのアクセスにかかるCPU時間の計測を行い、SafePBNFのそれがほぼ0秒であるのに対してHDA*はおおよそ$0.00001$秒(中央値)かかることを示している\cite{Burns2010}。これは１回のアクセスにかかる時間なので、実行時間を通しての合計は非常に大きい。
 \newline
 
 HDA*でも各スレッドのheapを分割することは可能である。Hash関数による仕事の分配を各スレッド内のheapに自然に流用することが出来る。よって、HDA*でも分割heapを用いることで実数コストドメインにおけるパフォーマンスを向上させることが出来ると考えられる。これは今後の研究課題である。
@@ -762,7 +760,7 @@ HDA*でも各スレッドのheapを分割することは可能である。Hash�
 	\begin{tabular}{lrrrr} \hline
 		 & &             HDA* & & SafePBNF \\ 
 		 &  解の発見回数 & 最初の解の発見時間 & 解の発見回数 & 最初の解の発見時間 \\ \hline
-		15 Puzzle (vector)& 1 & 14.56 & 1.14 & 20.73 \\ 
+		15 Puzzle (nested bucket)& 1 & 14.56 & 1.14 & 20.73 \\ 
 		24 Puzzle & 1 & 59.82 & 1 & 67.04 \\ 
 		Grid Pathfinding & 1.02 & 3.45 & 1.02 & 3.30 \\ 
 %		TSP20　MST & 1 & 5.18 & \textbf{2.25} & \textbf{1.23} \\ 
