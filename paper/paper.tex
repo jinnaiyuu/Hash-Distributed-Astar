@@ -377,6 +377,7 @@ Kishimotoらは24 PuzzleドメインにおいてHDA*の探索オーバーヘッ�
 \subsection{HDA*のノードの展開順}
 % Why this method works?
 HDA*の探索オーバーヘッドは、逐次A*とノードの展開順が異なることが原因であると考えることが出来る。ノードの展開する順番が逐次A*と完全に一致するならば、探索オーバーヘッドは全く生じない。裏を返せば、逐次A*と展開順が異なる場合に探索オーバーヘッドが生じると考えられる。よって、HDA*の状態の展開順を逐次A*のそれと比較をすることで、どのようなパターンで探索オーバーヘッドが生じるのかを分析することが出来ると考えられる。
+
 本実験では15 Puzzleドメインを対象に逐次A*とHDA*においてある状態が展開された順番を記録した。同時に、重複して展開されたノードの数を記録した。インスタンスはランダムに生成した100問を対象とした。実験環境はIntel dual-quad Xeon 2.33GHz, 32GB RAM, OSはGNU/Linux Ubuntu 14.04である。本実験では15 Puzzleドメインに最適化したコードを利用した。KishimotoらはMPI message passing libraryでプロセス間通信を実装したが、本実験では共有メモリ環境においてMPIよりも高速なpthreadライブラリを用いた。非同期通信はtry\_lockで実装した。オープンセットはnested bucketで実装した。なお、オープンセットをheapで実装した場合も概ね同様の結果が得られた。
 \newline
 
@@ -416,7 +417,7 @@ HDA*の探索オーバーヘッドは、逐次A*とノードの展開順が異�
 		\caption{delayed expansion}
 		\label{fig:order_delay}
 	\end{subfigure}
-	\caption{HDA*の展開順}
+	\caption{HDA*と逐次A*のノードの展開順の比較}
 	\label{fig:hdastar_orders}
 \end{figure}
 
