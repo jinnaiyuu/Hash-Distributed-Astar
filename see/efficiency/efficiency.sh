@@ -2,7 +2,8 @@
 
 
 
-awk 'NR==FNR{one[$1]=$2; next;} NR==(FNR+300){two[$1]=$2;next;} NR==(FNR+600){four[$1]=$2;next;} { \
+
+awk 'NR==FNR{one[$1]=$2; next;} NR==(FNR+100){two[$1]=$2;next;} NR==(FNR+200){four[$1]=$2;next;} { \
 printf("%d %f %f %f %f\n", $1, one[$1], one[$1]/two[$1]/2, one[$1]/four[$1]/4, (one[$1]/$2/8)) \
 }' $1 $2 $3 $4 > efficiency
 
@@ -28,7 +29,7 @@ gnuplot<<EOF
   replot "efficiency" u 2:5 w l title "8 threads"
 EOF
 
-awk 'NR==FNR{walltime[$1]=$2; one[$1]=$3; ; next;} NR==(FNR+300){two[$1]=$3;next;} NR==(FNR+600){four[$1]=$3;next;} {\
+awk 'NR==FNR{walltime[$1]=$2; one[$1]=$3; ; next;} NR==(FNR+100){two[$1]=$3;next;} NR==(FNR+200){four[$1]=$3;next;} {\
 printf("%d %f %f %f %f\n", $1, walltime[$1], two[$1]/one[$1], four[$1]/one[$1], $3/one[$1])\
 }' $1 $2 $3 $4 > efficiency.expd
 

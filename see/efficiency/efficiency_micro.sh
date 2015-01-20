@@ -38,7 +38,7 @@ NR==(FNR+fs*3){eight[$1]=$3;next;} \
 NR==(FNR+fs*4){twelve[$1]=$3;next;} \
 NR==(FNR+fs*5){sixteen[$1]=$3;next;} \
 {\
-printf("%d %f %f %f %f %f %f %f\n", $1, walltime[$1], one[$1], one[$1]/two[$1], one[$1]/four[$1], one[$1]/eight[$1], one[$1]/twelve[$1], one[$1]/sixteen[$1], (one[$1]/$3)) \
+printf("%d %f %f %f %f %f %f %f %f\n", $1, walltime[$1], one[$1], two[$1]/one[$1], four[$1]/one[$1], eight[$1]/one[$1], twelve[$1]/one[$1], sixteen[$1]/one[$1], ($3/one[$1])) \
 }' $1 $2 $3 $4 $5 $6 $7 | sort -n -k 2 > efficiency.expd
 
 gnuplot<<EOF
@@ -46,13 +46,13 @@ gnuplot<<EOF
   set logscale x
   set xlabel "walltime"
   set ylabel "search overhead"
-  plot "efficiency.expd" u 2:3 w l title "2 threads"
-  replot "efficiency.expd" u 2:4 w l title "4 threads"
-  replot "efficiency.expd" u 2:5 w l title "8 threads"
-  replot "efficiency.expd" u 2:6 w l title "12 threads"
-  replot "efficiency.expd" u 2:7 w l title "16 threads"
+  plot "efficiency.expd" u 2:4 w l title "2 threads"
+  replot "efficiency.expd" u 2:5 w l title "4 threads"
+  replot "efficiency.expd" u 2:6 w l title "8 threads"
+  replot "efficiency.expd" u 2:7 w l title "12 threads"
+  replot "efficiency.expd" u 2:8 w l title "16 threads"
   set output "search_overhead_24puzzle_micro.pdf"
-  replot "efficiency.expd" u 2:8 w l title "24 threads"
+  replot "efficiency.expd" u 2:9 w l title "24 threads"
 EOF
 
 #cp *_micro.pdf ../../paper/eps

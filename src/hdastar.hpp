@@ -739,7 +739,7 @@ public:
 	}
 
 	int uselessCalc(int useless) {
-		static const int zero = 0;
+//		static const int zero = 0;
 //		int test = 0;
 		int uselessLocal = 0;
 		for (int i = 0; i < DELAY; ++i) {

@@ -7,12 +7,12 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cassert>
-#include <stdint.h>
 
 // Exact Table size for 24 puzzle's pattern databases.
 #define TABLESIZE 244140625
 
 // Enable 128 bit integer. It is not the optimal way to implement.
+#include <stdint.h>
 typedef unsigned int uint128_t __attribute__((mode(TI)));
 
 

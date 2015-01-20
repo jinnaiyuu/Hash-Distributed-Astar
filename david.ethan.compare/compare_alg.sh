@@ -42,6 +42,31 @@ gnuplot<<EOF
 #   replot "${data9}.correctrate.expd" u 2:1 w steps title "$data9"
 EOF
 
+echo "8, 16 threads"
+
+gnuplot<<EOF
+   set xlabel "walltime"
+   set ylabel "instances solved in given time"
+   set terminal pdf
+#   set terminal postscript enhanced color font ',15'
+#   set terminal png size 900,900 font ',15'
+   set logscale x
+#   set key out vert
+   set key left
+   plot "${data1}.correctrate" u 2:1 w steps title "HDA* 8 threads"
+   replot "${data2}.correctrate" u 2:1 w steps title "HDA* 16 threads"
+   replot "${data3}.correctrate" u 2:1 w steps title "SafePBNF 8 threads"
+   set output "${data1}_walltime.pdf"
+   replot "${data4}.correctrate" u 2:1 w steps title "SafePBNF 16 threads"
+#   replot "${data5}.correctrate" u 2:1 w steps title "$data5"
+#   replot "${data6}.correctrate" u 2:1 w steps title "$data6"
+#   replot "${data7}.correctrate" u 2:1 w steps title "$data7"
+#   replot "${data8}.correctrate" u 2:1 w steps title "$data8"
+#   replot "${data9}.correctrate" u 2:1 w steps title "$data9"
+EOF
+
+exit 0
+
 gnuplot<<EOF
    set xlabel "walltime"
    set ylabel "instances solved in given time"

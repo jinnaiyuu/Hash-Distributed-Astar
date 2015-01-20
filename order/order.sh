@@ -155,6 +155,7 @@ gnuplot<<EOF
   set yrange[0:]
   set xtics 2000
   set ytics 2000
+  set style arrow 1 heads nofilled size screen 0.01,60 lt 1 ls 1 lc rgb "red" lw 14
 #  set logscale x
 #  set logscale y
 
@@ -168,10 +169,13 @@ gnuplot<<EOF
 
 #  set xr[0:40000]
   replot x lw 2 lc "black" title "Strict Order"
-
-  set output "2_threads_draft.pdf"
   replot "${dat1}.first"  using 4:9 w p pt 14 lc "black" ps 4 notitle,\
        1/0  w p pt 14 lc "black" ps 1 title "Goal"
+  set output "2_threads_draft.pdf"
+#  set style arrow 1  heads lt 1 ls 2 lc rgb "red" lw 3
+  replot "<echo '5400 6000 1200 0'" with vectors arrowstyle 1 notitle
+
+#from 5400,6000 to 6600,6000
 #  set terminal png size 1280,960
 
 #  set title "Thread 1-2 Nodes Searched $astarnodes-$length2"
@@ -183,11 +187,11 @@ gnuplot<<EOF
 #       "${dat1}.joined" using 4:(\$8==1?\$9:1/0):(0):(-\$11) every 30 w xerrorbars pt 0 lc rgb"blue" notitle,\
 #       "${dat1}.2dup"   using 4:9 w p pt -1 ps -1 notitle,\                
 
-EOF
+#EOF
 
-evince 2_threads_draft.pdf
+#evince 2_threads_draft.pdf
 
-exit 0
+#exit 0
 
 #  set title "Thread 1-4 Nodes Searched $astarnodes-$length3"
   set output "4_threads_draft.pdf"
@@ -203,7 +207,8 @@ exit 0
        x lw 2 lc "black" title "Strict Order",\
 \
        "${dat1}.first"  using 4:14 w p pt 14 lc "black" ps 4 notitle,\
-       1/0  w p pt 14 lc "black" ps 1 title "Goal"
+       1/0  w p pt 14 lc "black" ps 1 title "Goal",\
+       "<echo '5200 6000 1600 0'" with vectors arrowstyle 1 notitle
 
   set output "8_threads_draft.pdf"
   set xtics 10000
@@ -228,7 +233,8 @@ exit 0
        x lw 2 lc "black" title "Strict Order",\
 \
        "${dat1}.first"  using 4:19 w p pt 14 lc "black" ps 4 notitle,\
-       1/0  w p pt 14 lc "black" ps 1 title "Goal"
+       1/0  w p pt 14 lc "black" ps 1 title "Goal",\
+       "<echo '4000 7000 4000 0'" with vectors arrowstyle 1 notitle
 
 EOF
 
