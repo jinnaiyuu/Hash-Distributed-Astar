@@ -81,7 +81,7 @@ HDA*は各スレッドに対してオープンセット・クローズドセッ�
 Kumarらはオープンセット, クローズドセットをスレッド間で共有して並列に探索を行うParallel A*を提案した。Parallel A*は非常にシンプルな手法であるが、データ構造を共有するために同期オーバーヘッドが非常に大きいという問題がある。\ref{sec:analysis2}章で見るように、このシンプルな手法は逐次A*よりも遅くなってしまう。
 
 % TODO: Burnsらの論文から引っ張ってくる
-オープンセット、クローズドリストは同期オーバーヘッドのないlock-freeなデータ構造を用いて実装することが出来る。lock-freeなデータ構造とは、複数のスレッドが同時にアクセスすることの出来るデータ構造である。このデータ構造はスレッドの同期の必要がない代わりにアクセスが遅い。Burnsらはオープンセット、クローズドリストをlock-freeなデータ構造で実装をした並列う手法をlock-free parallel A*と定義し、この手法も逐次A*よりも遅くなってしまうことを示した。
+オープンセット、クローズドリストは同期の必要がないlock-freeなデータ構造を用いて実装することが出来る。lock-freeなデータ構造とは、複数のスレッドが同時にアクセスすることの出来るデータ構造である。このデータ構造はスレッドの同期の必要がないが、アクセス速度が遅い。Burnsらはオープンセット、クローズドリストをlock-freeなデータ構造で実装をしたlock-free parallel A*を実装し、この手法も逐次A*よりも遅くなってしまうことを示した。
 % lock-freeデータ構造
 
 % HDA*
@@ -354,10 +354,14 @@ Livelockの可能性のあるアルゴリズムは完全ではない。アルゴ
 
 \subsection{Travelling Salesperson Problem (TSP)}
 \index{Travelling Salesperson Problem, TSP}
-\textbf{Travelling Salesperson Problem (TSP)}は、都市の集合とそれぞれの２都市間の距離が与えられたとき、全ての都市を一度ずつ訪れ、出発都市に戻る為の最短経路を求める問題である。TSPで使われるヒューリスティック関数の一つは\textbf{Minimum Spanning Tree}\index{Minimum Spanning Tree, MST}である。Minimum Spanning Treeはグラフの全ての頂点を含む、最も辺の長さが小さい部分グラフである。これはゴールまでの経路よりも短いか同等である。なぜなら、ゴールまでの経路の方が短いならば、それがMinimum Spanning Treeになるはずであるからである。よって、Minimum Spanning Treeはadmissibleなヒューリスティック関数である。より簡単なヒューリスティックとして\textbf{Round Trip Distance}\index{Round Trip Distance}がある。Round Trip Distanceは現在の都市から最も離れた未訪問の都市までの距離の２倍を返す。このヒューリスティックはMinimum Spanning Treeよりも不正確であるが、非常に素早く計算が出来る。並列化に伴う高速化はノードの展開が速い方が困難である為、Round Trip Distanceでの高速化の方が難しいと考えられる。本研究は並列化の効率を調べることが目的である為、Round Trip Distanceをヒューリスティックに用いる。本研究では正方形内にランダムに都市を配置し、都市間の直線距離をコストとした。
+\textbf{Travelling Salesperson Problem (TSP)}は、都市の集合とそれぞれの２都市間の距離が与えられたとき、全ての都市を一度ずつ訪れ、出発都市に戻る為の最短経路を求める問題である。
+
+TSPで使われるヒューリスティック関数の一つは\textbf{Minimum Spanning Tree}\index{Minimum Spanning Tree, MST}である。Minimum Spanning Treeはグラフの全ての頂点を含む、最も辺の長さが小さい部分グラフである。これはゴールまでの経路よりも短いか同等である。なぜなら、ゴールまでの経路の方が短いならば、それがMinimum Spanning Treeになるはずであるからである。よって、Minimum Spanning Treeはadmissibleなヒューリスティック関数である。
+
+より簡単なヒューリスティックとして\textbf{Round Trip Distance}\index{Round Trip Distance}がある。Round Trip Distanceは現在の都市から最も離れた未訪問の都市までの距離の２倍を返す。このヒューリスティックはMinimum Spanning Treeよりも不正確であるが、非常に素早く計算が出来る。並列化に伴う高速化はノードの展開が速い方が困難である為、Round Trip Distanceでの高速化の方が難しいと考えられる。本研究は並列化の効率を調べることが目的である為、Round Trip Distanceをヒューリスティックに用いる。本研究では正方形内にランダムに都市を配置し、都市間の直線距離をコストとした。
 
 % TODO: TSPの説明
-ただし、Round Trip DistanceによるA*探索はTSPを解くには良い方法ではないことに注意されたい。state-of-the-artとされる手法では線形計画法による\cite{applegate2006traveling}。本研究では並列探索が木構造のドメインでどのように振る舞うかを示すためにのみ用いる。
+Round Trip DistanceによるA*探索はTSPを解くには良い方法ではないことに注意されたい。state-of-the-artとされる手法は線形計画法による\cite{applegate2006traveling}。本研究では並列探索が木構造のドメインでどのように振る舞うかを示すためにのみ用いる。
 
 \newpage
 
