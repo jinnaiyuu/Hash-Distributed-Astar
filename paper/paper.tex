@@ -398,6 +398,13 @@ HDA*の探索オーバーヘッドは、逐次A*とノードの展開順が異�
 		\caption{8 threads}
 		\label{fig:order_8_threads}
 	\end{subfigure}
+
+	\caption{HDA*の展開順}
+	\label{fig:hdastar_orders}
+\end{figure}
+
+\begin{figure}[h]
+	\centering
 	\begin{subfigure}{0.45\columnwidth}
 		\centering
 		\includegraphics[width=\columnwidth]{order/8_threads_easy.pdf}
@@ -411,7 +418,7 @@ HDA*の探索オーバーヘッドは、逐次A*とノードの展開順が異�
 		\label{fig:order_delay}
 	\end{subfigure}
 	\caption{HDA*の展開順}
-	\label{fig:hdastar_orders}
+	\label{fig:hdastar_orders2}
 \end{figure}
 
 % TODO: Define Strict Order
@@ -474,7 +481,7 @@ Kobayashiらがノードの重複が問題となるシーケンスアライメ�
 \index{ノードの重複}
 \vspace{3mm}
 % TODO: マチゲータぞう
-\textbf{ノードの重複}は同じノードを複数回展開することによる探索オーバーヘッドである。HDA*は展開済ノードの全てをクローズドセットに保存するので、ノードの重複は少ない。重複が生じる場合は、ある状態に対して複数の経路があり、より長い経路が先に探索された場合のみである。本研究のドメインでは殆ど発生しない為、本分析の対象外とする。
+\textbf{ノードの重複}は同じノードを複数回展開することによる探索オーバーヘッドである。HDA*は展開済ノードの全てをクローズドセットに保存するので、ノードの重複は少ない。重複が生じる場合は、ある状態に対して複数の経路があり、より長い経路が先に探索された場合のみである。
 
 
 \end{enumerate}
@@ -561,7 +568,7 @@ Simple Hash分配はうまくいっていないようである。
 	\label{fig:15_david}
 \end{figure}
 
-% TODO: Print this if we could experiment with more than 10 instances. I think we can.
+% TODO for IJCAI: Print this if we could experiment with more than 10 instances. I think we can.
 \begin{comment}
 \begin{figure}[h]
 	\centering
@@ -761,8 +768,9 @@ SafePBNFのnblockへの分割方法とnblockの数はそれぞれ以下である
 図\ref{fig:comparison}が実行時間の比較である。それぞれの図は、横軸に実行時間、縦軸にその実行時間内に解ける問題の数を示してある。これらの結果から、特に実行時間の大きい問題ドメイン・インスタンスにおいて、HDA*はSafePBNFよりもパフォーマンスに優れると結論出来る。一方、実行時間が5秒未満程度の小さい問題に対してはSafePBNFの方が優れる場合が多い。\ref{sec:analysis1}章で述べたように、HDA*は実行時間の冒頭と末尾に探索オーバーヘッドがある。実行時間が短い場合、これらのオーバーヘッドの割合が大きくなる。よって、小さな問題インスタンスに対しては探索オーバーヘッドが大きく、SafePBNFの方が速いと考えられる。特にGrid Pathfindingの１秒程度の問題においてHDA*は大きな探索オーバーヘッドを持つ。
 
 図\ref{fig:comparison_expd}は展開ノード数の比較である。それぞれの図は、横軸に展開ノード数、縦軸にその展開ノード数以内に解ける問題の数を示してある。実行時間の短いGrid Pathfindingを除き、HDA* vs. SafePBNFの展開ノード数はあまり変わらない。\ref{sec:analysis1}章の結論とこの結果を踏まえると、HDA*は十分に大きな問題に対しては探索オーバーヘッドの殆どない手法であると結論出来るだろう。BurnsらがHDA*の探索オーバーヘッドを指摘したのはハッシュ関数をSimple Hashで実装したからである。図\ref{fig:order_naive_hash}及び図\ref{fig:hdastar_tuning}より、Simple Hashは明らかに性能が悪い。その原因は調査中であるが、クローズドセットに対してハッシュ値が偏っている可能性がある。 % TODO: どうやら違う？
+
 % TODO: ノードの展開速度を具体的に
-図\ref{fig:15puzzle_heap}は15 Puzzleドメインでオープンセットをnested bucketで実装した場合の実行時間の比較である。このドメインはノードの展開が非常に高速なドメインである。この場合でもHDA*は逐次A*に対して高速化が可能である。これは\ref{sec:analysis1}章の実験結果と一致する。一方、SafePBNFは逐次A*に対して高速化が見られない。図\ref{fig:15puzzle_heap}は15 Puzzleドメインでオープンセットをheapで実装した場合の実行時間の比較である。heap実装の場合、HDA*とPBNFは共に逐次A*よりも高速である。加えて、この実験結果はheap実装においてもHDA*がSafePBNFよりもパフォーマンスに優れるということを示す。
+図\ref{fig:15puzzle_heap}は15 Puzzleドメインでオープンセットをnested bucketで実装した場合の実行時間の比較である。このドメインはノードの展開が非常に高速なドメインである。逐次A*で$10^5~10^6$ノード/秒が展開される。この場合でもHDA*は逐次A*に対して高速化が可能である。これは\ref{sec:analysis1}章の実験結果と一致する。一方、SafePBNFは逐次A*に対して高速化が見られない。図\ref{fig:15puzzle_heap}は15 Puzzleドメインでオープンセットをheapで実装した場合の実行時間の比較である。heap実装の場合、HDA*とSafePBNFは共に逐次A*よりも高速である。加えて、この実験結果はheap実装においてもHDA*がSafePBNFよりもパフォーマンスに優れるということを示す。
 
 nested bucket実装でSafePBNFが速くならない原因は二つの理由が考えられる。
 一つは、nested bucket実装によってノードの展開が高速化したことである。ノードの展開が高速であると、並列化のオーバーヘッドによる影響が比較して大きくなる。 %よって、heap実装時には見られなかったオーバーヘッドの影響を受けていると考えられる。
