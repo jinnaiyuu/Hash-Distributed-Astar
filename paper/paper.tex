@@ -361,7 +361,7 @@ TSPで使われるヒューリスティック関数の一つは\textbf{Minimum S
 より簡単なヒューリスティックとして\textbf{Round Trip Distance}\index{Round Trip Distance}がある。Round Trip Distanceは現在の都市から最も離れた未訪問の都市までの距離の２倍を返す。このヒューリスティックはMinimum Spanning Treeよりも不正確であるが、非常に素早く計算が出来る。並列化に伴う高速化はノードの展開が速い方が困難である為、Round Trip Distanceでの高速化の方が難しいと考えられる。本研究は並列化の効率を調べることが目的である為、Round Trip Distanceをヒューリスティックに用いる。本研究では正方形内にランダムに都市を配置し、都市間の直線距離をコストとした。
 
 % TODO: TSPの説明
-Round Trip DistanceによるA*探索はTSPを解くには効率的な方法ではないことに注意されたい。state-of-the-artとされる手法は線形計画法による\cite{applegate2006traveling}。本研究ではHDA*, SafePBNFが木構造のドメインでどのように振る舞うかを示すためにのみ用いる。
+Minimum Spanning Tree, およびRound Trip DistanceによるA*探索はTSPを解くには効率的な方法ではないことに注意されたい。state-of-the-artとされる手法は線形計画法による\cite{applegate2006traveling}。本研究ではHDA*, SafePBNFが木構造のドメインでどのように振る舞うかを示すためにのみ用いる。
 
 \newpage
 
