@@ -605,7 +605,7 @@ superlinear speedupが生じる原因は調査中であるが、クローズド�
 
 Burnsらの比較実験には複数問題点がある\cite{Burns2010}。まず、HDA*のハッシュ関数をKishimotoらはZobrist Hashを用いて実装したのに対して、BurnsらはSimple Hashによって実装している。Zobrist Hashによる分配がSimple Hashのそれよりも大きく優れることは\ref{sec:analysis1}章で論じた。
 
-また、Burnsらの実験ではHDA*, SafePBNFのオープンセットをheapで実装している。コストが整数のドメインはオープンセットをnested bucketで実装することが出来る。heapに対するアクセスが$O(logn)$であるのに対してnested bucketへのアクセスは$O(1)$である。Burnsらは別の論文で、15 Puzzleドメインを対象に逐次A*の最適化を議論しており、heap実装とnested bucket実装の比較実験を行い、nested bucket実装が3倍程度高速であることを示した\cite{Burns2012implementing}。HDA*とSafePBNFは複数のオープンセットがある。HDA*はスレッドの数に分割され、SafePBNFはnblockの数に分割される。nblockは15 Puzzleの場合3360個に分割される。よって、両アルゴリズムのnested bucket実装による高速化の割合は異なると考えられるが、まだ検証はされていない。
+また、Burnsらの実験ではHDA*, SafePBNFのオープンセットをheapで実装している。コストが整数のドメインはオープンセットをnested bucketで実装することが出来る。heapに対するアクセスが$O(\mathrm{log}\: n)$であるのに対してnested bucketへのアクセスは$O(1)$である。Burnsらは別の論文で、15 Puzzleドメインを対象に逐次A*の最適化を議論しており、heap実装とnested bucket実装の比較実験を行い、nested bucket実装が3倍程度高速であることを示した\cite{Burns2012implementing}。HDA*とSafePBNFは複数のオープンセットがある。HDA*はスレッドの数に分割され、SafePBNFはnblockの数に分割される。nblockは15 Puzzleの場合3360個に分割される。よって、両アルゴリズムのnested bucket実装による高速化の割合は異なると考えられるが、まだ検証はされていない。
 % 両アルゴリズムは各オープンセットが小さくなるので、高速化の割合はそれぞれ逐次A*における３倍よりも小さくなると推測されるが、まだ検証はされていない。
 
 もう一つ重要な問題点として、ベンチマーク問題のサイズが小さいということが挙げられる。\ref{sec:speedup_size}節で議論したように、HDA*の高速化効率は1000秒程度の問題まで向上し続ける。しかしながらBurnsらの用いた問題集は逐次A*で10秒未満のものが殆どである。よって、ベンチマーク問題の問題サイズを考慮した比較・解析が必要である。
@@ -664,7 +664,7 @@ SafePBNFのパラメータとして、nblockの個数と最小探索ノード数
 	\label{fig:safepbnf_tuning}
 \end{figure}
 
-図\ref{fig:safepbnf_tuning}が実行結果である。SafePBNFにおいては、HDA*ほどの高速化が得られないようである。heapに対するアクセスは$O(logn)$であるのに対してnested bucketは$O(1)$である。本実験でSafePBNFは3360個のオープンセットに分割されている。その為各オープンセットが小さく、$O(logn)$と$O(1)$の差が小さい為、nested bucket実装による高速化が小さいと考えられる。翻って、SafePBNFはheap実装による遅延の影響が小さいとも言える。
+図\ref{fig:safepbnf_tuning}が実行結果である。SafePBNFにおいては、HDA*ほどの高速化が得られないようである。heapに対するアクセスは$O(\mathrm{log}\: n)$であるのに対してnested bucketは$O(1)$である。本実験でSafePBNFは3360個のオープンセットに分割されている。その為各オープンセットが小さく、$O(logn)$と$O(1)$の差が小さい為、nested bucket実装による高速化が小さいと考えられる。翻って、SafePBNFはheap実装による遅延の影響が小さいとも言える。
 
 \subsection{HDA*とSafePBNFの性能比較実験}
 
