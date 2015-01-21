@@ -237,7 +237,7 @@ MahapatraとDuttはPRA*で提案されたハッシュ関数による仕事の分
 
 \subsection{Transposition-table driven work scheduling (TDS)}
 \index{Transposition-table driven work scheduling, TDS}
-\textbf{Transposition-table driven work scheduling (TDS)}は分散メモリ環境におけるIDA*の並列アルゴリズムである\cite{romein1999transposition}。\textbf{Iterative Deepening A* (IDA*)}\index{Iterative Deepening A*, IDA*}はメモリ効率に優れたA*探索の派生である\cite{Korf1985depth}。IDA*は反復的に深さ優先探索を行う。反復の度に最大深度を大きくしながら、解が見つかるまで深さ優先探索を繰り返す。TDSはPRA*と同様、状態に対するハッシュ関数を使ってノードを分配する。生成されたノードはハッシュ関数によって送信先のプロセスが決定される。ノードはTransposition-tableで重複していないことを確認された場合に仕事のキューに加えられる。Transposition-tableは各プロセスがローカルに保持する。Transposition-tableによる重複の確認により、TDSの展開ノード数はIDA*よりも大きくならない。IDA*およびTDSは繰り返し探索を行う為、反復の度に多くのノードを再展開する必要がある。PRA*などのA*探索をベースとする並列探索の場合はこのような反復的な再展開はない。TDSは、特にIDA*で再展開を必要とするノードの割合が非常に小さいことで知られる15 PuzzleやRubik's cubeなどの問題で効率的である。TDSのアイディアは主に二人零和ゲームに応用されている。
+\textbf{Transposition-table driven work scheduling (TDS)}は分散メモリ環境におけるIDA*の並列アルゴリズムである\cite{romein1999transposition}。\textbf{Iterative Deepening A* (IDA*)}\index{Iterative Deepening A*, IDA*}はメモリ効率に優れたA*探索の派生である\cite{Korf1985depth}。IDA*は反復的に深さ優先探索を行う。反復の度に探索したノードの情報を捨て、最大深度を大きくしながら、解が見つかるまで深さ優先探索を繰り返す。IDA*はA*探索と比較して必要なメモリの量が小さいが、反復の度に多くのノードを再展開する必要がある。TDSはPRA*と同様、状態に対するハッシュ関数を使ってノードを分配する。生成されたノードはハッシュ関数によって送信先のプロセスが決定される。ノードはTransposition-tableで重複していないことを確認された場合に仕事のキューに加えられる。Transposition-tableは各プロセスがローカルに保持する。Transposition-tableによる重複の確認により、TDSの展開ノード数はIDA*よりも大きくならない。IDA*およびTDSは繰り返し探索を行う為、反復の度に多くのノードを再展開する必要がある。PRA*などのA*探索をベースとする並列探索の場合はこのような反復的な再展開はない。TDSは、特にIDA*で再展開を必要とするノードの割合が非常に小さいことで知られる15 PuzzleやRubik's cubeなどの問題で効率的である。TDSのアイディアは主に二人零和ゲームに応用されている。
 
 
 % HDA*の定義
@@ -277,7 +277,7 @@ HDA*はまず、ルートプロセスで初期状態を展開する。その後�
 以上の要件から、多くのドメインにおいて\textbf{Zobrist Hash}\index{Zobrist Hash}が使われる\cite{Zobrist1970}。ノード$s$の状態が整数列$\mathbf{x}$で表現されるとする。状態の$i$番目の整数の取りうる値は$l_{i}$通りあるとする。ノードの状態を$\mathbf{x} = (x_{0}, x_{1}, …, x_{n})$と置く。この時$x_{i}$は$0 \leq x_{i} < l_{i}$である。$R_{i}$を$l_{i}$個の値を持つテーブルとする。$R_{i}$は予めランダムに生成される。ここでZobrist Function $Z(s)$は以下のように定義される。
 \newline
 \begin{equation}
-	Z(s) := R_{0}[x_{0}]\; xor\; R_{1}[x_{1}]\; xor\; …\; xor\; R_{n}[x_{n}]%
+	Z(s) := R_{0}[x_{0}]\; xor\; R_{1}[x_{1}]\; xor\; \cdots\; xor\; R_{n}[x_{n}]%
 \end{equation}
 
 $R_{i}$はランダムに生成される為、$Z(s)$は均等な確率で値域の全ての値が出ると期待される。また、状態の全情報を利用して生成される為、局所的な状態の変化に対しても不偏な分配を行うことが出来る。$xor$によって計算する為、状態の親ノードからの差分のみを計算してハッシュ値を求めることが出来る。加えて、XOR命令は非常に速い計算である。よってZobrist Hashは高速に求めることが出来る。
@@ -664,7 +664,7 @@ SafePBNFのパラメータとして、nblockの個数と最小探索ノード数
 	\label{fig:safepbnf_tuning}
 \end{figure}
 
-図\ref{fig:safepbnf_tuning}が実行結果である。SafePBNFにおいては、HDA*ほどの高速化が得られないようである。heapに対するアクセスは$O(\mathrm{log}\: n)$であるのに対してnested bucketは$O(1)$である。本実験でSafePBNFは3360個のオープンセットに分割されている。その為各オープンセットが小さく、$O(logn)$と$O(1)$の差が小さい為、nested bucket実装による高速化が小さいと考えられる。翻って、SafePBNFはheap実装による遅延の影響が小さいとも言える。
+図\ref{fig:safepbnf_tuning}が実行結果である。SafePBNFにおいては、HDA*ほどの高速化が得られないようである。heapに対するアクセスは$O(\mathrm{log}\: n)$であるのに対してnested bucketは$O(1)$である。本実験でSafePBNFは3360個のオープンセットに分割されている。その為各オープンセットが小さく、$O(\mathrm{log}\: n)$と$O(1)$の差が小さい為、nested bucket実装による高速化が小さいと考えられる。翻って、SafePBNFはheap実装による遅延の影響が小さいとも言える。
 
 \subsection{HDA*とSafePBNFの性能比較実験}
 
