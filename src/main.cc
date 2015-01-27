@@ -66,10 +66,10 @@ int main(int argc, const char *argv[]) {
 	try {
 		fflush(stdout);
 		// Markov primes.
-		printf("614657, 1336337, 4477457, 5308417, 8503057,"
+/*		printf("614657, 1336337, 4477457, 5308417, 8503057,"
 				"9834497, 29986577, 40960001, 45212177, 59969537, "
 				"65610001, 126247697, 193877777, 303595777, 384160001, "
-				"406586897, 562448657, 655360001");
+				"406586897, 562448657, 655360001");*/
 		/*
 		 if (!(3 <= argc && argc <= 7))
 		 throw Fatal(
@@ -93,8 +93,8 @@ int main(int argc, const char *argv[]) {
 			argc--;
 			sscanf(argv[2], "%d", &pnum);
 
-			printf("pnum = %d", pnum);
 			Tiles tiles(stdin, pnum);
+			printf("pnum = %d\n", pnum);
 
 //			tiles.set_weight(2);
 //			printf("weight = 2\n");
