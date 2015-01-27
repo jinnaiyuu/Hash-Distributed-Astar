@@ -16,7 +16,7 @@ problem_size=$6
 thread_number=$7
 param1=$8
 param2=$9
-param3=$8
+param3=$10
 
 mem="32gbmem"
 
