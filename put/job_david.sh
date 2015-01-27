@@ -29,7 +29,7 @@ mem="32gbmem"
 # For HDASTAR example
 
 
-JOB_ARRAY_ID=`qsub -t 1-$problem_size -l nodes=1:ppn=8,walltime=02:00:00 -N $algname.${problem_type}.${thread_number}threads.${mem}.${param1}${param2}${param3}.${time} -j oe -v time=$time,domain_name=$domain_name,algname=$algname,thread_number=$thread_number,problem_type=$problem_type,param1=$param1,param2=$param2,param3=$param3 ./run.sh`
+JOB_ARRAY_ID=`qsub -t 1-$problem_size -l nodes=1:ppn=8,walltime=02:00:00 -N $algname.${problem_type}.${thread_number}threads.${mem}.${param1}${param2}${param3} -j oe -v time=$time,domain_name=$domain_name,algname=$algname,thread_number=$thread_number,problem_type=$problem_type,param1=$param1,param2=$param2,param3=$param3 ./run.sh`
 
 JOB_NUMBER=`echo $JOB_ARRAY_ID | awk -F "." '{print $1}'` 
 
