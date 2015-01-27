@@ -65,6 +65,11 @@ void handler(int sig) {
 int main(int argc, const char *argv[]) {
 	try {
 		fflush(stdout);
+		// Markov primes.
+		printf("614657, 1336337, 4477457, 5308417, 8503057,"
+				"9834497, 29986577, 40960001, 45212177, 59969537, "
+				"65610001, 126247697, 193877777, 303595777, 384160001, "
+				"406586897, 562448657, 655360001");
 		/*
 		 if (!(3 <= argc && argc <= 7))
 		 throw Fatal(
@@ -107,14 +112,24 @@ int main(int argc, const char *argv[]) {
 					search = new Pastar<Tiles>(tiles);
 				}
 			} else if (strcmp(argv[1], "hdastar") == 0) {
-				if (argc >= 5) {
-					search = new HDAstar<Tiles, Zobrist<16> >(tiles,
-							std::stoi(argv[3]), std::stoi(argv[4]),
-							std::stoi(argv[5]), std::stoi(argv[6]));
-				} else {
-					search = new HDAstar<Tiles, Zobrist<16> >(tiles,
-							std::stoi(argv[3])); // Completely Asynchronous
+				// Set the size of closed list.
+				unsigned int closedlistsize = 0;
+				for (unsigned int i = 0; i < argc; ++i) {
+					if (sscanf(argv[i], "closed-%u", &closedlistsize) == 1) {
+						break;
+					}
 				}
+				if (!closedlistsize) {
+					printf("set closedlistsize as closed-%%u\n");
+					exit(1);
+				}
+				// Arguments of HDAstar
+				// Domain, n_threads,
+				// incomebuffermax, outgobuffermax,
+				// abstraction, closed list size
+				search = new HDAstar<Tiles, Zobrist<16> >(tiles, std::stoi(argv[3]),
+						1000000, 1000000,
+						std::stoi(argv[4]), 0, closedlistsize);
 			} else if (strcmp(argv[1], "hdastar_trivial") == 0) {
 				if (argc >= 5) {
 					search = new HDAstar<Tiles, TrivialHash<16> >(tiles,
@@ -191,12 +206,12 @@ int main(int argc, const char *argv[]) {
 			dfpair(stdout, "solution length", "%u", (unsigned int) path.size());
 
 			assert(path.begin() != path.end());
-			for (auto iter = path.end() - 1; iter != path.begin() - 1; --iter) {
+/*			for (auto iter = path.end() - 1; iter != path.begin() - 1; --iter) {
 				for (int i = 0; i < 16; ++i) {
 					printf("%2d ", iter->tiles[i]);
 				}
 				printf("\n");
-			}
+			}*/
 
 			dffooter(stdout);
 		} else { // 24 puzzle
@@ -215,15 +230,34 @@ int main(int argc, const char *argv[]) {
 			if (strcmp(argv[1], "astar") == 0) {
 				search = new Astar<Tiles24>(tiles);
 			} else if (strcmp(argv[1], "hdastar") == 0) {
-				search = new HDAstar<Tiles24, Zobrist<25> >(tiles,
-						std::stoi(argv[3]));
+//				search = new HDAstar<Tiles24, Zobrist<25> >(tiles,
+//						std::stoi(argv[3]));
+
+				unsigned int closedlistsize = 0;
+				for (unsigned int i = 0; i < argc; ++i) {
+					if (sscanf(argv[i], "closed-%u", &closedlistsize) == 1) {
+						break;
+					}
+				}
+				if (!closedlistsize) {
+					printf("set closedlistsize as closed-%%u\n");
+					exit(1);
+				}
+				// Arguments of HDAstar
+				// Domain, n_threads,
+				// incomebuffermax, outgobuffermax,
+				// abstraction, overrun, closed list size
+				search = new HDAstar<Tiles24, Zobrist<25> >(tiles, std::stoi(argv[3]),
+						1000000, 1000000,
+						std::stoi(argv[4]), 0, closedlistsize);
+
 			} else if (strcmp(argv[1], "hdastar_overrun") == 0) {
 				search = new HDAstar<Tiles24, Zobrist<25> >(tiles,
-						std::stoi(argv[3]), 1000000, 1000000, 0, std::stoi(argv[4]));
+						std::stoi(argv[3]), 1000000, 1000000, 0,
+						std::stoi(argv[4]));
 			} else {
 				throw Fatal("Unknown algorithm: %s", argv[1]);
 			}
-
 
 			Tiles24::State init = tiles.initial();
 			dfheader(stdout);
