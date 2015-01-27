@@ -230,9 +230,6 @@ int main(int argc, const char *argv[]) {
 			if (strcmp(argv[1], "astar") == 0) {
 				search = new Astar<Tiles24>(tiles);
 			} else if (strcmp(argv[1], "hdastar") == 0) {
-//				search = new HDAstar<Tiles24, Zobrist<25> >(tiles,
-//						std::stoi(argv[3]));
-
 				unsigned int closedlistsize = 0;
 				for (unsigned int i = 0; i < argc; ++i) {
 					if (sscanf(argv[i], "closed-%u", &closedlistsize) == 1) {
