@@ -12,7 +12,9 @@ EOF
 
 }
 
-time=`date +%m%d%H%M%S`
+#time=`date +%m%d%H%M%S`
+time="0127213431"
+
 #instance_name=$1
 #domain_name=$2
 #algorithm=$3
@@ -46,6 +48,6 @@ touch main.cc
 make
 cd ..
 cp ./src/tiles ./src/tiles$time
-scp  ./src/tiles$time ./put/job_david.sh ./put/run.sh ./src/*instances yuu@david.rm:/home/yuu/workspace/ethan/
+#scp  ./src/tiles$time ./put/job_david.sh ./put/run.sh ./src/*instances yuu@david.rm:/home/yuu/workspace/ethan/
 ssh -l yuu david.rm "${SCRIPT}"
 
