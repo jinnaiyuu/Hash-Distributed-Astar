@@ -12,8 +12,8 @@ EOF
 
 }
 
-time=`date +%m%d%H%M%S`
-#time="0127213431"
+#time=`date +%m%d%H%M%S`
+time="0129001540"
 
 #instance_name=$1
 #domain_name=$2
@@ -44,10 +44,10 @@ git stage src/*.hpp src/main.cc put/*.sh see/*.sh
 git commit -m "Experiment: $time $1 $2 $3 $4 $5 $6 $7 $8 $9 $text"
 
 cd src
-touch main.cc
+#touch main.cc
 make
 cd ..
 cp ./src/tiles ./src/tiles$time
-scp  ./src/tiles$time ./put/job_david.sh ./put/run.sh ./src/*instances yuu@david.rm:/home/yuu/workspace/ethan/
+#scp  ./src/tiles$time ./put/job_david.sh ./put/run.sh ./src/*instances yuu@david.rm:/home/yuu/workspace/ethan/
 ssh -l yuu david.rm "${SCRIPT}"
 
