@@ -12,8 +12,8 @@ EOF
 
 }
 
-#time=`date +%m%d%H%M%S`
-time="0127213431"
+time=`date +%m%d%H%M%S`
+#time="0127213431"
 
 #instance_name=$1
 #domain_name=$2

@@ -46,6 +46,7 @@ public:
 		open.push(wrap(init, 0, 0, -1));
 
 		while (!open.isempty() && path.size() == 0) {
+//			printf("while loop\n");
 			Node *n = static_cast<Node*>(open.pop());
 			if (closed.find(n->packed)) {
 				nodes.destruct(n);
@@ -63,6 +64,8 @@ public:
 //			printf("\n");
 
 			if (this->dom.isgoal(state)) {
+//				printf("goal!\n");
+
 				for (Node *p = n; p; p = p->parent) {
 					typename D::State s;
 					this->dom.unpack(s, p->packed);
@@ -84,6 +87,9 @@ public:
 				this->dom.undo(state, e);
 			}
 		}
+//		printf("return astar\n");
+		this->wtime = walltime();
+		this->ctime = cputime();
 		return path;
 	}
 

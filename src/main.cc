@@ -8,6 +8,7 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <pthread.h>
 
 //#define DEBUG
 #ifndef DEBUG
@@ -41,6 +42,7 @@
 #include "idastar.hpp"
 #include "astar.hpp"
 #include "pastar.hpp"
+#include "multiastar.hpp"
 #include "hdastar.hpp"
 #include "oshdastar.hpp"
 
@@ -98,6 +100,8 @@ int main(int argc, const char *argv[]) {
 
 //			tiles.set_weight(2);
 //			printf("weight = 2\n");
+			// For multiastar.
+			unsigned int n_threads = 0;
 
 			SearchAlg<Tiles> *search = NULL;
 
@@ -111,6 +115,8 @@ int main(int argc, const char *argv[]) {
 				} else {
 					search = new Pastar<Tiles>(tiles);
 				}
+			} else if (sscanf(argv[1], "multiastar-%u", &n_threads) == 1) {
+				search = new MultiAstar<Tiles>(tiles, n_threads);
 			} else if (strcmp(argv[1], "hdastar") == 0) {
 				// Set the size of closed list.
 				unsigned int closedlistsize = 0;
