@@ -44,7 +44,7 @@ git stage src/*.hpp src/main.cc put/*.sh see/*.sh
 git commit -m "Experiment: $time $1 $2 $3 $4 $5 $6 $7 $8 $9 $text"
 
 cd src
-#touch main.cc
+touch main.cc
 make
 cd ..
 cp ./src/tiles ./src/tiles$time
