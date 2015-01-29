@@ -160,6 +160,9 @@ template<class D, class hash> class HDAstar: public SearchAlg<D> {
 #endif
 #endif
 
+
+	unsigned int self_pushes = 0;
+
 	int overrun;
 	unsigned int closedlistsize;
 
@@ -245,6 +248,10 @@ void* thread_search(void * arg) {
 	int useless = 0;
 
 	int fval = -1;
+
+	// How many of the nodes sent to itself.
+	// If this high, then lower communication overhead.
+	unsigned int self_push = 0;
 
 	//		while (path.size() == 0) {
 
@@ -463,6 +470,7 @@ void* thread_search(void * arg) {
 
 			// If the node belongs to itself, just push to this open list.
 			if (zbr == id) {
+				++self_push;
 				open.push(next);
 			}
 #ifdef SEMISYNC
@@ -538,6 +546,9 @@ void* thread_search(void * arg) {
 #ifdef ANALYZE_DUPLICATE
 	this->duplicates[id] = duplicate_here;
 #endif
+
+	self_pushes += self_push;
+
 	dbgprintf("END\n");
 	return 0;
 }
@@ -658,6 +669,9 @@ std::vector<typename D::State> search(typename D::State &init) {
 		printf(" %d", sum);
 	}
 	printf("\n");
+
+
+	printf("self_pushes: %u\n", self_pushes);
 
 	return path;
 }
