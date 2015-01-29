@@ -13,7 +13,7 @@
 template<int size>
 class Zobrist {
 public:
-	enum ABST {SINGLE = 0, PAIR = 1, LINE = 2, BLOCK = 3};
+	enum ABST {SINGLE = 0, PAIR = 1, LINE = 2, BLOCK = 3, TWO = 4};
 
 // Should delete compatibility for performance.
 	Zobrist(int tnum_ = 1, ABST abst = SINGLE) :
@@ -69,6 +69,9 @@ private:
 			break;
 		case BLOCK:
 			block();
+			break;
+		case TWO:
+			two();
 			break;
 		}
 
