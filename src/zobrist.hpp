@@ -13,7 +13,7 @@
 template<int size>
 class Zobrist {
 public:
-	enum ABST {SINGLE = 0, PAIR = 1, LINE = 2, BLOCK = 3, TWO = 4};
+	enum ABST {SINGLE = 0, PAIR = 1, LINE = 2, BLOCK = 3, TWO = 4, ABSTRACTION = 123};
 
 // Should delete compatibility for performance.
 	Zobrist(int tnum_ = 1, ABST abst = SINGLE) :
@@ -72,6 +72,12 @@ private:
 			break;
 		case TWO:
 			two();
+			break;
+		case ABSTRACTION:
+			abstraction();
+			break;
+		default:
+			printf("ERRRRRRRORRRRR\n");
 			break;
 		}
 
@@ -135,6 +141,20 @@ private:
 				int r = random();
 				for (int j = 0; j < size / 2; ++j) {
 					zbr[i][j + two * size / 2] = r;
+				}
+			}
+		}
+	}
+
+	// This abstraction is divided by the position of tile 1, 2 and 3.
+	// Other tiles do not matter.
+	void abstraction() {
+		for (int i = 1; i < size; ++i) {
+			for (int j = 0; j < size; ++j) {
+				if (1 <= i && i <= 3) {
+					zbr[i][j] = random();
+				} else {
+					zbr[i][j] = 0;
 				}
 			}
 		}
