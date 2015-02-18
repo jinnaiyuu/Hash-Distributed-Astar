@@ -5,8 +5,8 @@
  *      Author: yuu
  */
 
-#ifndef HDASTAR_HPP_
-#define HDASTAR_HPP_
+#ifndef HDASTAR_SHARED_CLOSED_HPP_
+#define HDASTAR_SHARED_CLOSED_HPP_
 
 #include <vector>
 #include <pthread.h>
@@ -18,7 +18,7 @@
 
 #include "search.hpp"
 #include "utils.hpp"
-#include "hashtbl.hpp"
+#include "concurrent_hashtbl.hpp"
 #include "heap.hpp"
 #include "pool.hpp"
 #include "buffer.hpp"
@@ -32,11 +32,10 @@
 // DELAY 10,000,000 -> 3000 nodes per second
 #define DELAY 0
 
-template<class D, class hash> class HDAstar: public SearchAlg<D> {
+template<class D, class hash> class HDAstarSharedClosed: public SearchAlg<D> {
 
 	struct Node {
-		unsigned int f, g;
-		char pop;
+		char f, g, pop;
 		unsigned int zbr; // zobrist value. stored here for now. Also the size is char for now.
 		int openind;
 //		char thrown; // How many times this node has been outsourced.
@@ -164,20 +163,18 @@ template<class D, class hash> class HDAstar: public SearchAlg<D> {
 	unsigned int self_pushes = 0;
 
 	int overrun;
-	unsigned int closedlistsize;
-	unsigned int openlistsize;
+//	unsigned int closedlistsize;
+	ConcurrentHashTable<typename D::PackedState, Node> closed; // shared closed list
 
 public:
 
-	HDAstar(D &d, int tnum_, int income_threshold_ = 1000000,
+	HDAstarSharedClosed(D &d, int tnum_, int income_threshold_ = 1000000,
 			int outgo_threshold_ = 10000000, int abst_ = 0, int overrun_ = 0,
-			unsigned int closedlistsize = 110503,
-			unsigned int openlistsize = 100) :
+			unsigned int closedlistsize = 110503, unsigned int division = 1023) :
 			SearchAlg<D>(d), tnum(tnum_), thread_id(0), z(tnum,
 					static_cast<typename hash::ABST>(abst_)), incumbent(100000), income_threshold(
 					income_threshold_), outgo_threshold(outgo_threshold_), globalOrder(
-					0), overrun(overrun_), closedlistsize(closedlistsize),
-					openlistsize(openlistsize) {
+					0), overrun(overrun_), closed(closedlistsize, division) {
 		income_buffer = new buffer<Node> [tnum];
 		terminate = new bool[tnum];
 		for (int i = 0; i < tnum; ++i) {
@@ -199,7 +196,7 @@ public:
 	}
 
 	void set_closedlistsize(unsigned int closedlistsize) {
-		this->closedlistsize = closedlistsize;
+//		this->closedlistsize = closedlistsize;
 	}
 
 //      32,334 length 46 : 14 1 9 6 4 8 12 5 7 2 3 0 10 11 13 15
@@ -210,6 +207,7 @@ public:
 	void* thread_search(void * arg) {
 
 		int id = thread_id.fetch_add(1);
+
 		// closed list is waaaay too big for my computer.
 		// original 512927357
 		// TODO: Must optimize these numbers
@@ -217,12 +215,12 @@ public:
 		// 14414443
 		//129402307
 //		HashTable<typename D::PackedState, Node> closed(512927357 / tnum);
-		HashTable<typename D::PackedState, Node> closed(closedlistsize);
+//		HashTable<typename D::PackedState, Node> closed(closedlistsize);
 
 //	printf("closedlistsize = %u\n", closedlistsize);
 
 //		Heap<Node> open(100, overrun);
-		heap open(openlistsize, overrun);
+		heap open(150, overrun);
 		Pool<Node> nodes(2048);
 
 		// If the buffer is locked when the thread pushes a node,
@@ -257,7 +255,7 @@ public:
 
 		//		while (path.size() == 0) {
 
-	printf("id = %d\n", id);
+//	printf("id = %d\n", id);
 
 		while (true) {
 			Node *n;
@@ -320,8 +318,6 @@ public:
 				continue; // ad hoc
 			}
 			n = static_cast<Node*>(open.pop());
-			printf("f,g = %d, %d\n", n->f, n->g);
-
 #ifdef ANALYZE_LAPSE
 			endlapse(lapse, "openlist");
 #endif
@@ -357,7 +353,7 @@ public:
 			startlapse(&lapse); // closed list
 #endif
 //		if (n->thrown == 0) {
-			Node *duplicate = closed.find(n->packed);
+			Node *duplicate = this->closed.find(n->packed);
 			if (duplicate) {
 				if (duplicate->f <= n->f) {
 					dbgprintf("Discarded\n");
@@ -405,10 +401,10 @@ public:
 #endif // ANALYZE_ORDER
 			if (this->dom.isgoal(state)) {
 				// TODO: For some reason, sometimes pops broken node.
-//				if (state.tiles[1] == 0) {
-//					printf("isgoal ERROR\n");
-//					continue;
-//				}
+				if (state.tiles[1] == 0) {
+					printf("isgoal ERROR\n");
+					continue;
+				}
 //				print_state(state);
 
 				std::vector<typename D::State> newpath;
@@ -436,7 +432,7 @@ public:
 				closed.add(n);
 			}
 #else
-			closed.add(n);
+			this->closed.add(n);
 #endif
 			expd_here++;
 			//		printf("expd: %d\n", id);
@@ -458,21 +454,17 @@ public:
 				useless += uselessCalc(useless);
 
 				int moving_tile = state.tiles[op];
-				int blank = state.blank; // Make this available for Grid pathfinding.
+				int blank = state.blank;
+
 				Edge<D> e = this->dom.apply(state, op);
+
 				Node* next = wrap(state, n, e.cost, e.pop, nodes);
 				//printf("mv blank op = %d %d %d \n", moving_tile, blank, op);
 //				print_state(state);
 
-				// TODO: Make dist hash available for Grid pathfinding.
 				// TODO: Make Zobrist hash appropriate for 24 threads.
-//				next->zbr = inc_hash<D>(n->zbr, moving_tile, blank, op,
-//						state.tiles, state);
 				next->zbr = z.inc_hash(n->zbr, moving_tile, blank, op,
 						state.tiles, state);
-
-//				next->zbr = z.inc_hash(state);
-
 				unsigned int zbr = next->zbr % tnum;
 //				printf("zbr, zbr_tnum = (%u, %u)\n", next->zbr, zbr);
 
@@ -562,7 +554,7 @@ public:
 	}
 
 	std::vector<typename D::State> search(typename D::State &init) {
-		printf("search\n");
+
 		pthread_t t[tnum];
 		this->init = init;
 
@@ -577,8 +569,7 @@ public:
 		}
 		dbgprintf("zobrist of init = %d", z.hash_tnum(init.tiles));
 
-		income_buffer[0].push(n);
-//		income_buffer[z.hash_tnum(init.tiles)].push(n);
+		income_buffer[z.hash_tnum(init.tiles)].push(n);
 
 		wall0 = walltime();
 #ifdef OUTSOURCING
@@ -587,10 +578,9 @@ public:
 		}
 #endif
 
-		printf("start\n");
 		for (int i = 0; i < tnum; ++i) {
 			pthread_create(&t[tnum], NULL,
-					(void*(*)(void*))&HDAstar::thread_helper, this);
+					(void*(*)(void*))&HDAstarSharedClosed::thread_helper, this);
 				}
 		for (int i = 0; i < tnum; ++i) {
 			pthread_join(t[tnum], NULL);
@@ -686,7 +676,7 @@ public:
 	}
 
 	static void* thread_helper(void* arg) {
-		return static_cast<HDAstar*>(arg)->thread_search<Heap<Node> >(arg);
+		return static_cast<HDAstarSharedClosed*>(arg)->thread_search<Heap<Node> >(arg);
 //		return static_cast<HDAstar*>(arg)->thread_search<NaiveHeap<Node> >(arg);
 	}
 
@@ -712,25 +702,6 @@ public:
 		}
 		return true;
 	}
-
-//	template<class H>
-//	inline
-//	unsigned int inc_hash(unsigned int previous, const int number,
-//			const int from, const int to, const char* const newBoard, typename D::State state) {
-//		printf("grid inc\n");
-//		return z.inc_hash(state);
-//	}
-//
-//	template<>
-//	inline
-//	unsigned int inc_hash<typename Grid>(const unsigned int previous, const int number,
-//			const int from, const int to, const char* const newBoard, typename D::State state) {
-//		printf("tile inc\n");
-//		return z.inc_hash(previous, number, from, to,
-//				newBoard);
-//	}
-
-
 
 	void print_state(typename D::State state) {
 		for (int i = 0; i < D::Ntiles; ++i) {

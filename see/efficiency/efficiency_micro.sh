@@ -44,8 +44,8 @@ printf("%d %f %f %f %f %f %f %f %f\n", $1, walltime[$1], one[$1], two[$1]/one[$1
 gnuplot<<EOF
   set terminal pdf
   set logscale x
-  set xlabel "walltime"
-  set ylabel "search overhead"
+  set xlabel "実行時間" font 'Verdana,18'
+  set ylabel "探索オーバーヘッド" font 'Verdana,18'
   plot "efficiency.expd" u 2:4 w l title "2 threads"
   replot "efficiency.expd" u 2:5 w l title "4 threads"
   replot "efficiency.expd" u 2:6 w l title "8 threads"

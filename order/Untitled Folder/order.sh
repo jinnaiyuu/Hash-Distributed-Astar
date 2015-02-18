@@ -149,6 +149,8 @@ gnuplot<<EOF
   set terminal pdf
   set xrange[0:]
   set yrange[0:]
+  set xlabel "expansion order of A*"
+  set ylabel "expansion order of HDA*"
   set size ratio -1
   set key out right
   freq = 60

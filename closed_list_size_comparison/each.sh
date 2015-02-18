@@ -9,9 +9,7 @@ file=$1
 
 # Wall time for each instance
 
-cat ${file} | sort -n -k 2 > ${file}.timesort
-
-cat ${file}.timesort | awk 'BEGIN{printf("0 0\n"); pnum=0} NF>=2&&$2<9990{pnum++; printf("%d %f\n", pnum, $2)}' > ${file}.correctrate
+cat ${file} | sort -n -k 2 | awk 'BEGIN{printf("0 0\n"); pnum=0} NF>=2&&$2<9990{pnum++; printf("%d %f\n", pnum, $2)}' > ${file}.correctrate
 
 
 #gnuplot<<EOF
@@ -31,9 +29,7 @@ cat ${file} | awk 'BEGIN{printf("0 0\n"); cumwall=0} $2<9990{cumwall=cumwall + $
 #EOF
 
 
-cat ${file} | sort -n -k 3 > ${file}.expdsort
-
-cat ${file}.expdsort | awk 'BEGIN{printf("0 0\n"); pnum=0;} NF>=2&&$2<9990{pnum++;printf("%d %f\n", pnum, $3)}' > ${file}.correctrate.expd
+cat ${file} | sort -n -k 3 | awk 'BEGIN{printf("0 0\n"); pnum=0;} NF>=2&&$2<9990{pnum++;printf("%d %f\n", pnum, $3)}' > ${file}.correctrate.expd
 
 #gnuplot<<EOF
 #   set terminal postscript
@@ -41,4 +37,4 @@ cat ${file}.expdsort | awk 'BEGIN{printf("0 0\n"); pnum=0;} NF>=2&&$2<9990{pnum+
 #   plot "${file}.correctrate.expd" u 2:1 w l
 #EOF
 
-rm ${file}.timesort ${file}.correctrate.cum ${file}.expdsort ${file}.correctrate.expd
+#rm ${file}.timesort ${file}.correctrate.cum ${file}.expdsort ${file}.correctrate.expd

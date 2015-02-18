@@ -53,11 +53,11 @@ gnuplot<<EOF
    set logscale x
 #   set key out vert
    set key left
-   plot "${data1}.correctrate" u 2:1 w steps title "HDA* 8 threads"
-   replot "${data2}.correctrate" u 2:1 w steps title "HDA* 16 threads"
-   replot "${data3}.correctrate" u 2:1 w steps title "SafePBNF 8 threads"
+   plot "${data1}.correctrate" u 2:1 w steps title "A*"
+   replot "${data2}.correctrate" u 2:1 w steps title "Parallel A*"
+   replot "${data3}.correctrate" u 2:1 w steps title "HDA*"
    set output "${data1}_walltime.pdf"
-   replot "${data4}.correctrate" u 2:1 w steps title "SafePBNF 16 threads"
+   replot "${data4}.correctrate" u 2:1 w steps title "SafePBNF"
 #   replot "${data5}.correctrate" u 2:1 w steps title "$data5"
 #   replot "${data6}.correctrate" u 2:1 w steps title "$data6"
 #   replot "${data7}.correctrate" u 2:1 w steps title "$data7"

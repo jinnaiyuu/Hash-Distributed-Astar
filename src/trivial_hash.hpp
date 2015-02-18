@@ -11,7 +11,7 @@
 #include <bitset>
 #include <random>
 
-template <int size>
+template <typename D, int size>
 class TrivialHash {
 public:
 	enum ABST {SINGLE = 0, PAIR = 1, LINE = 2, BLOCK = 3};
@@ -25,8 +25,14 @@ public:
 //			const int to, const char* const newBoard) {
 //		return hash_tnum(newBoard);
 //	}
-	unsigned char inc_hash(unsigned char previous, const int number, const int from, const int to, const char* const newBoard) {
+	unsigned char inc_hash(const unsigned char previous,
+			const int number, const int from, const int to,
+			const char* const newBoard, const typename D::State s) {
 		return hash(newBoard) % tnum;
+	}
+
+	unsigned char inc_hash(typename D::State s) {
+		return 0;
 	}
 
 	unsigned char hash_tnum(const char* const board) {

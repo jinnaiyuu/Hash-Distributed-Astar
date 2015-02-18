@@ -29,7 +29,7 @@ awk 'BEGIN{isData = 0;} $3=="wall"&&$4=="time"{isData = 0} $1=="openlist"{isData
 echo "dat2 done"
 awk 'BEGIN{isData = 0;} $3=="wall"&&$4=="time"{isData = 0} $1=="openlist"{isData = 0} $1!="incumbent"{if (isData) {printf("4 "); if(NF!=5) {printf("%d %d %d %s %d 0\n", $1,$2,$3,$4,$5)} else {print}}} /incumbent/{isData = 1}' $dat3 | sort -k 4 > ${dat3}.buf
 echo "dat3 done"
-awk 'BEGIN{isData = 0;} $3=="wall"&&$4=="time"{isData = 0} $1=="openlist"{isData = 0} $1!="incumbent"{if (isData) {printf("8 "); if(NF!=5) {printf("%d %d %d %s %d 0\n", $1,$2,$3,$4,$5)} else {print}}} /incumbent/{isData = 1}' $dat4 | sort -k 4 > ${dat4}.buf
+awk 'BEGIN{isData = 0;} $3=="wall"&&$4=="time"{isData = 0} $1=="openlist"{isData = 0} $1!="incumbent"{if (isData) {printf("8 "); if(NF!=5) {printf("%d %d %s %d %d\n", $1,$2,$3,$4,$5)} else {print}}} /incumbent/{isData = 1}' $dat4 | sort -k 4 > ${dat4}.buf
 echo "dat4 done"
 
 # The size of open list for each experiments
@@ -133,7 +133,7 @@ fi
 sed -n '1p' ${dat1}.joined > ${dat1}.first
 astarnodes=`awk '{print $4}' ${dat1}.first`
 #uniq -D -w 32 ${dat1}.2joined > ${dat1}.2dup
-#uniq -D -w 32 ${dat1}.4joined > ${dat1}.4dup
+uniq -D -w 32 ${dat1}.4joined > ${dat1}.4dup
 #uniq -D -w 32 ${dat1}.joined > ${dat1}.dup
 
 # 3. Plot
@@ -155,6 +155,8 @@ gnuplot<<EOF
   set yrange[0:]
   set xtics 2000
   set ytics 2000
+  set xlabel "expansion order of A*"
+  set ylabel "expansion order of HDA*"
   set style arrow 1 heads nofilled size screen 0.01,60 lt 1 ls 1 lc rgb "red" lw 14
 #  set logscale x
 #  set logscale y
@@ -207,9 +209,17 @@ gnuplot<<EOF
        x lw 2 lc "black" title "Strict Order",\
 \
        "${dat1}.first"  using 4:14 w p pt 14 lc "black" ps 4 notitle,\
-       1/0  w p pt 14 lc "black" ps 1 title "Goal",\
-       "<echo '5200 6000 1600 0'" with vectors arrowstyle 1 notitle
+#       "${dat1}.4dup"   using 4:9 w p pt 1 ps 5 pc rgb"black" notitle,\
+       1/0  w p pt 14 lc "black" ps 1 title "Goal"
 
+
+
+#       "<echo '5200 6000 1600 0'" with vectors arrowstyle 1 notitle
+
+
+EOF
+
+exit 0
   set output "8_threads_draft.pdf"
   set xtics 10000
   set ytics 10000
@@ -233,8 +243,8 @@ gnuplot<<EOF
        x lw 2 lc "black" title "Strict Order",\
 \
        "${dat1}.first"  using 4:19 w p pt 14 lc "black" ps 4 notitle,\
-       1/0  w p pt 14 lc "black" ps 1 title "Goal",\
-       "<echo '4000 7000 4000 0'" with vectors arrowstyle 1 notitle
+       1/0  w p pt 14 lc "black" ps 1 title "Goal"
+#       "<echo '4000 7000 4000 0'" with vectors arrowstyle 1 notitle
 
 EOF
 

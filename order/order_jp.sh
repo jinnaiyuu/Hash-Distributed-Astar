@@ -20,14 +20,16 @@ else
 fi
 
 # 1. Parse the input file to get the order data.
+if false
+then 
 echo "start ${dat1}"
-awk 'BEGIN{isData = 0;} $1!="incumbent"{if (isData) {printf("1 "); print} } $1=="expanded:"{isData = 1}' $dat1 | sort -k 4 > ${dat1}.buf
+awk 'BEGIN{isData = 0;} $3=="wall"&&$4=="time"{isData = 0} $1=="openlist"{isData = 0} $1!="incumbent"{if (isData) {printf("1 "); if(NF!=5) {printf("%d %d %d %s %d 0\n", $1,$2,$3,$4,$5)} else {print}} } /incumbent/{isData = 1}' $dat1 | sort -k 4 > ${dat1}.buf
 echo "dat1 done"
-awk 'BEGIN{isData = 0;} $3=="wall"&&$4=="time"{isData = 0} $1=="openlist"{isData = 0} $1!="incumbent"{if (isData) {printf("2 "); print} } /incumbent/{isData = 1}  $1=="expanded:"{isData = 1}' $dat2 | sort -k 4 > ${dat2}.buf
+awk 'BEGIN{isData = 0;} $3=="wall"&&$4=="time"{isData = 0} $1=="openlist"{isData = 0} $1!="incumbent"{if (isData) {printf("2 "); if(NF!=5) {printf("%d %d %d %s %d 0\n", $1,$2,$3,$4,$5)} else {print}}}  /incumbent/{isData = 1}' $dat2 | sort -k 4 > ${dat2}.buf
 echo "dat2 done"
-awk 'BEGIN{isData = 0;} $3=="wall"&&$4=="time"{isData = 0} $1=="openlist"{isData = 0} $1!="incumbent"{if (isData) {printf("4 "); print} } /incumbent/{isData = 1}  $1=="expanded:"{isData = 1}' $dat3 | sort -k 4 > ${dat3}.buf
+awk 'BEGIN{isData = 0;} $3=="wall"&&$4=="time"{isData = 0} $1=="openlist"{isData = 0} $1!="incumbent"{if (isData) {printf("4 "); if(NF!=5) {printf("%d %d %d %s %d 0\n", $1,$2,$3,$4,$5)} else {print}}} /incumbent/{isData = 1}' $dat3 | sort -k 4 > ${dat3}.buf
 echo "dat3 done"
-awk 'BEGIN{isData = 0;} $3=="wall"&&$4=="time"{isData = 0} $1=="openlist"{isData = 0} $1!="incumbent"{if (isData) {printf("8 "); print} } /incumbent/{isData = 1}  $1=="expanded:"{isData = 1}' $dat4 | sort -k 4 > ${dat4}.buf
+awk 'BEGIN{isData = 0;} $3=="wall"&&$4=="time"{isData = 0} $1=="openlist"{isData = 0} $1!="incumbent"{if (isData) {printf("8 "); if(NF!=5) {printf("%d %d %s %d %d\n", $1,$2,$3,$4,$5)} else {print}}} /incumbent/{isData = 1}' $dat4 | sort -k 4 > ${dat4}.buf
 echo "dat4 done"
 
 # The size of open list for each experiments
@@ -37,6 +39,8 @@ grep_get()
 {
     grep $1 $2 | awk -v col=$3 '{print $col}'
 }
+
+echo "Extracting variables"
 
 expansion20=`grep expansion_distribution ${dat2}  | awk '{print $3}'`
 expansion21=$( grep_get expansion_distribution ${dat2} 4 )
@@ -99,7 +103,10 @@ length2=`wc -l ${dat2}.buf | awk '{print $1}'`
 length3=`wc -l ${dat3}.buf | awk '{print $1}'`
 length4=`wc -l ${dat4}.buf | awk '{print $1}'`
 
+#fi
+
 # 2. Join two input data into a single data. First need to sort to join.
+echo "Joining the bufs"
 
 join -j 4 -a1 -a2 ${dat1}.buf ${dat2}.buf | awk 'NF==11{print} NF==6&&$2==1{for(i=1;i<=NF;i++){printf("%s ", $i)}; printf("2 -1 -1 -1 -1 \n")} \
 NF==6&&$2==2{printf("%s 1 -1 -1 -1 -1", $1); for(i=2;i<=NF;i++){printf(" %d", $i)}; printf("\n")}' > ${dat1}.2joined
@@ -117,6 +124,7 @@ fi
 joinedlength=`wc -l ${dat1}.joined | awk '{print $1}'`
 if [ $joinedlength -eq 0 ]
 then 
+    echo "Trouble"
     exit 1
 fi 
 
@@ -124,42 +132,58 @@ fi
 # Get Highlights
 sed -n '1p' ${dat1}.joined > ${dat1}.first
 astarnodes=`awk '{print $4}' ${dat1}.first`
-uniq -D -w 32 ${dat1}.2joined > ${dat1}.2dup
+#uniq -D -w 32 ${dat1}.2joined > ${dat1}.2dup
 uniq -D -w 32 ${dat1}.4joined > ${dat1}.4dup
-uniq -D -w 32 ${dat1}.joined > ${dat1}.dup
+#uniq -D -w 32 ${dat1}.joined > ${dat1}.dup
 
 # 3. Plot
+fi
 
+echo "Ready to plot"
 
+length=`wc -l ${dat1}.joined | awk '{print $1}'`
+freq=`expr $length / 50000 + 1`
+echo "file length =" $length
+echo "plot frequency =" $freq
+
+#cat ${dat1}.joined | awk '$4>0{print}' > ${dat1}.parse
+#mv ${dat1}.joined ${dat1}.joined_
+#mv ${dat1}.parse ${dat1}.joined
 
 gnuplot<<EOF
-#  set terminal png size 1280,960
   set terminal pdf
   set xrange[0:]
   set yrange[0:]
-  set xlabel "expansion order of A*"
-  set ylabel "expansion order of HDA*"
   set xtics 2000
   set ytics 2000
-#  set size ratio -1
-  set key out right
-  freq = 1
-#  set title "Thread 1-2 Nodes Searched $astarnodes-$length2"
+  set xlabel "A*" font "Verdana,18"
+  set ylabel "HDA*" font "Verdana,18"
+  set style arrow 1 heads nofilled size screen 0.01,60 lt 1 ls 1 lc rgb "red" lw 14
+#  set logscale x
+#  set logscale y
 
-  plot "${dat1}.joined" using 4:(\$8==0?\$9:1/0) every freq w p pt 0 lc rgb"red" notitle,\
-       1/0  w p pt 7 ps 1 lc rgb"red"  title "Thread 1",\
-       "${dat1}.joined" using 4:(\$8==1?\$9:1/0) every freq w p pt 0 lc rgb"blue" notitle,\
-       1/0  w p pt 7 ps 1 lc rgb"blue" title "Thread 2"
+  set size ratio -1
+  set key out right
+  freq = $freq
+  plot "${dat1}.joined" using 4:(\$4>0&&\$8==0&&\$9>0?\$9:1/0) every freq w p pt 0 lc rgb"red" notitle
+  replot 1/0 w p pt 7 ps 1 lc rgb"red"  title "Thread 1"
+  replot "${dat1}.joined" using 4:(\$8==1&&\$9>0?\$9:1/0) every freq  w p pt 0 lc rgb"blue" notitle,\
+       1/0 w p pt 7 ps 1 lc rgb"blue" title "Thread 2"
 
 #  set xr[0:40000]
-  range='awk '{}' ${dat1}.first'
   replot x lw 2 lc "black" title "Strict Order"
-
-  set output "2_threads_draft.pdf"
   replot "${dat1}.first"  using 4:9 w p pt 14 lc "black" ps 4 notitle,\
        1/0  w p pt 14 lc "black" ps 1 title "Goal"
+  set output "2_threads_draft.pdf"
+#  set style arrow 1  heads lt 1 ls 2 lc rgb "red" lw 3
+  replot "<echo '5400 6000 1200 0'" with vectors arrowstyle 1 notitle
 
-#       "${dat1}.joined" using 4:(\$5!=-1?\$9:1/0) w impulse lt 1 notitle,\
+#from 5400,6000 to 6600,6000
+#  set terminal png size 1280,960
+
+#  set title "Thread 1-2 Nodes Searched $astarnodes-$length2"
+#  replot "${dat1}.joined" using 4:(\$5!=-1?\$9:1/0) w impulse lt 1 notitle
+
 #       "${dat1}.joined" using 4:(\$8==-1&&\$4<$astarnodes?0:1/0) w p pt 2 notitle,\
 #       "${dat1}.joined" using 4:(\$5!=-1?1:1/0):5 w labels notitle,\
 #       "${dat1}.joined" using 4:(\$8==0?\$9:1/0):(0):(-\$11) every 30 w xerrorbars pt 0 lc rgb"red" notitle,\
@@ -186,8 +210,17 @@ gnuplot<<EOF
        x lw 2 lc "black" title "Strict Order",\
 \
        "${dat1}.first"  using 4:14 w p pt 14 lc "black" ps 4 notitle,\
+#       "${dat1}.4dup"   using 4:9 w p pt 1 ps 5 pc rgb"black" notitle,\
        1/0  w p pt 14 lc "black" ps 1 title "Goal"
 
+
+
+#       "<echo '5200 6000 1600 0'" with vectors arrowstyle 1 notitle
+
+
+EOF
+
+exit 0
   set output "8_threads_draft.pdf"
   set xtics 10000
   set ytics 10000
@@ -212,10 +245,11 @@ gnuplot<<EOF
 \
        "${dat1}.first"  using 4:19 w p pt 14 lc "black" ps 4 notitle,\
        1/0  w p pt 14 lc "black" ps 1 title "Goal"
+#       "<echo '4000 7000 4000 0'" with vectors arrowstyle 1 notitle
 
 EOF
 
-#evince ${dat1}.order.1.8.pdf
+evince 8_threads_draft.pdf
 
 exit 0
 
@@ -229,6 +263,4 @@ then
     rm ${dat1}.2dup ${dat1}.4dup
 fi
 
-
-exit 0
 hdastar.easy_instances.1threads.32gbmem.incomebufsize1000000.outgobufsize1000000.abstraction0.1120213236.o552-7 hdastar.easy_instances.2threads.32gbmem.incomebufsize1000000.outgobufsize1000000.abstraction0.1120002114.o348-7 hdastar.easy_instances.4threads.32gbmem.incomebufsize1000000.outgobufsize1000000.abstraction0.1120002124.o349-7

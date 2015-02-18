@@ -330,7 +330,7 @@ public:
 				next->thrown = 0; // TODO: won't need without Outsourcing
 
 				dbgprintf("mv blank op = %d %d %d \n", moving_tile, blank, op);
-				next->zbr = z.inc_hash(n->zbr, moving_tile, blank, op, state.tiles);
+				next->zbr = z.inc_hash(n->zbr, moving_tile, blank, op, state.tiles, state);
 				unsigned char zbr = next->zbr;
 
 				dbgprintf("zbr = %d\n", zbr);

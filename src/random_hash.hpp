@@ -11,7 +11,7 @@
 #include <random>
 
 
-template<int size>
+template<typename D, int size>
 class RandomHash {
 public:
 	enum ABST {
@@ -23,11 +23,15 @@ public:
 		initHash();
 	}
 
-	unsigned char inc_hash(unsigned char previous, const int number,
-			const int from, const int to, const char* const newBoard) {
+	unsigned char inc_hash(const unsigned char previous, const int number,
+			const int from, const int to, const char* const newBoard, const typename D::State s) {
 		int id = round.fetch_add(1);
 //		printf("id = %d\n", id % tnum);
 		return id % tnum;
+	}
+
+	unsigned char inc_hash(typename D::State previous) {
+		return 0;
 	}
 
 	unsigned char hash_tnum(const char* const board) {

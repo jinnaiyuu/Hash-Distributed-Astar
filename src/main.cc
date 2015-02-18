@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <iostream>
 
 //#define DEBUG
 #ifndef DEBUG
@@ -39,14 +40,21 @@
 //#define ANALYZE_OPENLIST_SIZE
 
 #include "tiles.hpp"
+#include "tiles24.hpp"
+#include "grid.hpp"
+#include "tsp.hpp"
+
+#include "grid_hash.hpp"
+#include "tsp_hash.hpp"
+
 #include "idastar.hpp"
 #include "astar.hpp"
 #include "pastar.hpp"
 #include "multiastar.hpp"
 #include "hdastar.hpp"
 #include "oshdastar.hpp"
-
-#include "tiles24.hpp"
+#include "hdastar_shared_closed.hpp"
+#include "ppastar.hpp"
 
 //	 expd 32334 length 46   : 14 1 9 6 4 8 12 5 7 2 3 0 10 11 13 15
 //	 expd 909442 length 53  : 13 14 6 12 4 5 1 0 9 3 10 2 15 11 8 7
@@ -81,7 +89,7 @@ int main(int argc, const char *argv[]) {
 		int pnum = 0;
 
 //		printf("pnum = %d\n", pnum);
-		if (strcmp(argv[1], "24") != 0) {
+		if (strcmp(argv[1], "15") == 0) {
 //			printf("15 puzzle");
 //			argv++;
 //			argc--;
@@ -133,43 +141,115 @@ int main(int argc, const char *argv[]) {
 				// Domain, n_threads,
 				// incomebuffermax, outgobuffermax,
 				// abstraction, closed list size
-				search = new HDAstar<Tiles, Zobrist<16> >(tiles, std::stoi(argv[3]),
+				search = new HDAstar<Tiles, Zobrist<Tiles, 16> >(tiles, std::stoi(argv[3]),
 						1000000, 1000000,
 						std::stoi(argv[4]), 0, closedlistsize);
+
+				// HDA* with shared closed list
+			} else if (strcmp(argv[1], "hdastar-shared") == 0) {
+				// Set the size of closed list.
+				unsigned int closedlistsize = 0;
+				unsigned int division = 0;
+				for (unsigned int i = 0; i < argc; ++i) {
+					if (sscanf(argv[i], "closed-%u-%u", &closedlistsize, &division) == 2) {
+						break;
+					}
+				}
+				if (!closedlistsize || !division) {
+					printf("set closedlistsize as closed-%%u-%%u\n");
+					exit(1);
+				}
+				// Arguments of HDAstar
+				// Domain, n_threads,
+				// incomebuffermax, outgobuffermax,
+				// abstraction, closed list size
+				search = new HDAstarSharedClosed<Tiles, Zobrist<Tiles, 16> >(tiles, std::stoi(argv[3]),
+						1000000, 1000000,
+						std::stoi(argv[4]), 0, closedlistsize, division);
+
+			} else if (strcmp(argv[1], "ppastar") == 0) {
+				// Set the size of closed list.
+				unsigned int openlistsize = 0;
+				unsigned int openlistdivision = 0;
+				unsigned int open_synchronous_push = true;
+				unsigned int open_synchronous_pop = -1;
+				unsigned int min_expd = 100;
+				unsigned int closedlistsize = 0;
+				unsigned int closedlistdivision = 0;
+				unsigned int hash_method = 0;
+
+				for (unsigned int i = 0; i < argc; ++i) {
+//					if (sscanf(argv[i], "open-%u-%u", &openlistsize, &openlistdivision) == 2) {}
+					if (sscanf(argv[i], "open-%u-%u-%u-%u-%u",
+							&openlistsize, &openlistdivision,
+							&open_synchronous_push, &open_synchronous_pop,
+							&min_expd) == 5) {}
+					if (sscanf(argv[i], "closed-%u-%u", &closedlistsize, &closedlistdivision) == 2) {}
+					if (sscanf(argv[i], "hash-%u", &hash_method) == 1) {}
+				}
+
+				if (!(openlistsize&&openlistdivision&&closedlistsize&&closedlistdivision)) {
+					printf("set openlistsize as open-%%u-%%u\n");
+					printf("set closedlistsize as closed-%%u-%%u\n");
+					exit(1);
+				}
+				printf("syncpop = %u\n", open_synchronous_pop);
+				// Arguments of HDAstar
+				// Domain, n_threads,
+				// incomebuffermax, outgobuffermax,
+				// abstraction, closed list size
+				if (hash_method == 0) { // Zobrist
+				search = new PPAstar<Tiles, Zobrist<Tiles, 16> >(tiles, std::stoi(argv[3]),
+						1000000, 1000000,
+						std::stoi(argv[4]), 0,
+						openlistsize, openlistdivision,
+						open_synchronous_push, open_synchronous_pop,
+						min_expd,
+						closedlistsize, closedlistdivision);
+				} else {
+					search = new PPAstar<Tiles, TrivialHash<Tiles, 16> >(tiles, std::stoi(argv[3]),
+							1000000, 1000000,
+							0, 0,
+							openlistsize, openlistdivision,
+							open_synchronous_push, open_synchronous_pop,
+							min_expd,
+							closedlistsize, closedlistdivision);
+				}
+
 			} else if (strcmp(argv[1], "hdastar_trivial") == 0) {
 				if (argc >= 5) {
-					search = new HDAstar<Tiles, TrivialHash<16> >(tiles,
+					search = new HDAstar<Tiles, TrivialHash<Tiles, 16> >(tiles,
 							std::stoi(argv[3]), std::stoi(argv[4]),
 							std::stoi(argv[5]));
 				} else {
-					search = new HDAstar<Tiles, TrivialHash<16> >(tiles,
+					search = new HDAstar<Tiles, TrivialHash<Tiles, 16> >(tiles,
 							std::stoi(argv[3])); // Completely Asynchronous
 				}
 			} else if (strcmp(argv[1], "hdastar_random") == 0) {
 				if (argc >= 5) {
-					search = new HDAstar<Tiles, RandomHash<16> >(tiles,
+					search = new HDAstar<Tiles, RandomHash<Tiles, 16> >(tiles,
 							std::stoi(argv[3]), std::stoi(argv[4]),
 							std::stoi(argv[5]));
 				} else {
-					search = new HDAstar<Tiles, RandomHash<16> >(tiles,
+					search = new HDAstar<Tiles, RandomHash<Tiles, 16> >(tiles,
 							std::stoi(argv[3])); // Completely Asynchronous
 				}
 			} else if (strcmp(argv[1], "hdastar_overrun") == 0) {
 				if (argc >= 5) {
-					search = new HDAstar<Tiles, Zobrist<16> >(tiles,
+					search = new HDAstar<Tiles, Zobrist<Tiles, 16> >(tiles,
 							std::stoi(argv[3]), std::stoi(argv[4]),
 							std::stoi(argv[5]), std::stoi(argv[6]), 1);
 				} else {
-					search = new HDAstar<Tiles, Zobrist<16> >(tiles,
+					search = new HDAstar<Tiles, Zobrist<Tiles, 16> >(tiles,
 							std::stoi(argv[3])); // Completely Asynchronous
 				}
 			} else if (strcmp(argv[1], "oshdastar") == 0) {
 				if (argc == 6) {
-					search = new OSHDAstar<Tiles, Zobrist<16> >(tiles,
+					search = new OSHDAstar<Tiles, Zobrist<Tiles, 16> >(tiles,
 							std::stoi(argv[3]), std::stoi(argv[4]),
 							std::stoi(argv[5]));
 				} else {
-					search = new OSHDAstar<Tiles, Zobrist<16> >(tiles,
+					search = new OSHDAstar<Tiles, Zobrist<Tiles, 16> >(tiles,
 							std::stoi(argv[3]));
 				}
 			} else
@@ -189,16 +269,18 @@ int main(int argc, const char *argv[]) {
 			if (argc > 3 && strcmp(argv[3], "")) {
 				dfpair(stdout, "thread number", "%02d", std::stoi(argv[3]));
 			}
+/*
 			if (argc == 7) {
 				dfpair(stdout, "income buffer threshold", "%d",
 						std::stoi(argv[4]));
 				dfpair(stdout, "outgo buffer threshold", "%d",
 						std::stoi(argv[5]));
-				dfpair(stdout, "abstraction", "%d", std::stoi(argv[6]));
+//				dfpair(stdout, "abstraction", "%d", std::stoi(argv[6]));
 			} else if (argc == 5) {
 				dfpair(stdout, "outsourcing f diff threshold", "%d",
 						std::stoi(argv[4]));
 			}
+*/
 			dfpair(stdout, "initial heuristic", "%d", tiles.h(init));
 			double wall0 = walltime(), cpu0 = cputime();
 			std::vector<Tiles::State> path = search->search(init);
@@ -210,9 +292,9 @@ int main(int argc, const char *argv[]) {
 			dfpair(stdout, "total nodes expanded", "%lu", search->expd);
 			dfpair(stdout, "total nodes generated", "%lu", search->gend);
 			dfpair(stdout, "solution length", "%u", (unsigned int) path.size());
-
-			assert(path.begin() != path.end());
-/*			for (auto iter = path.end() - 1; iter != path.begin() - 1; --iter) {
+//			search->
+/*			assert(path.begin() != path.end());
+			for (auto iter = path.end() - 1; iter != path.begin() - 1; --iter) {
 				for (int i = 0; i < 16; ++i) {
 					printf("%2d ", iter->tiles[i]);
 				}
@@ -220,7 +302,7 @@ int main(int argc, const char *argv[]) {
 			}*/
 
 			dffooter(stdout);
-		} else { // 24 puzzle
+		} else if (strcmp(argv[1], "24") == 0) { // 24 puzzle
 //#ifdef PUZZLE
 			printf("24 Puzzle\n");
 			argv++;
@@ -236,6 +318,26 @@ int main(int argc, const char *argv[]) {
 			if (strcmp(argv[1], "astar") == 0) {
 				search = new Astar<Tiles24>(tiles);
 			} else if (strcmp(argv[1], "hdastar") == 0) {
+				// Set the size of closed list.
+				unsigned int closedlistsize = 0;
+				for (unsigned int i = 0; i < argc; ++i) {
+					if (sscanf(argv[i], "closed-%u", &closedlistsize) == 1) {
+						break;
+					}
+				}
+				if (!closedlistsize) {
+					printf("set closedlistsize as closed-%%u\n");
+					exit(1);
+				}
+				// Arguments of HDAstar
+				// Domain, n_threads,
+				// incomebuffermax, outgobuffermax,
+				// abstraction, closed list size
+				search = new HDAstar<Tiles24, Zobrist<Tiles24, 25> >(tiles, std::stoi(argv[3]),
+						1000000, 1000000,
+						std::stoi(argv[4]), 0, closedlistsize);
+
+			} else if (strcmp(argv[1], "hdastar") == 0) {
 				unsigned int closedlistsize = 0;
 				for (unsigned int i = 0; i < argc; ++i) {
 					if (sscanf(argv[i], "closed-%u", &closedlistsize) == 1) {
@@ -250,12 +352,12 @@ int main(int argc, const char *argv[]) {
 				// Domain, n_threads,
 				// incomebuffermax, outgobuffermax,
 				// abstraction, overrun, closed list size
-				search = new HDAstar<Tiles24, Zobrist<25> >(tiles, std::stoi(argv[3]),
+				search = new HDAstar<Tiles24, Zobrist<Tiles24, 25> >(tiles, std::stoi(argv[3]),
 						1000000, 1000000,
 						std::stoi(argv[4]), 0, closedlistsize);
 
 			} else if (strcmp(argv[1], "hdastar_overrun") == 0) {
-				search = new HDAstar<Tiles24, Zobrist<25> >(tiles,
+				search = new HDAstar<Tiles24, Zobrist<Tiles24, 25> >(tiles,
 						std::stoi(argv[3]), 1000000, 1000000, 0,
 						std::stoi(argv[4]));
 			} else {
@@ -284,6 +386,103 @@ int main(int argc, const char *argv[]) {
 			dfpair(stdout, "total nodes generated", "%lu", search->gend);
 			dfpair(stdout, "solution length", "%u", (unsigned int) path.size());
 //#endif
+		} else if (strcmp(argv[1], "grid") == 0) {
+			printf("Grid\n");
+			argv++;
+			argc--;
+
+			// Here pnum is the scaling parameter. If two then make the instances size twice as big.
+
+			unsigned int scale = 0;
+			sscanf(argv[2], "%d", &scale);
+
+			Grid grid(std::cin, scale);
+			SearchAlg<Grid> *search = NULL;
+			unsigned int max_f = (grid.get_height() + grid.get_width()) * scale;
+
+
+			if (strcmp(argv[1], "astar") == 0) {
+				search = new Astar<Grid>(grid, max_f);
+			} else if (strcmp(argv[1], "hdastar") == 0) {
+
+				unsigned int closedlistsize = 0;
+				unsigned int abstraction = 1;
+				for (unsigned int i = 0; i < argc; ++i) {
+					if (sscanf(argv[i], "closed-%u", &closedlistsize) == 1) {
+					}
+					if (sscanf(argv[i], "abstraction-%u", &abstraction) == 1) {
+					}
+
+				}
+				if (!closedlistsize) {
+					printf("set closedlistsize as closed-%%u\n");
+					exit(1);
+				}
+				printf("abst = %u\n", abstraction);
+
+				search = new HDAstar<Grid, GridHash<Grid>>(grid, std::stoi(argv[3]),
+						1000000, 1000000,
+						abstraction, 0, closedlistsize, max_f);
+			} else {
+				printf("command line input parse error\n");
+				exit(1);
+			}
+			Grid::State init = grid.initial();
+			dfheader(stdout);
+			dfpair(stdout, "algorithm", "%s", argv[1]);
+			dfpair(stdout, "initial heuristic", "%d", grid.h(init));
+			double wall0 = walltime(), cpu0 = cputime();
+			// HERE!
+			std::vector<Grid::State> path = search->search(init);
+
+			double wtime = walltime() - wall0, ctime = cputime() - cpu0;
+
+			dfpair(stdout, "total wall time", "%g", wtime);
+			dfpair(stdout, "total cpu time", "%g", ctime);
+			dfpair(stdout, "total nodes expanded", "%lu", search->expd);
+			dfpair(stdout, "total nodes generated", "%lu", search->gend);
+			dfpair(stdout, "solution length", "%u", (unsigned int) path.size());
+
+
+		} else if (strcmp(argv[1], "tsp") == 0) {
+			printf("Tsp\n");
+			argv++;
+			argc--;
+			// Here pnum is the scaling parameter. If two then make the instances size twice as big.
+
+			Tsp tsp(std::cin);
+
+			unsigned int heuristic = 0;
+			sscanf(argv[2], "%d", &heuristic);
+			tsp.set_heuristic(heuristic);
+
+
+			SearchAlg<Tsp> *search = NULL;
+
+
+			if (strcmp(argv[1], "astar") == 0) {
+				search = new Astar<Tsp>(tsp, 1500000);
+			} else if (strcmp(argv[1], "hdastar") == 0) {
+				search = new HDAstar<Tsp, TspHash<Tsp> >(tsp, std::stoi(argv[3]),
+						1000000, 1000000, std::stoi(argv[4]), 0, 193877777, 1500000);
+			}
+
+
+			Tsp::State init = tsp.initial();
+			dfheader(stdout);
+			dfpair(stdout, "algorithm", "%s", argv[1]);
+			dfpair(stdout, "initial heuristic", "%d", tsp.h(init));
+			double wall0 = walltime(), cpu0 = cputime();
+			// HERE!
+			std::vector<Tsp::State> path = search->search(init);
+
+			double wtime = walltime() - wall0, ctime = cputime() - cpu0;
+
+			dfpair(stdout, "total wall time", "%g", wtime);
+			dfpair(stdout, "total cpu time", "%g", ctime);
+			dfpair(stdout, "total nodes expanded", "%lu", search->expd);
+			dfpair(stdout, "total nodes generated", "%lu", search->gend);
+			dfpair(stdout, "solution length", "%u", (unsigned int) path.size());
 		}
 	} catch (const Fatal &f) {
 		fputs(f.msg, stderr);

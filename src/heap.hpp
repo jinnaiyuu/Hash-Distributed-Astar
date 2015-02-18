@@ -70,6 +70,10 @@ template <class HeapElm> class Heap {
 			return sum;
 		}
 
+		int getmax(){
+			return max;
+		}
+
 		int fill, max;
 		std::vector< std::vector<HeapElm*> > bins;
 	};
@@ -138,6 +142,10 @@ public:
 	bool mem(HeapElm *n) { return n->openind >= 0; }
 
 	int minf() {return min;}
+
+	int getpriority() {
+		return min * 100000 - qs[min].getmax();
+	}
 
 	int getsize() {
 //		int sum = 0;

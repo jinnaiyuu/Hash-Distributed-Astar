@@ -5,8 +5,8 @@
  *      Author: yuu
  */
 
-#ifndef HDASTAR_HPP_
-#define HDASTAR_HPP_
+#ifndef PPASTAR_HPP_
+#define PPASTAR_HPP_
 
 #include <vector>
 #include <pthread.h>
@@ -18,8 +18,8 @@
 
 #include "search.hpp"
 #include "utils.hpp"
-#include "hashtbl.hpp"
-#include "heap.hpp"
+#include "concurrent_hashtbl.hpp"
+#include "concurrent_heap.hpp"
 #include "pool.hpp"
 #include "buffer.hpp"
 
@@ -29,14 +29,15 @@
 #include "trivial_hash.hpp"
 #include "random_hash.hpp"
 
+#define INIT_INCUMBENT 10000000
 // DELAY 10,000,000 -> 3000 nodes per second
 #define DELAY 0
 
-template<class D, class hash> class HDAstar: public SearchAlg<D> {
+
+template<class D, class hash> class PPAstar: public SearchAlg<D> {
 
 	struct Node {
-		unsigned int f, g;
-		char pop;
+		char f, g, pop;
 		unsigned int zbr; // zobrist value. stored here for now. Also the size is char for now.
 		int openind;
 //		char thrown; // How many times this node has been outsourced.
@@ -63,7 +64,9 @@ template<class D, class hash> class HDAstar: public SearchAlg<D> {
 		}
 	};
 
-	buffer<Node>* income_buffer;
+//	buffer<Node>* income_buffer;
+
+	pthread_mutex_t path_lock;
 	std::vector<typename D::State> path;
 	typename D::State init;
 	int tnum;
@@ -164,26 +167,34 @@ template<class D, class hash> class HDAstar: public SearchAlg<D> {
 	unsigned int self_pushes = 0;
 
 	int overrun;
-	unsigned int closedlistsize;
-	unsigned int openlistsize;
+//	unsigned int closedlistsize;
+	ConcurrentHeap<Node> open;
+	ConcurrentHashTable<typename D::PackedState, Node> closed; // shared closed list
 
 public:
 
-	HDAstar(D &d, int tnum_, int income_threshold_ = 1000000,
-			int outgo_threshold_ = 10000000, int abst_ = 0, int overrun_ = 0,
-			unsigned int closedlistsize = 110503,
-			unsigned int openlistsize = 100) :
+	PPAstar(D &d, int tnum_, int income_threshold_,
+			int outgo_threshold_, int abst_, int overrun_,
+			unsigned int openlistsize, unsigned int openlistdivision,
+			bool open_synchronous_push, unsigned int open_synchronous_pop,
+			unsigned int min_expd,
+			unsigned int closedlistsize, unsigned int closedlistdivision) :
 			SearchAlg<D>(d), tnum(tnum_), thread_id(0), z(tnum,
-					static_cast<typename hash::ABST>(abst_)), incumbent(100000), income_threshold(
+					static_cast<typename hash::ABST>(abst_)), incumbent(INIT_INCUMBENT), income_threshold(
 					income_threshold_), outgo_threshold(outgo_threshold_), globalOrder(
-					0), overrun(overrun_), closedlistsize(closedlistsize),
-					openlistsize(openlistsize) {
-		income_buffer = new buffer<Node> [tnum];
+					0), overrun(overrun_),
+					open(openlistsize, openlistdivision, tnum_,
+							open_synchronous_push, open_synchronous_pop, min_expd),
+					closed(closedlistsize, closedlistdivision) {
+//		income_buffer = new buffer<Node> [tnum];
 		terminate = new bool[tnum];
 		for (int i = 0; i < tnum; ++i) {
 			terminate[i] = 0;
 		}
 		expd_distribution = new int[tnum];
+		for (unsigned int i = 0; i < tnum; ++i) {
+			expd_distribution[i] = 0;
+		}
 		gend_distribution = new int[tnum];
 
 		duplicates = new int[tnum];
@@ -199,17 +210,18 @@ public:
 	}
 
 	void set_closedlistsize(unsigned int closedlistsize) {
-		this->closedlistsize = closedlistsize;
+//		this->closedlistsize = closedlistsize;
 	}
 
 //      32,334 length 46 : 14 1 9 6 4 8 12 5 7 2 3 0 10 11 13 15
 //     909,442 length 53 : 13 14 6 12 4 5 1 0 9 3 10 2 15 11 8 7
 //   5,253,685 length 57 : 5 12 10 7 15 11 14 0 8 2 1 13 3 4 9 6
 // 565,994,203 length ?? : 14 7 8 2 13 11 10 4 9 12 5 0 3 6 1 15
-	template<class heap>
+//	template<class heap>
 	void* thread_search(void * arg) {
 
 		int id = thread_id.fetch_add(1);
+
 		// closed list is waaaay too big for my computer.
 		// original 512927357
 		// TODO: Must optimize these numbers
@@ -217,12 +229,12 @@ public:
 		// 14414443
 		//129402307
 //		HashTable<typename D::PackedState, Node> closed(512927357 / tnum);
-		HashTable<typename D::PackedState, Node> closed(closedlistsize);
+//		HashTable<typename D::PackedState, Node> closed(closedlistsize);
 
 //	printf("closedlistsize = %u\n", closedlistsize);
 
 //		Heap<Node> open(100, overrun);
-		heap open(openlistsize, overrun);
+//		heap open(150, overrun);
 		Pool<Node> nodes(2048);
 
 		// If the buffer is locked when the thread pushes a node,
@@ -257,7 +269,7 @@ public:
 
 		//		while (path.size() == 0) {
 
-	printf("id = %d\n", id);
+//	printf("id = %d\n", id);
 
 		while (true) {
 			Node *n;
@@ -265,44 +277,8 @@ public:
 #ifdef ANALYZE_LAP
 			startlapse(lapse); // income buffer
 #endif
-			if (!income_buffer[id].isempty()) {
-				terminate[id] = false;
-				if (income_buffer[id].size() >= income_threshold) {
-					++force_income;
-					income_buffer[id].lock();
-					tmp = income_buffer[id].pull_all_with_lock();
-					income_buffer[id].release_lock();
-					uint size = tmp.size();
-#ifdef ANALYZE_INCOME
-					if (max_income_buffer_size < size) {
-						max_income_buffer_size = size;
-					}
-					dbgprintf("size = %d\n", size);
-#endif // ANALYZE_INCOME
-					for (int i = 0; i < size; ++i) {
-						dbgprintf("pushing %d, ", i);
-						open.push(tmp[i]); // Not sure optimal or not. Vector to Heap.
-					}
-					tmp.clear();
-				} else if (income_buffer[id].try_lock()) {
-					tmp = income_buffer[id].pull_all_with_lock();
-//					printf("%d", __LINE__);
-					income_buffer[id].release_lock();
 
-					uint size = tmp.size();
-#ifdef ANALYZE_INCOME
-					if (max_income_buffer_size < size) {
-						max_income_buffer_size = size;
-					}
-					dbgprintf("size = %d\n", size);
-#endif // ANALYZE_INCOME
-					for (int i = 0; i < size; ++i) {
-						dbgprintf("pushing %d, ", i);
-						open.push(tmp[i]); // Not sure optimal or not.
-					}
-					tmp.clear();
-				}
-			}
+
 #ifdef ANALYZE_LAPSE
 			endlapse(lapse, "incomebuffer");
 			startlapse(&lapse); // open list
@@ -311,16 +287,20 @@ public:
 			open_sizes[id] = open.getsize();
 #endif
 			if (open.isemptyunder(incumbent.load())) {
-				dbgprintf("open is empty.\n");
+//				printf("incumbet = %u\n", incumbent.load());
 				terminate[id] = true;
-				if (hasterminated() && incumbent != 100000) {
+				if (hasterminated() && incumbent != INIT_INCUMBENT) {
 					printf("terminated\n");
 					break;
 				}
 				continue; // ad hoc
 			}
-			n = static_cast<Node*>(open.pop());
-			printf("f,g = %d, %d\n", n->f, n->g);
+			n = static_cast<Node*>(open.pop(id));
+
+			if (n == NULL) {
+//				printf("n is NULL!\n");
+				continue;
+			}
 
 #ifdef ANALYZE_LAPSE
 			endlapse(lapse, "openlist");
@@ -357,7 +337,7 @@ public:
 			startlapse(&lapse); // closed list
 #endif
 //		if (n->thrown == 0) {
-			Node *duplicate = closed.find(n->packed);
+			Node *duplicate = this->closed.find(n->packed);
 			if (duplicate) {
 				if (duplicate->f <= n->f) {
 					dbgprintf("Discarded\n");
@@ -405,10 +385,10 @@ public:
 #endif // ANALYZE_ORDER
 			if (this->dom.isgoal(state)) {
 				// TODO: For some reason, sometimes pops broken node.
-//				if (state.tiles[1] == 0) {
-//					printf("isgoal ERROR\n");
-//					continue;
-//				}
+				if (state.tiles[1] == 0) {
+					printf("isgoal ERROR\n");
+					continue;
+				}
 //				print_state(state);
 
 				std::vector<typename D::State> newpath;
@@ -419,16 +399,17 @@ public:
 					newpath.push_back(s); // This triggers the main loop to terminate.
 				}
 				int length = newpath.size();
-				printf("Goal! length = %d\n", length);
+				printf("Goal! length = %d, incumbent = %u\n", length, incumbent.load());
 				// TODO: need to be atomic. Really?
+				pthread_mutex_lock(&path_lock);
 				if (incumbent > length) {
 					incumbent = length;
 					LogIncumbent* li = new LogIncumbent(walltime() - wall0,
 							incumbent);
 					logincumbent[id].push_back(*li);
-					path = newpath;
+					this->path = newpath;
 				}
-
+				pthread_mutex_unlock(&path_lock);
 				continue;
 			}
 #ifdef OUTSOURCING
@@ -436,10 +417,10 @@ public:
 				closed.add(n);
 			}
 #else
-			closed.add(n);
+			this->closed.add(n);
 #endif
-			expd_here++;
-			//		printf("expd: %d\n", id);
+			++expd_here;
+//			printf("expd = %d\n", expd_here);
 
 #ifdef ANALYZE_LAPSE
 			startlapse(&lapse);
@@ -455,71 +436,25 @@ public:
 //				printf("gend: %d\n", id);
 				gend_here++;
 
-				useless += uselessCalc(useless);
+//				useless += uselessCalc(useless);
 
 				int moving_tile = state.tiles[op];
-				int blank = state.blank; // Make this available for Grid pathfinding.
+				int blank = state.blank;
+
 				Edge<D> e = this->dom.apply(state, op);
+
 				Node* next = wrap(state, n, e.cost, e.pop, nodes);
 				//printf("mv blank op = %d %d %d \n", moving_tile, blank, op);
 //				print_state(state);
 
-				// TODO: Make dist hash available for Grid pathfinding.
 				// TODO: Make Zobrist hash appropriate for 24 threads.
-//				next->zbr = inc_hash<D>(n->zbr, moving_tile, blank, op,
-//						state.tiles, state);
-				next->zbr = z.inc_hash(n->zbr, moving_tile, blank, op,
-						state.tiles, state);
-
-//				next->zbr = z.inc_hash(state);
-
-				unsigned int zbr = next->zbr % tnum;
+				next->zbr = z.inc_hash(n->zbr, moving_tile, blank, op, state.tiles, state);
+//				unsigned int zbr = next->zbr % tnum;
 //				printf("zbr, zbr_tnum = (%u, %u)\n", next->zbr, zbr);
 
 				// If the node belongs to itself, just push to this open list.
-				if (zbr == id) {
-					++self_push;
-					open.push(next);
-				}
-#ifdef SEMISYNC
-				// Synchronous communication to avoid search overhead
-				else if (outgo_buffer[zbr].size() > outgo_threshold) {
-					income_buffer[zbr].lock();
-					income_buffer[zbr].push_with_lock(next);
-					income_buffer[zbr].push_all_with_lock(outgo_buffer[zbr]);
-//					printf("%d", __LINE__);
-					income_buffer[zbr].release_lock();
-					outgo_buffer[zbr].clear();
-#ifdef ANALYZE_SEMISYNC
-					++force_outgo;
-//					printf("semisync = %d to %d\n", id, zbr);
-#endif // ANALYZE_SEMISYNC
-				}
-#endif // SEMISYNC
-				else if (income_buffer[zbr].try_lock()) {
-					// if able to acquire the lock, then push all nodes in local buffer.
-					income_buffer[zbr].push_with_lock(next);
-					if (outgo_buffer[zbr].size() != 0) {
-						income_buffer[zbr].push_all_with_lock(
-								outgo_buffer[zbr]);
-					}
-//					printf("%d", __LINE__);
-					income_buffer[zbr].release_lock();
-					outgo_buffer[zbr].clear();
-				} else {
-					// Stacking over threshold would not happen so often.
-					// Therefore, first try to acquire the lock & then check whether the size
-					// exceeds the threshold.
-					// For more bigger system, this might change.
-					// if the buffer is locked, store the node locally.
-					outgo_buffer[zbr].push_back(next);
-#ifdef ANALYZE_OUTGO
-					int size = outgo_buffer[zbr].size();
-					if (size > max_outgo_buffer_size) {
-						max_outgo_buffer_size = size;
-					}
-#endif // ANALYZE_OUTGO
-				}
+
+				open.push(next, id);
 
 				this->dom.undo(state, e);
 			}
@@ -528,6 +463,7 @@ public:
 #endif
 		}
 
+//		printf("TERMINATE: opensize = %u", open.getsize());
 		// Solved (maybe)
 
 		this->wtime = walltime();
@@ -540,7 +476,7 @@ public:
 		// From here, you can dump every comments as it would not be included in walltime & cputime.
 
 		//		path =
-		dbgprintf("pathsize = %lu\n", path.size());
+//		printf("pathsize = %lu\n", this->path.size());
 
 		this->expd_distribution[id] = expd_here;
 		this->gend_distribution[id] = gend_here;
@@ -562,7 +498,7 @@ public:
 	}
 
 	std::vector<typename D::State> search(typename D::State &init) {
-		printf("search\n");
+
 		pthread_t t[tnum];
 		this->init = init;
 
@@ -577,7 +513,7 @@ public:
 		}
 		dbgprintf("zobrist of init = %d", z.hash_tnum(init.tiles));
 
-		income_buffer[0].push(n);
+		open.push(n);
 //		income_buffer[z.hash_tnum(init.tiles)].push(n);
 
 		wall0 = walltime();
@@ -587,19 +523,20 @@ public:
 		}
 #endif
 
-		printf("start\n");
 		for (int i = 0; i < tnum; ++i) {
 			pthread_create(&t[tnum], NULL,
-					(void*(*)(void*))&HDAstar::thread_helper, this);
+					(void*(*)(void*))&PPAstar::thread_helper, this);
 				}
 		for (int i = 0; i < tnum; ++i) {
 			pthread_join(t[tnum], NULL);
 		}
 
-		for (int i = 0; i < tnum; ++i) {
-			this->expd += expd_distribution[i];
-			this->gend += gend_distribution[i];
-		}
+//		sleep(2);
+
+/*		printf("expansion: %d\n", this->expd);
+		printf("generation: %d\n", this->gend);*/
+
+
 
 #ifdef ANALYZE_INCOME
 		printf("average of max_income_buffer_size = %d\n", max_income / tnum);
@@ -614,6 +551,15 @@ public:
 		}
 		printf("\n");
 #endif
+		this->expd = 0;
+		this->gend = 0;
+		printf("this->expd = %u\n", this->expd);
+		for (int i = 0; i < tnum; ++i) {
+			this->expd += expd_distribution[i];
+			this->gend += gend_distribution[i];
+			printf("expd[%u] = %u\n", i, expd_distribution[i]);
+			printf("this->expd = %u\n", this->expd);
+		}
 #ifdef ANALYZE_DISTRIBUTION
 		printf("expansion balance = %f\n", load_balance(expd_distribution));
 		printf("expansion stddev = %f\n",
@@ -682,11 +628,19 @@ public:
 
 		printf("self_pushes: %u\n", self_pushes);
 
-		return path;
+/*		for (auto iter = path.end() - 1; iter != path.begin() - 1; --iter) {
+			for (int i = 0; i < 16; ++i) {
+				printf("%2d ", iter->tiles[i]);
+			}
+			printf("\n");
+		}*/
+
+//		pthread_mutex_lock(&path_lock);
+		return this->path;
 	}
 
 	static void* thread_helper(void* arg) {
-		return static_cast<HDAstar*>(arg)->thread_search<Heap<Node> >(arg);
+		return static_cast<PPAstar*>(arg)->thread_search(arg);
 //		return static_cast<HDAstar*>(arg)->thread_search<NaiveHeap<Node> >(arg);
 	}
 
@@ -712,25 +666,6 @@ public:
 		}
 		return true;
 	}
-
-//	template<class H>
-//	inline
-//	unsigned int inc_hash(unsigned int previous, const int number,
-//			const int from, const int to, const char* const newBoard, typename D::State state) {
-//		printf("grid inc\n");
-//		return z.inc_hash(state);
-//	}
-//
-//	template<>
-//	inline
-//	unsigned int inc_hash<typename Grid>(const unsigned int previous, const int number,
-//			const int from, const int to, const char* const newBoard, typename D::State state) {
-//		printf("tile inc\n");
-//		return z.inc_hash(previous, number, from, to,
-//				newBoard);
-//	}
-
-
 
 	void print_state(typename D::State state) {
 		for (int i = 0; i < D::Ntiles; ++i) {
@@ -831,7 +766,7 @@ public:
 //		p->thrown += 1; // it indicates that the node has outsourced.
 
 		// Should this be try_push?
-		income_buffer[minid].push(p);
+//		income_buffer[minid].push(p);
 		dbgprintf("send %d to %d\n", id, minid);
 		return true;
 	}

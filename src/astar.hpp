@@ -10,7 +10,8 @@
 template<class D> class Astar : public SearchAlg<D> {
 
 	struct Node {
-		char f, g, pop;
+		unsigned int f, g;
+		char pop;
 		int openind;
 		Node *parent;
 		typename D::PackedState packed;
@@ -41,6 +42,8 @@ public:
 	// now      200　000　000
 	Astar(D &d) : SearchAlg<D>(d), closed(512927357), open(120) { }
 
+	Astar(D &d, unsigned int opensize) : SearchAlg<D>(d), closed(512927357), open(opensize) { }
+
 
 	std::vector<typename D::State> search(typename D::State &init) {
 		open.push(wrap(init, 0, 0, -1));
@@ -57,14 +60,16 @@ public:
 			this->dom.unpack(state, n->packed);
 
 //			printf("expd = %lu\n", this->expd);
-//			printf("f,g = %d, %d, ", n->f, n->g);
+//			Grid::State s = static_cast<Grid::State>(state);
+//			printf("x = %u\n", state.blank);
+			printf("f,g = %d, %d\n", n->f, n->g);
 //			for (int i = 0; i < 16; ++i) {
 //				printf("%d ", state.tiles[i]);
 //			}
 //			printf("\n");
 
 			if (this->dom.isgoal(state)) {
-//				printf("goal!\n");
+				printf("goal!\n");
 
 				for (Node *p = n; p; p = p->parent) {
 					typename D::State s;
@@ -77,8 +82,10 @@ public:
 			closed.add(n);
 
 			this->expd++;
+//			printf("nops = %u\nexpd: ", this->dom.nops(state));
 			for (int i = 0; i < this->dom.nops(state); i++) {
 				int op = this->dom.nthop(state, i);
+//				printf("%u ", op);
 				if (op == n->pop)
 					continue;
 				this->gend++;
@@ -86,6 +93,7 @@ public:
 				open.push(wrap(state, n, e.cost, e.pop));
 				this->dom.undo(state, e);
 			}
+//			printf("\n");
 		}
 //		printf("return astar\n");
 		this->wtime = walltime();
