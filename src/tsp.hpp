@@ -85,7 +85,7 @@ struct Tsp {
 			// if there are cities not visited other than the home town.
 			return n_not_visited;
 		} else {
-			printf("to goal nops\n");
+//			printf("to goal nops\n");
 			// if all cities other than the home town visited
 			return 1;
 		}
@@ -105,7 +105,7 @@ struct Tsp {
 			}
 		}
 		if (to_goal) {
-			printf("to goal\n");
+//			printf("to goal\n");
 			if (n != 0) {
 				printf("ERROR nthop\n");
 			}
@@ -144,18 +144,18 @@ struct Tsp {
 		s.h = calc_heuristic(s); //heuristic();
 
 		if (newb == 0) {
-			printf("TO GOAL !\n");
+//			printf("TO GOAL !\n");
 		}
 
-		printf("%u :", s.current);
-		for (unsigned int i = 0; i < number_of_cities; ++i) {
-			if (s.visited[i]) {
-				printf("O");
-			} else {
-				printf("X");
-			}
-		}
-		printf("\n");
+//		printf("%u :", s.current);
+//		for (unsigned int i = 0; i < number_of_cities; ++i) {
+//			if (s.visited[i]) {
+//				printf("O");
+//			} else {
+//				printf("X");
+//			}
+//		}
+//		printf("\n");
 
 		return e;
 	}
@@ -282,7 +282,7 @@ private:
 //		visited[s.current] = false;
 //		unsigned int fmst = mst(visited);
 		if (smst == 0) {
-			printf("from, to, mst = %u, %u, %u\n", min_from, min_to, smst);
+//			printf("from, to, mst = %u, %u, %u\n", min_from, min_to, smst);
 		}
 
 		return min_from + min_to + smst;
@@ -311,9 +311,9 @@ private:
 
 		if (vertices.size() <= 1) {
 			if (vertices.empty()) {
-				printf("empty mst\n");
+//				printf("empty mst\n");
 			} else {
-				printf("single vertex\n");
+	//			printf("single vertex\n");
 			}
 			return 0;
 		}

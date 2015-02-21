@@ -62,7 +62,7 @@ public:
 //			printf("expd = %lu\n", this->expd);
 //			Grid::State s = static_cast<Grid::State>(state);
 //			printf("x = %u\n", state.blank);
-			printf("f,g = %d, %d\n", n->f, n->g);
+//			printf("f,g = %d, %d\n", n->f, n->g);
 //			for (int i = 0; i < 16; ++i) {
 //				printf("%d ", state.tiles[i]);
 //			}

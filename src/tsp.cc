@@ -20,9 +20,9 @@ Tsp::Tsp(std::istream &in) {
 		in >> y[t];
 	}
 
-	for (int t = 0; t < number_of_cities; t++) {
-		printf("x,y = %f, %f\n", x[t], y[t]);
-	}
+//	for (int t = 0; t < number_of_cities; t++) {
+//		printf("x,y = %f, %f\n", x[t], y[t]);
+//	}
 
 	distances.resize(number_of_cities * number_of_cities);
 
@@ -33,12 +33,12 @@ Tsp::Tsp(std::istream &in) {
 		}
 	}
 
-	for (int t = 0; t < number_of_cities; t++) {
-		for (int f = 0; f < number_of_cities; f++) {
-			printf("%u ", distances[f * number_of_cities + t]);
-		}
-		printf("\n");
-	}
+//	for (int t = 0; t < number_of_cities; t++) {
+//		for (int f = 0; f < number_of_cities; f++) {
+//			printf("%u ", distances[f * number_of_cities + t]);
+//		}
+//		printf("\n");
+//	}
 
 	delete x;
 	delete y;

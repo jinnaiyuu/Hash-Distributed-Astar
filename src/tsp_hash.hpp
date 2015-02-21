@@ -21,7 +21,12 @@ public:
 	// This should be refactored afterall.
 	TspHash(unsigned int number_of_cities = 1000, ABST structure = 1) :
 			structure(structure) {
+		if (this->structure == 0) {
+			printf("structure = 1\n");
+			this->structure = 1;
+		}
 		init_zbr();
+
 	}
 
 	~TspHash(){
@@ -29,7 +34,7 @@ public:
 	}
 
 	unsigned char inc_hash(const unsigned char previous, const int number,
-			const int from, const int to, const char* const newBoard, const typename D::State s) {
+			const int from, const int to, const char* const newBoard, const typename D::State s) const {
 		// from = x * 100000 + y
 		unsigned int z = 0;
 		for (unsigned int i = 0; i < s.visited.size(); ++i) {

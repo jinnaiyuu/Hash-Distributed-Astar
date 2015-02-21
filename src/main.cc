@@ -476,7 +476,8 @@ int main(int argc, const char *argv[]) {
 			// HERE!
 			std::vector<Tsp::State> path = search->search(init);
 
-			double wtime = walltime() - wall0, ctime = cputime() - cpu0;
+//			double wtime = walltime() - wall0, ctime = cputime() - cpu0;
+			double wtime = search->wtime - wall0, ctime = search->ctime - cpu0;
 
 			dfpair(stdout, "total wall time", "%g", wtime);
 			dfpair(stdout, "total cpu time", "%g", ctime);

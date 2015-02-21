@@ -320,7 +320,7 @@ public:
 				continue; // ad hoc
 			}
 			n = static_cast<Node*>(open.pop());
-			printf("f,g = %d, %d\n", n->f, n->g);
+//			printf("f,g = %d, %d\n", n->f, n->g);
 
 #ifdef ANALYZE_LAPSE
 			endlapse(lapse, "openlist");
@@ -591,7 +591,7 @@ public:
 		for (int i = 0; i < tnum; ++i) {
 			pthread_create(&t[tnum], NULL,
 					(void*(*)(void*))&HDAstar::thread_helper, this);
-				}
+		}
 		for (int i = 0; i < tnum; ++i) {
 			pthread_join(t[tnum], NULL);
 		}
@@ -686,8 +686,8 @@ public:
 	}
 
 	static void* thread_helper(void* arg) {
-		return static_cast<HDAstar*>(arg)->thread_search<Heap<Node> >(arg);
-//		return static_cast<HDAstar*>(arg)->thread_search<NaiveHeap<Node> >(arg);
+//		return static_cast<HDAstar*>(arg)->thread_search<Heap<Node> >(arg);
+		return static_cast<HDAstar*>(arg)->thread_search<NaiveHeap<Node> >(arg);
 	}
 
 	inline Node *wrap(typename D::State &s, Node *p, int c, int pop,
