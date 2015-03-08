@@ -4,10 +4,14 @@
 #include "search.hpp"
 #include "fatal.hpp"
 #include "hashtbl.hpp"
+
 #include <cstdio>
 #include <cstdlib>
 #include <cassert>
 #include <stdint.h>
+
+
+
 
 struct Tiles {
 	enum {
@@ -33,6 +37,8 @@ struct Tiles {
 			return word == h.word;
 		}
 	};
+
+
 
 	// Tiles constructs a new instance by reading
 	// the initial state from the given file which is
@@ -146,6 +152,8 @@ private:
 
 	// initoptob initializes the operator table, optab.
 	void initoptab();
+
+
 
 	// init is the initial tile positions.
 	int init[Ntiles];

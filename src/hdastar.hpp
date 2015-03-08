@@ -166,18 +166,20 @@ template<class D, class hash> class HDAstar: public SearchAlg<D> {
 	int overrun;
 	unsigned int closedlistsize;
 	unsigned int openlistsize;
+	unsigned int initmaxcost;
 
 public:
 
 	HDAstar(D &d, int tnum_, int income_threshold_ = 1000000,
 			int outgo_threshold_ = 10000000, int abst_ = 0, int overrun_ = 0,
 			unsigned int closedlistsize = 110503,
-			unsigned int openlistsize = 100) :
-			SearchAlg<D>(d), tnum(tnum_), thread_id(0), z(tnum,
-					static_cast<typename hash::ABST>(abst_)), incumbent(100000), income_threshold(
+			unsigned int openlistsize = 100,
+			unsigned int maxcost = 1000000) :
+			SearchAlg<D>(d), tnum(tnum_), thread_id(0), z(d,
+					static_cast<typename hash::ABST>(abst_)), incumbent(maxcost), income_threshold(
 					income_threshold_), outgo_threshold(outgo_threshold_), globalOrder(
 					0), overrun(overrun_), closedlistsize(closedlistsize),
-					openlistsize(openlistsize) {
+					openlistsize(openlistsize), initmaxcost(maxcost) {
 		income_buffer = new buffer<Node> [tnum];
 		terminate = new bool[tnum];
 		for (int i = 0; i < tnum; ++i) {
@@ -313,7 +315,7 @@ public:
 			if (open.isemptyunder(incumbent.load())) {
 				dbgprintf("open is empty.\n");
 				terminate[id] = true;
-				if (hasterminated() && incumbent != 100000) {
+				if (hasterminated() && incumbent != initmaxcost) {
 					printf("terminated\n");
 					break;
 				}
@@ -420,9 +422,11 @@ public:
 				}
 				int length = newpath.size();
 				printf("Goal! length = %d\n", length);
-				// TODO: need to be atomic. Really?
-				if (incumbent > length) {
-					incumbent = length;
+				printf("cost = %u\n", n->g);
+
+				if (incumbent > n->g) {
+					// TODO: this should be changed to match non-unit cost domains.
+					incumbent = n->g;
 					LogIncumbent* li = new LogIncumbent(walltime() - wall0,
 							incumbent);
 					logincumbent[id].push_back(*li);
@@ -575,7 +579,7 @@ public:
 			n->parent = 0;
 			this->dom.pack(n->packed, init);
 		}
-		dbgprintf("zobrist of init = %d", z.hash_tnum(init.tiles));
+//		dbgprintf("zobrist of init = %d", z.hash_tnum(init.tiles));
 
 		income_buffer[0].push(n);
 //		income_buffer[z.hash_tnum(init.tiles)].push(n);
@@ -686,8 +690,8 @@ public:
 	}
 
 	static void* thread_helper(void* arg) {
-//		return static_cast<HDAstar*>(arg)->thread_search<Heap<Node> >(arg);
-		return static_cast<HDAstar*>(arg)->thread_search<NaiveHeap<Node> >(arg);
+		return static_cast<HDAstar*>(arg)->thread_search<Heap<Node> >(arg);
+//		return static_cast<HDAstar*>(arg)->thread_search<NaiveHeap<Node> >(arg);
 	}
 
 	inline Node *wrap(typename D::State &s, Node *p, int c, int pop,

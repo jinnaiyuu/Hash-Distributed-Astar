@@ -1,6 +1,10 @@
 // Copyright 2012 Ethan Burns. All rights reserved.
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
+#ifndef TSP_
+#define TSP_
+
+
 #include "search.hpp"
 #include "fatal.hpp"
 #include "hashtbl.hpp"
@@ -215,6 +219,9 @@ struct Tsp {
 		return number_of_cities;
 	}
 
+	const std::vector<unsigned int> get_distances(void) const {
+		return distances;
+	}
 
 private:
 
@@ -358,3 +365,6 @@ private:
 	// entry is a description of the possible next
 	// blank positions.
 };
+
+#endif /* TSP_ */
+

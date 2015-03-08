@@ -10,6 +10,8 @@
 
 #include <cmath>
 #include <climits>
+#include <cstdlib>
+#include <math.h>
 
 template<typename D, int size>
 class Zobrist {
@@ -29,6 +31,12 @@ public:
 // Should delete compatibility for performance.
 	Zobrist(int tnum_ = 1, ABST abst = SINGLE) :
 			tnum(tnum_) {
+		initZobrist(abst);
+//		dump_table();
+	}
+
+	Zobrist(D tnum_ , ABST abst = SINGLE)
+			{
 		initZobrist(abst);
 //		dump_table();
 	}
@@ -246,7 +254,7 @@ private:
 		int width = 4; // Hard coding
 		int row = number / width, col = number % width;
 		int grow = place / width, gcol = place % width;
-		int sum = abs(gcol - col) + abs(grow - row);
+		int sum = std::abs(gcol - col) + std::abs(grow - row);
 	}
 
 // The method to return zobrist value for the very first node.

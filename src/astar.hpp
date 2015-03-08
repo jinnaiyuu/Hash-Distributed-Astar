@@ -34,15 +34,18 @@ template<class D> class Astar : public SearchAlg<D> {
 	Heap<Node> open;
 	std::vector<typename D::State> path;
 	Pool<Node> nodes;
+	double w;
 
 public:
 
 	// closed might be waaaay too big for my memory....
 	// original 512927357
 	// now      200　000　000
-	Astar(D &d) : SearchAlg<D>(d), closed(512927357), open(120) { }
+	Astar(D &d) : SearchAlg<D>(d), closed(512927357), open(120), w(1) { }
 
-	Astar(D &d, unsigned int opensize) : SearchAlg<D>(d), closed(512927357), open(opensize) { }
+	Astar(D &d, unsigned int opensize) : SearchAlg<D>(d), closed(512927357), open(opensize), w(1) { }
+
+	Astar(D &d, unsigned int opensize, double weight) : SearchAlg<D>(d), closed(512927357), open(opensize), w(weight) { }
 
 
 	std::vector<typename D::State> search(typename D::State &init) {
@@ -70,7 +73,7 @@ public:
 
 			if (this->dom.isgoal(state)) {
 				printf("goal!\n");
-
+				printf("f = %u\n", n->f);
 				for (Node *p = n; p; p = p->parent) {
 					typename D::State s;
 					this->dom.unpack(s, p->packed);
@@ -106,7 +109,9 @@ public:
 		n->g = c;
 		if (p)
 			n->g += p->g;
-		n->f = n->g + this->dom.h(s);
+		n->f = n->g + this->dom.h(s) * w;
+		unsigned int nw = n->g + this->dom.h(s);
+//		printf("h, wh = %u, %u\n", this->dom.h(s), static_cast<unsigned int>(this->dom.h(s) * w));
 //		printf("h = %d\n", this->dom.weight_h(s));
 		n->pop = pop;
 		n->parent = p;

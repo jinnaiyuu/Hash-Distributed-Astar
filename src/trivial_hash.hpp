@@ -21,6 +21,12 @@ public:
 			tnum(tnum_) {
 		initHash();
 	}
+
+	TrivialHash(D tnum_, ABST abst = SINGLE)
+			{
+		initHash();
+	}
+
 //	unsigned char inc_hash_tnum(const int number, const int from,
 //			const int to, const char* const newBoard) {
 //		return hash_tnum(newBoard);
@@ -28,7 +34,7 @@ public:
 	unsigned char inc_hash(const unsigned char previous,
 			const int number, const int from, const int to,
 			const char* const newBoard, const typename D::State s) {
-		return hash(newBoard) % tnum;
+		return hash(newBoard);
 	}
 
 	unsigned char inc_hash(typename D::State s) {

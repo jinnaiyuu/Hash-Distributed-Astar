@@ -88,9 +88,11 @@ public:
 
 	bool isemptyunder(int incumbent) {
 		if (heap.size() == 0) {
+//			printf("empty heap\n");
 			return true;
 		} else {
 			HeapElm *top = heap[0];
+//			printf("top->f = %u, incumbent = %d\n", top->f, incumbent);
 			return ((incumbent - 1 + overrun) <= top->f);
 		}
 	}

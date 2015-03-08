@@ -11,7 +11,7 @@
 #include <random>
 
 
-template<typename D, int size>
+template<typename D>
 class RandomHash {
 public:
 	enum ABST {
@@ -23,6 +23,10 @@ public:
 		initHash();
 	}
 
+	RandomHash(D tnum_, ABST abst = SINGLE) :
+			round(0) {
+		initHash();
+	}
 	unsigned char inc_hash(const unsigned char previous, const int number,
 			const int from, const int to, const char* const newBoard, const typename D::State s) {
 		int id = round.fetch_add(1);

@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <iostream>
+#include <fstream>
 
 //#define DEBUG
 #ifndef DEBUG
@@ -43,9 +44,11 @@
 #include "tiles24.hpp"
 #include "grid.hpp"
 #include "tsp.hpp"
+#include "msa/msa.hpp"
 
 #include "grid_hash.hpp"
 #include "tsp_hash.hpp"
+#include "msa/zobrist.hpp"
 
 #include "idastar.hpp"
 #include "astar.hpp"
@@ -76,10 +79,10 @@ int main(int argc, const char *argv[]) {
 	try {
 		fflush(stdout);
 		// Markov primes.
-/*		printf("614657, 1336337, 4477457, 5308417, 8503057,"
-				"9834497, 29986577, 40960001, 45212177, 59969537, "
-				"65610001, 126247697, 193877777, 303595777, 384160001, "
-				"406586897, 562448657, 655360001");*/
+		/*		printf("614657, 1336337, 4477457, 5308417, 8503057,"
+		 "9834497, 29986577, 40960001, 45212177, 59969537, "
+		 "65610001, 126247697, 193877777, 303595777, 384160001, "
+		 "406586897, 562448657, 655360001");*/
 		/*
 		 if (!(3 <= argc && argc <= 7))
 		 throw Fatal(
@@ -141,8 +144,8 @@ int main(int argc, const char *argv[]) {
 				// Domain, n_threads,
 				// incomebuffermax, outgobuffermax,
 				// abstraction, closed list size
-				search = new HDAstar<Tiles, Zobrist<Tiles, 16> >(tiles, std::stoi(argv[3]),
-						1000000, 1000000,
+				search = new HDAstar<Tiles, Zobrist<Tiles, 16> >(tiles,
+						std::stoi(argv[3]), 1000000, 1000000,
 						std::stoi(argv[4]), 0, closedlistsize);
 
 				// HDA* with shared closed list
@@ -151,7 +154,8 @@ int main(int argc, const char *argv[]) {
 				unsigned int closedlistsize = 0;
 				unsigned int division = 0;
 				for (unsigned int i = 0; i < argc; ++i) {
-					if (sscanf(argv[i], "closed-%u-%u", &closedlistsize, &division) == 2) {
+					if (sscanf(argv[i], "closed-%u-%u", &closedlistsize,
+							&division) == 2) {
 						break;
 					}
 				}
@@ -163,8 +167,8 @@ int main(int argc, const char *argv[]) {
 				// Domain, n_threads,
 				// incomebuffermax, outgobuffermax,
 				// abstraction, closed list size
-				search = new HDAstarSharedClosed<Tiles, Zobrist<Tiles, 16> >(tiles, std::stoi(argv[3]),
-						1000000, 1000000,
+				search = new HDAstarSharedClosed<Tiles, Zobrist<Tiles, 16> >(
+						tiles, std::stoi(argv[3]), 1000000, 1000000,
 						std::stoi(argv[4]), 0, closedlistsize, division);
 
 			} else if (strcmp(argv[1], "ppastar") == 0) {
@@ -180,15 +184,19 @@ int main(int argc, const char *argv[]) {
 
 				for (unsigned int i = 0; i < argc; ++i) {
 //					if (sscanf(argv[i], "open-%u-%u", &openlistsize, &openlistdivision) == 2) {}
-					if (sscanf(argv[i], "open-%u-%u-%u-%u-%u",
-							&openlistsize, &openlistdivision,
-							&open_synchronous_push, &open_synchronous_pop,
-							&min_expd) == 5) {}
-					if (sscanf(argv[i], "closed-%u-%u", &closedlistsize, &closedlistdivision) == 2) {}
-					if (sscanf(argv[i], "hash-%u", &hash_method) == 1) {}
+					if (sscanf(argv[i], "open-%u-%u-%u-%u-%u", &openlistsize,
+							&openlistdivision, &open_synchronous_push,
+							&open_synchronous_pop, &min_expd) == 5) {
+					}
+					if (sscanf(argv[i], "closed-%u-%u", &closedlistsize,
+							&closedlistdivision) == 2) {
+					}
+					if (sscanf(argv[i], "hash-%u", &hash_method) == 1) {
+					}
 				}
 
-				if (!(openlistsize&&openlistdivision&&closedlistsize&&closedlistdivision)) {
+				if (!(openlistsize && openlistdivision && closedlistsize
+						&& closedlistdivision)) {
 					printf("set openlistsize as open-%%u-%%u\n");
 					printf("set closedlistsize as closed-%%u-%%u\n");
 					exit(1);
@@ -199,21 +207,18 @@ int main(int argc, const char *argv[]) {
 				// incomebuffermax, outgobuffermax,
 				// abstraction, closed list size
 				if (hash_method == 0) { // Zobrist
-				search = new PPAstar<Tiles, Zobrist<Tiles, 16> >(tiles, std::stoi(argv[3]),
-						1000000, 1000000,
-						std::stoi(argv[4]), 0,
-						openlistsize, openlistdivision,
-						open_synchronous_push, open_synchronous_pop,
-						min_expd,
-						closedlistsize, closedlistdivision);
+					search = new PPAstar<Tiles, Zobrist<Tiles, 16> >(tiles,
+							std::stoi(argv[3]), 1000000, 1000000,
+							std::stoi(argv[4]), 0, openlistsize,
+							openlistdivision, open_synchronous_push,
+							open_synchronous_pop, min_expd, closedlistsize,
+							closedlistdivision);
 				} else {
-					search = new PPAstar<Tiles, TrivialHash<Tiles, 16> >(tiles, std::stoi(argv[3]),
-							1000000, 1000000,
-							0, 0,
+					search = new PPAstar<Tiles, TrivialHash<Tiles, 16> >(tiles,
+							std::stoi(argv[3]), 1000000, 1000000, 0, 0,
 							openlistsize, openlistdivision,
 							open_synchronous_push, open_synchronous_pop,
-							min_expd,
-							closedlistsize, closedlistdivision);
+							min_expd, closedlistsize, closedlistdivision);
 				}
 
 			} else if (strcmp(argv[1], "hdastar_trivial") == 0) {
@@ -227,11 +232,11 @@ int main(int argc, const char *argv[]) {
 				}
 			} else if (strcmp(argv[1], "hdastar_random") == 0) {
 				if (argc >= 5) {
-					search = new HDAstar<Tiles, RandomHash<Tiles, 16> >(tiles,
+					search = new HDAstar<Tiles, RandomHash<Tiles> >(tiles,
 							std::stoi(argv[3]), std::stoi(argv[4]),
 							std::stoi(argv[5]));
 				} else {
-					search = new HDAstar<Tiles, RandomHash<Tiles, 16> >(tiles,
+					search = new HDAstar<Tiles, RandomHash<Tiles> >(tiles,
 							std::stoi(argv[3])); // Completely Asynchronous
 				}
 			} else if (strcmp(argv[1], "hdastar_overrun") == 0) {
@@ -269,18 +274,18 @@ int main(int argc, const char *argv[]) {
 			if (argc > 3 && strcmp(argv[3], "")) {
 				dfpair(stdout, "thread number", "%02d", std::stoi(argv[3]));
 			}
-/*
-			if (argc == 7) {
-				dfpair(stdout, "income buffer threshold", "%d",
-						std::stoi(argv[4]));
-				dfpair(stdout, "outgo buffer threshold", "%d",
-						std::stoi(argv[5]));
-//				dfpair(stdout, "abstraction", "%d", std::stoi(argv[6]));
-			} else if (argc == 5) {
-				dfpair(stdout, "outsourcing f diff threshold", "%d",
-						std::stoi(argv[4]));
-			}
-*/
+			/*
+			 if (argc == 7) {
+			 dfpair(stdout, "income buffer threshold", "%d",
+			 std::stoi(argv[4]));
+			 dfpair(stdout, "outgo buffer threshold", "%d",
+			 std::stoi(argv[5]));
+			 //				dfpair(stdout, "abstraction", "%d", std::stoi(argv[6]));
+			 } else if (argc == 5) {
+			 dfpair(stdout, "outsourcing f diff threshold", "%d",
+			 std::stoi(argv[4]));
+			 }
+			 */
 			dfpair(stdout, "initial heuristic", "%d", tiles.h(init));
 			double wall0 = walltime(), cpu0 = cputime();
 			std::vector<Tiles::State> path = search->search(init);
@@ -293,13 +298,13 @@ int main(int argc, const char *argv[]) {
 			dfpair(stdout, "total nodes generated", "%lu", search->gend);
 			dfpair(stdout, "solution length", "%u", (unsigned int) path.size());
 //			search->
-/*			assert(path.begin() != path.end());
-			for (auto iter = path.end() - 1; iter != path.begin() - 1; --iter) {
-				for (int i = 0; i < 16; ++i) {
-					printf("%2d ", iter->tiles[i]);
-				}
-				printf("\n");
-			}*/
+			/*			assert(path.begin() != path.end());
+			 for (auto iter = path.end() - 1; iter != path.begin() - 1; --iter) {
+			 for (int i = 0; i < 16; ++i) {
+			 printf("%2d ", iter->tiles[i]);
+			 }
+			 printf("\n");
+			 }*/
 
 			dffooter(stdout);
 		} else if (strcmp(argv[1], "24") == 0) { // 24 puzzle
@@ -333,8 +338,8 @@ int main(int argc, const char *argv[]) {
 				// Domain, n_threads,
 				// incomebuffermax, outgobuffermax,
 				// abstraction, closed list size
-				search = new HDAstar<Tiles24, Zobrist<Tiles24, 25> >(tiles, std::stoi(argv[3]),
-						1000000, 1000000,
+				search = new HDAstar<Tiles24, Zobrist<Tiles24, 25> >(tiles,
+						std::stoi(argv[3]), 1000000, 1000000,
 						std::stoi(argv[4]), 0, closedlistsize);
 
 			} else if (strcmp(argv[1], "hdastar") == 0) {
@@ -352,8 +357,8 @@ int main(int argc, const char *argv[]) {
 				// Domain, n_threads,
 				// incomebuffermax, outgobuffermax,
 				// abstraction, overrun, closed list size
-				search = new HDAstar<Tiles24, Zobrist<Tiles24, 25> >(tiles, std::stoi(argv[3]),
-						1000000, 1000000,
+				search = new HDAstar<Tiles24, Zobrist<Tiles24, 25> >(tiles,
+						std::stoi(argv[3]), 1000000, 1000000,
 						std::stoi(argv[4]), 0, closedlistsize);
 
 			} else if (strcmp(argv[1], "hdastar_overrun") == 0) {
@@ -400,7 +405,6 @@ int main(int argc, const char *argv[]) {
 			SearchAlg<Grid> *search = NULL;
 			unsigned int max_f = (grid.get_height() + grid.get_width()) * scale;
 
-
 			if (strcmp(argv[1], "astar") == 0) {
 				search = new Astar<Grid>(grid, max_f);
 			} else if (strcmp(argv[1], "hdastar") == 0) {
@@ -420,9 +424,9 @@ int main(int argc, const char *argv[]) {
 				}
 				printf("abst = %u\n", abstraction);
 
-				search = new HDAstar<Grid, GridHash<Grid>>(grid, std::stoi(argv[3]),
-						1000000, 1000000,
-						abstraction, 0, closedlistsize, max_f);
+				search = new HDAstar<Grid, GridHash<Grid>>(grid,
+						std::stoi(argv[3]), 1000000, 1000000, abstraction, 0,
+						closedlistsize, max_f);
 			} else {
 				printf("command line input parse error\n");
 				exit(1);
@@ -443,7 +447,6 @@ int main(int argc, const char *argv[]) {
 			dfpair(stdout, "total nodes generated", "%lu", search->gend);
 			dfpair(stdout, "solution length", "%u", (unsigned int) path.size());
 
-
 		} else if (strcmp(argv[1], "tsp") == 0) {
 			printf("Tsp\n");
 			argv++;
@@ -456,17 +459,15 @@ int main(int argc, const char *argv[]) {
 			sscanf(argv[2], "%d", &heuristic);
 			tsp.set_heuristic(heuristic);
 
-
 			SearchAlg<Tsp> *search = NULL;
-
 
 			if (strcmp(argv[1], "astar") == 0) {
 				search = new Astar<Tsp>(tsp, 1500000);
 			} else if (strcmp(argv[1], "hdastar") == 0) {
-				search = new HDAstar<Tsp, TspHash<Tsp> >(tsp, std::stoi(argv[3]),
-						1000000, 1000000, std::stoi(argv[4]), 0, 193877777, 1500000);
+				search = new HDAstar<Tsp, TspHash<Tsp> >(tsp,
+						std::stoi(argv[3]), 1000000, 1000000,
+						std::stoi(argv[4]), 0, 193877777, 1500000);
 			}
-
 
 			Tsp::State init = tsp.initial();
 			dfheader(stdout);
@@ -484,6 +485,65 @@ int main(int argc, const char *argv[]) {
 			dfpair(stdout, "total nodes expanded", "%lu", search->expd);
 			dfpair(stdout, "total nodes generated", "%lu", search->gend);
 			dfpair(stdout, "solution length", "%u", (unsigned int) path.size());
+
+		} else if (strcmp(argv[1], "msa") == 0) {
+			printf("MSA\n");
+			argv++;
+			argc--;
+			// Here pnum is the scaling parameter. If two then make the instances size twice as big.
+
+			std::ifstream pam("PAM250");
+//			pam.open("PAM250");
+
+			MSA msa(pam, std::cin);
+			pam.close();
+
+//			unsigned int heuristic = 0;
+//			sscanf(argv[2], "%d", &heuristic);
+//			msa.set_heuristic(heuristic);
+
+			SearchAlg<MSA> *search = NULL;
+
+			if (strcmp(argv[1], "astar") == 0) {
+				search = new Astar<MSA>(msa, 40000);
+			} else if (strcmp(argv[1], "hdastar") == 0) {
+				search = new HDAstar<MSA, MSAZobrist<MSA> >(msa,
+						std::stoi(argv[2]), 1000000, 1000000,
+						std::stoi(argv[3]), 0, 193877777, 1000000);
+			} else if (strcmp(argv[1], "wa+hdastar") == 0) {
+				search = new Astar<MSA>(msa, 40000, 1.05);
+				MSA::State init = msa.initial();
+				double wall0 = walltime();
+				std::vector<MSA::State> path = search->search(init);
+				double wtime = search->wtime - wall0;
+				unsigned int cost = msa.calc_cost(path);
+				printf("precalc cost = %u\n", cost);
+				dfpair(stdout, "precalc wall time", "%g", wtime);
+
+				search = new HDAstar<MSA, MSAZobrist<MSA> >(msa,
+						std::stoi(argv[2]), 1000000, 1000000,
+						std::stoi(argv[3]), 0, 193877777, cost);
+			} else {
+				throw Fatal("Unknown algorithm: %s", argv[1]);
+			}
+
+			MSA::State init = msa.initial();
+			dfheader(stdout);
+			dfpair(stdout, "algorithm", "%s", argv[1]);
+			dfpair(stdout, "initial heuristic", "%d", msa.h(init));
+			double wall0 = walltime(), cpu0 = cputime();
+			// HERE!
+			std::vector<MSA::State> path = search->search(init);
+
+//			double wtime = walltime() - wall0, ctime = cputime() - cpu0;
+			double wtime = search->wtime - wall0, ctime = search->ctime - cpu0;
+
+			dfpair(stdout, "total wall time", "%g", wtime);
+			dfpair(stdout, "total cpu time", "%g", ctime);
+			dfpair(stdout, "total nodes expanded", "%lu", search->expd);
+			dfpair(stdout, "total nodes generated", "%lu", search->gend);
+			dfpair(stdout, "solution length", "%u", (unsigned int) path.size());
+			msa.print_alignment(path);
 		}
 	} catch (const Fatal &f) {
 		fputs(f.msg, stderr);

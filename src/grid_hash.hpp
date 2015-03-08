@@ -22,6 +22,9 @@ public:
 	GridHash(int tnum_ = 1, ABST structure = 1) :
 			structure(structure) {}
 
+	GridHash(D tnum_, ABST structure = 1) :
+			structure(structure) {}
+
 	unsigned char inc_hash(const unsigned char previous, const int number,
 			const int from, const int to, const char* const newBoard, const typename D::State s) {
 		// from = x * 100000 + y
