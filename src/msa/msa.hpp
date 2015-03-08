@@ -49,7 +49,7 @@ struct MSA {
 		for (unsigned int seq1 = 0; seq1 < num_of_sequences; ++seq1) {
 			for (unsigned int seq2 = seq1 + 1; seq2 < num_of_sequences;
 					++seq2) {
-				delete pairwise_tables[seq1 * num_of_sequences + seq2];
+				delete pairwise_tables[seq1 + seq2 * num_of_sequences];
 			}
 		}
 		delete pairwise_tables;
@@ -228,7 +228,7 @@ struct MSA {
 
 	unsigned int calc_cost(std::vector<MSA::State> solution) {
 		unsigned int cost = 0;
-		for (int sq = 0; sq < solution.size(); ++sq) {
+		for (int sq = 0; sq < solution.size() - 1; ++sq) {
 			MSA::State s = solution[sq];
 			bool* isgap = new bool[num_of_sequences];
 			if (sq == 0) {

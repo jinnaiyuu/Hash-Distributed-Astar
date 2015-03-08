@@ -259,7 +259,9 @@ public:
 
 		//		while (path.size() == 0) {
 
-	printf("id = %d\n", id);
+		printf("id = %d\n", id);
+
+		unsigned int over_incumbent_count = 0;
 
 		while (true) {
 			Node *n;
@@ -457,7 +459,6 @@ public:
 				}
 
 //				printf("gend: %d\n", id);
-				gend_here++;
 
 				useless += uselessCalc(useless);
 
@@ -465,6 +466,13 @@ public:
 				int blank = state.blank; // Make this available for Grid pathfinding.
 				Edge<D> e = this->dom.apply(state, op);
 				Node* next = wrap(state, n, e.cost, e.pop, nodes);
+
+//				if (next->f > incumbent.load()) {
+////					printf("needless\n");
+//					++over_incumbent_count;
+//					continue;
+//				}
+				gend_here++;
 				//printf("mv blank op = %d %d %d \n", moving_tile, blank, op);
 //				print_state(state);
 
@@ -538,6 +546,7 @@ public:
 		this->ctime = cputime();
 
 		printf("useless = %d\n", useless);
+		printf("over incumbent = %u\n", over_incumbent_count);
 
 		this->open_sizes[id] = open.getsize();
 

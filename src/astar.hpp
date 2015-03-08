@@ -5,6 +5,7 @@
 #include "utils.hpp"
 #include "hashtbl.hpp"
 #include "heap.hpp"
+#include "naive_heap.hpp"
 #include "pool.hpp"
 
 template<class D> class Astar : public SearchAlg<D> {
@@ -31,10 +32,12 @@ template<class D> class Astar : public SearchAlg<D> {
 	};
 
 	HashTable<typename D::PackedState, Node> closed;
-	Heap<Node> open;
+	Heap<Node> open; // TODO: TODO
 	std::vector<typename D::State> path;
 	Pool<Node> nodes;
+
 	double w;
+	unsigned int incumbent;
 
 public:
 
@@ -43,9 +46,14 @@ public:
 	// now      200　000　000
 	Astar(D &d) : SearchAlg<D>(d), closed(512927357), open(120), w(1) { }
 
-	Astar(D &d, unsigned int opensize) : SearchAlg<D>(d), closed(512927357), open(opensize), w(1) { }
+	Astar(D &d, unsigned int opensize)
+	: SearchAlg<D>(d), closed(512927357), open(opensize), w(1), incumbent(1000000) { }
 
-	Astar(D &d, unsigned int opensize, double weight) : SearchAlg<D>(d), closed(512927357), open(opensize), w(weight) { }
+	Astar(D &d, unsigned int opensize, double weight)
+	: SearchAlg<D>(d), closed(512927357), open(opensize), w(weight), incumbent(1000000) { }
+
+	Astar(D &d, unsigned int opensize, double weight, unsigned int incumbent)
+	: SearchAlg<D>(d), closed(512927357), open(opensize), w(weight), incumbent(incumbent) { }
 
 
 	std::vector<typename D::State> search(typename D::State &init) {
@@ -91,9 +99,16 @@ public:
 //				printf("%u ", op);
 				if (op == n->pop)
 					continue;
-				this->gend++;
 				Edge<D> e = this->dom.apply(state, op);
-				open.push(wrap(state, n, e.cost, e.pop));
+
+				Node* next = wrap(state, n, e.cost, e.pop);
+				if (next->f > incumbent) {
+//					delete next;
+					continue;
+				}
+				this->gend++;
+				open.push(next);
+//				open.push(wrap(state, n, e.cost, e.pop));
 				this->dom.undo(state, e);
 			}
 //			printf("\n");

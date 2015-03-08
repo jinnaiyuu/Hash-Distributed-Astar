@@ -506,6 +506,20 @@ int main(int argc, const char *argv[]) {
 
 			if (strcmp(argv[1], "astar") == 0) {
 				search = new Astar<MSA>(msa, 40000);
+			} else if (strcmp(argv[1], "wastar") == 0) {
+				search = new Astar<MSA>(msa, 40000, 1.05);
+			} else if (strcmp(argv[1], "wa+astar") == 0) {
+				search = new Astar<MSA>(msa, 40000, 1.05);
+				MSA::State init = msa.initial();
+				double wall0 = walltime();
+				std::vector<MSA::State> path = search->search(init);
+				double wtime = search->wtime - wall0;
+				unsigned int cost = msa.calc_cost(path);
+				printf("precalc cost = %u\n", cost);
+				dfpair(stdout, "precalc wall time", "%g", wtime);
+				delete search;
+				search = new Astar<MSA>(msa, 40000, 1.0, cost);
+
 			} else if (strcmp(argv[1], "hdastar") == 0) {
 				search = new HDAstar<MSA, MSAZobrist<MSA> >(msa,
 						std::stoi(argv[2]), 1000000, 1000000,
@@ -519,7 +533,7 @@ int main(int argc, const char *argv[]) {
 				unsigned int cost = msa.calc_cost(path);
 				printf("precalc cost = %u\n", cost);
 				dfpair(stdout, "precalc wall time", "%g", wtime);
-
+				delete search;
 				search = new HDAstar<MSA, MSAZobrist<MSA> >(msa,
 						std::stoi(argv[2]), 1000000, 1000000,
 						std::stoi(argv[3]), 0, 193877777, cost);
