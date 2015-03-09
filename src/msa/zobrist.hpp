@@ -17,8 +17,7 @@ template<typename D>
 class MSAZobrist {
 public:
 	enum ABST {
-		SINGLE = 0,
-		FIVE = 5
+		SINGLE = 1, FIVE = 5
 //		PAIR = 1,
 //		LINE = 2,
 //		BLOCK = 3,
@@ -43,7 +42,8 @@ public:
 	 * @return the value to XOR to the Zobrist value of parent.
 	 */
 	unsigned int inc_hash(const unsigned int previous, const int number,
-			const int from, const int to, const char* const newBoard, const typename D::State s) const {
+			const int from, const int to, const char* const newBoard,
+			const typename D::State s) const {
 		unsigned int c = 0;
 		for (unsigned int i = 0; i < map.size(); ++i) {
 			c = c ^ map[i][s.sequence[i]];
@@ -75,16 +75,29 @@ private:
 		if (abst < 1000) {
 			// ###### Abstraction
 			abstraction(abst);
+		} else {
+			abstraction(abst % 1000, abst / 1000);
 		}
 	}
 
-	void abstraction(unsigned int abst) {
+	void abstraction(unsigned int abst, unsigned int features = 100) {
 		printf("abst = %u\n", abst);
+		printf("features = %u\n", features);
+		if (abst == 0) {
+			++abst;
+		}
 		for (unsigned int i = 0; i < map.size(); ++i) {
-			for (unsigned int j = 0; j < map[i].size(); j += abst) {
-				unsigned int r = random();
-				for (unsigned int ab = 0; (ab < abst) && ((j + ab) < map[i].size()); ++ab) {
-					map[i][j + ab] = r;
+			if (i < features) {
+				for (unsigned int j = 0; j < map[i].size(); j += abst) {
+					unsigned int r = random();
+					for (unsigned int ab = 0;
+							(ab < abst) && ((j + ab) < map[i].size()); ++ab) {
+						map[i][j + ab] = r;
+					}
+				}
+			} else {
+				for (unsigned int j = 0; j < map[i].size(); ++j) {
+					map[i][j] = 0;
 				}
 			}
 		}

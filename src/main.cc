@@ -49,6 +49,7 @@
 #include "grid_hash.hpp"
 #include "tsp_hash.hpp"
 #include "msa/zobrist.hpp"
+#include "msa/hyperplane.hpp"
 
 #include "idastar.hpp"
 #include "astar.hpp"
@@ -524,6 +525,13 @@ int main(int argc, const char *argv[]) {
 				search = new HDAstar<MSA, MSAZobrist<MSA> >(msa,
 						std::stoi(argv[2]), 1000000, 1000000,
 						std::stoi(argv[3]), 0, 193877777, 1000000);
+			} else if (strcmp(argv[1], "hdastar-hwd") == 0) {
+				// hyperplane work distribution
+				// abst == # of threads
+				search = new HDAstar<MSA, Hyperplane<MSA> >(msa,
+						std::stoi(argv[2]), 1000000, 1000000,
+						std::stoi(argv[2]), 0, 193877777, 1000000);
+
 			} else if (strcmp(argv[1], "wa+hdastar") == 0) {
 				search = new Astar<MSA>(msa, 40000, 1.05);
 				MSA::State init = msa.initial();

@@ -546,7 +546,6 @@ public:
 		this->ctime = cputime();
 
 		printf("useless = %d\n", useless);
-		printf("over incumbent = %u\n", over_incumbent_count);
 
 		this->open_sizes[id] = open.getsize();
 
