@@ -5,8 +5,8 @@
  *      Author: yuu
  */
 
-#ifndef HDASTAR_HPP_
-#define HDASTAR_HPP_
+#ifndef HDASTAR_HEAP_HPP_
+#define HDASTAR_HEAP_HPP_
 
 #include <vector>
 #include <pthread.h>
@@ -32,10 +32,10 @@
 // DELAY 10,000,000 -> 3000 nodes per second
 #define DELAY 0
 
-template<class D, class hash> class HDAstar: public SearchAlg<D> {
+template<class D, class hash> class HDAstarHeap: public SearchAlg<D> {
 
 	struct Node {
-		unsigned int f, g;
+		double f, g;
 		char pop;
 		unsigned int zbr; // zobrist value. stored here for now. Also the size is char for now.
 		int openind;
@@ -170,7 +170,7 @@ template<class D, class hash> class HDAstar: public SearchAlg<D> {
 
 public:
 
-	HDAstar(D &d, int tnum_, int income_threshold_ = 1000000,
+	HDAstarHeap(D &d, int tnum_, int income_threshold_ = 1000000,
 			int outgo_threshold_ = 10000000, int abst_ = 0, int overrun_ = 0,
 			unsigned int closedlistsize = 110503,
 			unsigned int openlistsize = 100,
@@ -467,8 +467,8 @@ public:
 
 //				int moving_tile = 0;
 //				int blank = 0; // Make this available for Grid pathfinding.
-				int moving_tile = state.tiles[op];
-				int blank = state.blank; // Make this available for Grid pathfinding.
+//				int moving_tile = state.tiles[op];
+//				int blank = state.blank; // Make this available for Grid pathfinding.
 				Edge<D> e = this->dom.apply(state, op);
 				Node* next = wrap(state, n, e.cost, e.pop, nodes);
 
@@ -494,19 +494,20 @@ public:
 //				}
 
 
-//				if (next->f > incumbent.load()) {
-////					printf("needless\n");
-//					++over_incumbent_count;
-//					continue;
-//				}
+				if (next->f > incumbent.load()) {
+//					printf("needless\n");
+					++over_incumbent_count;
+					this->dom.undo(state, e);
+					continue;
+				}
 				gend_here++;
 				//printf("mv blank op = %d %d %d \n", moving_tile, blank, op);
 //				print_state(state);
 
 				// TODO: Make dist hash available for Grid pathfinding.
 				// TODO: Make Zobrist hash appropriate for 24 threads.
-				next->zbr = z.inc_hash(n->zbr, moving_tile, blank, op,
-						state.tiles, state);
+				next->zbr = z.inc_hash(n->zbr, 0, 0, op,
+						0, state);
 //				next->zbr = z.inc_hash(n->zbr, moving_tile, blank, op,
 //						0, state);
 
@@ -644,7 +645,7 @@ public:
 		printf("start\n");
 		for (int i = 0; i < tnum; ++i) {
 			pthread_create(&t[tnum], NULL,
-					(void*(*)(void*))&HDAstar::thread_helper, this);
+					(void*(*)(void*))&HDAstarHeap::thread_helper, this);
 		}
 		for (int i = 0; i < tnum; ++i) {
 			pthread_join(t[tnum], NULL);
@@ -740,8 +741,8 @@ public:
 	}
 
 	static void* thread_helper(void* arg) {
-		return static_cast<HDAstar*>(arg)->thread_search<Heap<Node> >(arg);
-//		return static_cast<HDAstar*>(arg)->thread_search<NaiveHeap<Node> >(arg);
+//		return static_cast<HDAstarHeap*>(arg)->thread_search<Heap<Node> >(arg);
+		return static_cast<HDAstarHeap*>(arg)->thread_search<NaiveHeap<Node> >(arg);
 	}
 
 	inline Node *wrap(typename D::State &s, Node *p, int c, int pop,

@@ -57,6 +57,10 @@
 #include "multiastar.hpp"
 #include "hdastar.hpp"
 #include "oshdastar.hpp"
+
+#include "astar_heap.hpp"
+#include "hdastar_heap.hpp"
+
 #include "hdastar_shared_closed.hpp"
 #include "ppastar.hpp"
 
@@ -77,6 +81,7 @@ void handler(int sig) {
 }
 
 int main(int argc, const char *argv[]) {
+
 	try {
 		fflush(stdout);
 		// Markov primes.
@@ -505,51 +510,95 @@ int main(int argc, const char *argv[]) {
 
 			SearchAlg<MSA> *search = NULL;
 
+			MSA::State init = msa.initial();
+
+			unsigned int max_h = init.h * 1.5;
+
+			printf("max_h = %u\n", max_h);
+
 			if (strcmp(argv[1], "astar") == 0) {
-				search = new Astar<MSA>(msa, 40000);
+				search = new Astar<MSA>(msa, max_h);
+			} else if (strcmp(argv[1], "wastar_heap") == 0) {
+				double weight = 1;
+				for (unsigned int i = 0; i < argc; ++i) {
+					if (sscanf(argv[i], "w-%lf", &weight) == 1) {
+					}
+				}
+				printf("w = %f\n", weight);
+				search = new AstarHeap<MSA>(msa, max_h * weight, weight);
 			} else if (strcmp(argv[1], "wastar") == 0) {
-				search = new Astar<MSA>(msa, 40000, 1.05);
+				double weight = 1;
+				for (unsigned int i = 0; i < argc; ++i) {
+					if (sscanf(argv[i], "w-%lf", &weight) == 1) {
+					}
+				}
+				printf("w = %f\n", weight);
+				search = new Astar<MSA>(msa, max_h * weight, weight);
 			} else if (strcmp(argv[1], "wa+astar") == 0) {
-				search = new Astar<MSA>(msa, 40000, 1.05);
+				double weight = 1;
+				for (unsigned int i = 0; i < argc; ++i) {
+					if (sscanf(argv[i], "w-%lf", &weight) == 1) {
+					}
+				}
+				search = new AstarHeap<MSA>(msa, max_h * weight, weight);
 				MSA::State init = msa.initial();
 				double wall0 = walltime();
 				std::vector<MSA::State> path = search->search(init);
 				double wtime = search->wtime - wall0;
-				unsigned int cost = msa.calc_cost(path);
+				unsigned int cost = search->incm;
 				printf("precalc cost = %u\n", cost);
 				dfpair(stdout, "precalc wall time", "%g", wtime);
+				dfpair(stdout, "precalc nodes expanded", "%lu", search->expd);
+				dfpair(stdout, "precalc nodes generated", "%lu", search->gend);
 				delete search;
-				search = new Astar<MSA>(msa, 40000, 1.0, cost);
+				search = new AstarHeap<MSA>(msa, max_h, 1.0, cost);
 
 			} else if (strcmp(argv[1], "hdastar") == 0) {
-				search = new HDAstar<MSA, MSAZobrist<MSA> >(msa,
+
+				unsigned int closedlistsize = 0;
+				for (unsigned int i = 0; i < argc; ++i) {
+					if (sscanf(argv[i], "closed-%u", &closedlistsize) == 1) {
+					}
+				}
+
+				search = new HDAstarHeap<MSA, MSAZobrist<MSA> >(msa,
 						std::stoi(argv[2]), 1000000, 1000000,
-						std::stoi(argv[3]), 0, 193877777, 1000000);
+						std::stoi(argv[3]), 0, closedlistsize, max_h, 1000000);
+
+//				search = new HDAstar<MSA, MSAZobrist<MSA> >(msa,
+//						std::stoi(argv[2]), 1000000, 1000000,
+//						std::stoi(argv[3]), 0, closedlistsize, max_h, 1000000);
 			} else if (strcmp(argv[1], "hdastar-hwd") == 0) {
 				// hyperplane work distribution
 				// abst == # of threads
-				search = new HDAstar<MSA, Hyperplane<MSA> >(msa,
+				search = new HDAstarHeap<MSA, Hyperplane<MSA> >(msa,
 						std::stoi(argv[2]), 1000000, 1000000,
-						std::stoi(argv[2]), 0, 193877777, 1000000);
+						std::stoi(argv[2]), 0, 45212177, max_h, 1000000);
 
 			} else if (strcmp(argv[1], "wa+hdastar") == 0) {
-				search = new Astar<MSA>(msa, 40000, 1.05);
+				double weight = 1;
+				for (unsigned int i = 0; i < argc; ++i) {
+					if (sscanf(argv[i], "w-%lf", &weight) == 1) {
+					}
+				}
+				search = new AstarHeap<MSA>(msa, max_h * weight, weight);
 				MSA::State init = msa.initial();
 				double wall0 = walltime();
 				std::vector<MSA::State> path = search->search(init);
 				double wtime = search->wtime - wall0;
-				unsigned int cost = msa.calc_cost(path);
+				unsigned int cost = search->incm;
 				printf("precalc cost = %u\n", cost);
 				dfpair(stdout, "precalc wall time", "%g", wtime);
+				dfpair(stdout, "precalc nodes expanded", "%lu", search->expd);
+				dfpair(stdout, "precalc nodes generated", "%lu", search->gend);
 				delete search;
-				search = new HDAstar<MSA, MSAZobrist<MSA> >(msa,
+				search = new HDAstarHeap<MSA, MSAZobrist<MSA> >(msa,
 						std::stoi(argv[2]), 1000000, 1000000,
-						std::stoi(argv[3]), 0, 193877777, cost);
+						std::stoi(argv[3]), 0, 45212177, max_h, cost);
 			} else {
 				throw Fatal("Unknown algorithm: %s", argv[1]);
 			}
 
-			MSA::State init = msa.initial();
 			dfheader(stdout);
 			dfpair(stdout, "algorithm", "%s", argv[1]);
 			dfpair(stdout, "initial heuristic", "%d", msa.h(init));

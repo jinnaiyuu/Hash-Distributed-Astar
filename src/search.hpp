@@ -26,7 +26,7 @@ template<class D> struct SearchAlg {
 
 	// SearchAlg constructs a new search algorithm that
 	// searches in the given domain.
-	SearchAlg(D &d) : dom(d), expd(0), gend(0) { }
+	SearchAlg(D &d) : dom(d), expd(0), gend(0), incm(0) { }
 
 	// search searches for a goal from the initial state
 	// The return value is the path to the goal which can
@@ -39,6 +39,8 @@ template<class D> struct SearchAlg {
 	// expd and gend are the number of states that have been
 	// expanded and generated respectively.
 	unsigned long expd, gend;
+
+	unsigned int incm;
 
 	double wtime, ctime;
 };

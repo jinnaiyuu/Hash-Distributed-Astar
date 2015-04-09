@@ -14,14 +14,14 @@
 
 struct MSA {
 
+	// TODO: 9 short unsigned int? maybe vector is too heavy.
 	struct State {
-		char tiles[1];
-		char blank;
 		std::vector<unsigned int> sequence;
 		int h;
 	};
 
 	struct PackedState {
+		// TODO: max number of sequence = 8.
 		uint64_t word;
 
 		unsigned long hash() const {
@@ -67,7 +67,7 @@ struct MSA {
 	}
 
 	int h(const State &s) const {
-		return s.h * 1;
+		return s.h;
 	}
 
 	bool isgoal(const State &s) const {
@@ -132,6 +132,8 @@ struct MSA {
 //			printf("%u ", s.sequence[i]);
 //		}
 //		printf("\n");
+//		printf("BEFORE:\n");
+//		heuristic(s);
 
 		// TODO: apply incrementing seqs;
 		int path = newb;
@@ -148,6 +150,7 @@ struct MSA {
 		}
 //		printf("\n");
 
+//		printf("\ncosts:\n");
 		int cost = 0;
 		for (unsigned int i = 0; i < num_of_sequences; ++i) {
 			for (unsigned int j = i + 1; j < num_of_sequences; ++j) {
@@ -155,13 +158,15 @@ struct MSA {
 				if (incs[i] == 0) {
 					amino0 = 24;
 				} else {
-					amino0 = sequences[i][s.sequence[i]];
+					amino0 = sequences[i][s.sequence[i] - 1];
 				}
 				if (incs[j] == 0) {
 					amino1 = 24;
 				} else {
-					amino1 = sequences[j][s.sequence[j]];
+					amino1 = sequences[j][s.sequence[j] - 1];
 				}
+//				printf("%ux%u: %d\n", i, j, pam[amino0 * 25 + amino1]);
+//				printf("amino: %c %c\n", pamcode[amino0], pamcode[amino1]);
 				cost += pam[amino0 * 25 + amino1];
 			}
 		}
@@ -170,7 +175,10 @@ struct MSA {
 		e.undo.newb = newb;
 		e.undo.h = s.h;
 
+//		printf("AFTER:\n");
 		s.h = heuristic(s);
+//		printf("\n\n");
+
 		return e;
 	}
 
@@ -198,11 +206,15 @@ struct MSA {
 	void unpack(State &dst, PackedState s) const {
 		dst.h = 0;
 		dst.sequence.resize(num_of_sequences);
+//		printf("t = ");
 		for (int i = num_of_sequences - 1; i >= 0; i--) {
-			int t = s.word & 0xFF; // 15 Puzzle specific
+			unsigned int t = s.word & 0xFF;
+//			printf("%d ", t);
 			s.word >>= 8;
 			dst.sequence[i] = t;
 		}
+//		printf("\n");
+
 	}
 
 	void print_alignment(std::vector<MSA::State> solution) {
@@ -227,19 +239,17 @@ struct MSA {
 	}
 
 	unsigned int calc_cost(std::vector<MSA::State> solution) {
+
 		unsigned int cost = 0;
-		for (int sq = 0; sq < solution.size() - 1; ++sq) {
+		for (int sq = 0; sq < solution.size(); ++sq) {
 			MSA::State s = solution[sq];
 			bool* isgap = new bool[num_of_sequences];
-			if (sq == 0) {
-				for (unsigned int i = 0; i < num_of_sequences; ++i) {
-					isgap[i] = false;
-				}
-			} else {
-				for (unsigned int i = 0; i < num_of_sequences; ++i) {
-					isgap[i] = (s.sequence[i] == solution[sq - 1].sequence[i]);
-				}
+			for (unsigned int i = 0; i < num_of_sequences; ++i) {
+				isgap[i] = (s.sequence[i] == 0) ||
+						(s.sequence[i] == solution[sq + 1].sequence[i]);
 			}
+
+//			printf("\ncosts = \n");
 
 			for (unsigned int i = 0; i < num_of_sequences; ++i) {
 				for (unsigned int j = i + 1; j < num_of_sequences; ++j) {
@@ -254,6 +264,7 @@ struct MSA {
 					} else {
 						amino1 = sequences[j][s.sequence[j]];
 					}
+//					printf("%ux%u: %u\n", i, j, pam[amino0 * 25 + amino1]);
 					cost += pam[amino0 * 25 + amino1];
 				}
 			}
@@ -282,6 +293,9 @@ private:
 //						|| s.sequence[j] > sequences[j].size()) {
 //					cost += 10000; // to eliminate exceeding sequence.
 //				} else {
+//				printf("%ux%u: %u\n", i, j,
+//						pairwise_tables[i + j * num_of_sequences][s.sequence[i]
+//								+ s.sequence[j] * (sequences[i].size() + 1)]);
 				cost += pairwise_tables[i + j * num_of_sequences][s.sequence[i]
 						+ s.sequence[j] * (sequences[i].size() + 1)];
 //				cost += pairwise_heuristic(i, s.sequence[i], j, s.sequence[j]);
@@ -300,6 +314,7 @@ private:
 
 //		printf("heuristic = %d\n", cost);
 
+//		return 0;
 		return cost;
 	}
 
@@ -326,7 +341,8 @@ private:
 							* (length1 - 1 - i);
 				}
 				for (int j = 0; j < length2; ++j) {
-					pairwise_tables[num][j * length1 + length1 - 1] = gapcost * (length2 - 1 - j);
+					pairwise_tables[num][j * length1 + length1 - 1] = gapcost
+							* (length2 - 1 - j);
 				}
 
 				for (int pos1 = length1 - 2; pos1 >= 0; --pos1) {
@@ -336,7 +352,8 @@ private:
 						unsigned int amino1 = sequences[seq1][pos1];
 						unsigned int amino2 = sequences[seq2][pos2];
 						diagonal = pairwise_tables[num][(pos1 + 1)
-								+ (pos2 + 1) * length1] + pam[amino1 * 25 + amino2];
+								+ (pos2 + 1) * length1]
+								+ pam[amino1 * 25 + amino2];
 						gap1 = pairwise_tables[num][(pos1 + 1) + pos2 * length1]
 								+ pam[24 * 25 + amino2];
 						gap2 = pairwise_tables[num][pos1 + (pos2 + 1) * length1]
@@ -346,6 +363,9 @@ private:
 								diagonal, gap1, gap2);
 					}
 				}
+
+//				cost += pairwise_tables[i + j * num_of_sequences]
+//				                        [s.sequence[i]+ s.sequence[j] * (sequences[i].size() + 1)];
 
 //				printf("TABLE %ux%u:\n", seq1, seq2);
 //				for (int j = 0; j < length2; ++j) {

@@ -16,16 +16,18 @@ MSA::MSA(std::istream &pam, std::istream &sequence) {
 	}
 	gapcost = this->pam[24];
 
-//	printf("PAM 250\n");
-//	printf("   A  R  N  D  C  Q  E  G  H  I  L  K  M  F  P  S  T  W  Y  V  B  J  Z  X  *\n");
-//	for (unsigned int i = 0; i < 25; ++i) {
-//		printf("%c ", pamcode[i]);
-//		for (unsigned int j = 0; j < 25; ++j) {
-//			printf("%2d ", this->pam[i * 25 + j]);
-//		}
-//		printf("\n");
-//	}
-//	printf("gapcost = %d\n", gapcost);
+	this->pam[24 * 25 + 24] = 0;
+
+	printf("PAM 250\n");
+	printf("   A  R  N  D  C  Q  E  G  H  I  L  K  M  F  P  S  T  W  Y  V  B  J  Z  X  *\n");
+	for (unsigned int i = 0; i < 25; ++i) {
+		printf("%c ", pamcode[i]);
+		for (unsigned int j = 0; j < 25; ++j) {
+			printf("%3d ", this->pam[i * 25 + j]);
+		}
+		printf("\n");
+	}
+	printf("gapcost = %d\n", gapcost);
 
 
 	//>1aab_
@@ -58,10 +60,11 @@ MSA::MSA(std::istream &pam, std::istream &sequence) {
 	init_pairwise_heuristic();
 //	printf("sequences:\n");
 //	printf("length = ");
-//	for (unsigned int i = 0; i < sequences.size(); ++i) {
-//		printf("%u, ", sequences[i].size());
-//	}
-//	printf("\n");
+	printf("length of the sequences: ");
+	for (unsigned int i = 0; i < sequences.size(); ++i) {
+		printf("%u ", sequences[i].size());
+	}
+	printf("\n");
 //	for (unsigned int i = 0; i < sequences.size(); ++i) {
 //		printf("seq %u:\n", i);
 //		for (unsigned int j = 0; j < sequences[i].size(); ++j) {

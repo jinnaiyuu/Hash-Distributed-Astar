@@ -80,7 +80,7 @@ private:
 		for (unsigned int i = 0; i < d.num_of_sequences; ++i) {
 			total_length += d.sequences[i].size();
 		}
-		double p = 0.003 * total_length / log2(static_cast<double>(abst));
+		double p = 0.03 * total_length / log2(static_cast<double>(abst));
 
 		if (p >= 1.0) {
 			is_d_int = true;

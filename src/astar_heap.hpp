@@ -4,14 +4,13 @@
 #include "search.hpp"
 #include "utils.hpp"
 #include "hashtbl.hpp"
-#include "heap.hpp"
 #include "naive_heap.hpp"
 #include "pool.hpp"
 
-template<class D> class Astar : public SearchAlg<D> {
+template<class D> class AstarHeap: public SearchAlg<D> {
 
 	struct Node {
-		unsigned int f, g;
+		double f, g;
 		char pop;
 		int openind;
 		Node *parent;
@@ -24,15 +23,20 @@ template<class D> class Astar : public SearchAlg<D> {
 			return f < o->f;
 		}
 
- 		void setindex(int i) { }
+		void setindex(int i) {
+		}
 
-		const typename D::PackedState &key() { return packed; }
+		const typename D::PackedState &key() {
+			return packed;
+		}
 
-		HashEntry<Node> &hashentry() { return hentry; }
+		HashEntry<Node> &hashentry() {
+			return hentry;
+		}
 	};
 
 	HashTable<typename D::PackedState, Node> closed;
-	Heap<Node> open; // TODO: TODO
+	NaiveHeap<Node> open; // TODO: TODO
 	std::vector<typename D::State> path;
 	Pool<Node> nodes;
 
@@ -44,17 +48,26 @@ public:
 	// closed might be waaaay too big for my memory....
 	// original 512927357
 	// now      200　000　000
-	Astar(D &d) : SearchAlg<D>(d), closed(512927357), open(120), w(1), incumbent(1000000) { }
+	AstarHeap(D &d) :
+			SearchAlg<D>(d), closed(512927357), open(120), w(1), incumbent(
+					1000000) {
+	}
 
-	Astar(D &d, unsigned int opensize)
-	: SearchAlg<D>(d), closed(512927357), open(opensize), w(1), incumbent(1000000) { }
+	AstarHeap(D &d, unsigned int opensize) :
+			SearchAlg<D>(d), closed(512927357), open(opensize), w(1), incumbent(
+					1000000) {
+	}
 
-	Astar(D &d, unsigned int opensize, double weight)
-	: SearchAlg<D>(d), closed(512927357), open(opensize), w(weight), incumbent(1000000) { }
+	AstarHeap(D &d, unsigned int opensize, double weight) :
+			SearchAlg<D>(d), closed(512927357), open(opensize), w(weight), incumbent(
+					1000000) {
+	}
 
-	Astar(D &d, unsigned int opensize, double weight, unsigned int incumbent)
-	: SearchAlg<D>(d), closed(512927357), open(opensize), w(weight), incumbent(incumbent) { }
-
+	AstarHeap(D &d, unsigned int opensize, double weight,
+			unsigned int incumbent) :
+			SearchAlg<D>(d), closed(512927357), open(opensize), w(weight), incumbent(
+					incumbent) {
+	}
 
 	std::vector<typename D::State> search(typename D::State &init) {
 		open.push(wrap(init, 0, 0, -1));
@@ -73,7 +86,7 @@ public:
 //			printf("expd = %lu\n", this->expd);
 //			Grid::State s = static_cast<Grid::State>(state);
 //			printf("x = %u\n", state.blank);
-//			printf("f,g = %d, %d\n", n->f, n->g);
+//			printf("f,g = %f, %f\n", n->f, n->g);
 //			for (int i = 0; i < 16; ++i) {
 //				printf("%d ", state.tiles[i]);
 //			}
@@ -81,7 +94,9 @@ public:
 
 			if (this->dom.isgoal(state)) {
 				printf("goal!\n");
-				printf("f = %u\n", n->f);
+				printf("f = %f\n", n->f);
+				this->incm = n->f;
+				printf("incm = %f\n", this->incm);
 				for (Node *p = n; p; p = p->parent) {
 					typename D::State s;
 					this->dom.unpack(s, p->packed);
@@ -94,6 +109,9 @@ public:
 
 			this->expd++;
 //			printf("nops = %u\nexpd: ", this->dom.nops(state));
+//			printf("expd = %d\n\n", this->expd);
+//			printf("f, h = %f %f\n", n->f, n->f - n->g);
+
 			for (int i = 0; i < this->dom.nops(state); i++) {
 				int op = this->dom.nthop(state, i);
 //				printf("%u ", op);
@@ -102,9 +120,29 @@ public:
 				Edge<D> e = this->dom.apply(state, op);
 
 				Node* next = wrap(state, n, e.cost, e.pop);
+
+				if (w == 1.0 && n->f > next->f) {
+//					// heuristic was calculating too big.
+					printf("!!!ERROR: f decreases\n");
+//
+//					double nh = n->f - n->g;
+//					double nxh = next->f - next->g;
+//					printf("f = %f -> %f\n", n->f, next->f);
+//					printf("h = %f -> %f\n", nh, nxh);
+//					printf("edge cost = %d\n", e.cost);
+//					printf("\n");
+				}
+//				if (static_cast<unsigned int>(n->g + e.cost)
+//						!= static_cast<unsigned int>(next->g)) {
+//					printf("!!!ERROR: g is wrong: %u + %d != %u\n", n->g, e.cost,
+//							next->g);
+//				}
+
+
 				if (next->f > incumbent) {
 //					delete next;
-//					printf("f > incumbent\n");
+//					printf("f > incumbent: %f > %u\n", next->f, incumbent);
+					this->dom.undo(state, e);
 					continue;
 				}
 				this->gend++;
@@ -125,10 +163,12 @@ public:
 		n->g = c;
 		if (p)
 			n->g += p->g;
-		n->f = n->g + this->dom.h(s) * w;
-		unsigned int nw = n->g + this->dom.h(s);
+		n->f = static_cast<double>(n->g)
+				+ static_cast<double>(this->dom.h(s)) * w;
+//		unsigned int nw = n->g + this->dom.h(s);
 //		printf("h, wh = %u, %u\n", this->dom.h(s), static_cast<unsigned int>(this->dom.h(s) * w));
-//		printf("h = %d\n", this->dom.weight_h(s));
+//		printf("h = %f\n", static_cast<double>(this->dom.h(s)) * w);
+//		printf("f = %f\n", n->f);
 		n->pop = pop;
 		n->parent = p;
 		this->dom.pack(n->packed, s);
