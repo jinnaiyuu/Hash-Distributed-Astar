@@ -11,8 +11,8 @@ template<class D> class AstarHeap: public SearchAlg<D> {
 
 	struct Node {
 		double f, g;
-		char pop;
-		int openind;
+//		char pop;
+//		int openind;
 		Node *parent;
 		typename D::PackedState packed;
 		HashEntry<Node> hentry;
@@ -75,10 +75,10 @@ public:
 		while (!open.isempty() && path.size() == 0) {
 //			printf("while loop\n");
 			Node *n = static_cast<Node*>(open.pop());
-			if (closed.find(n->packed)) {
-				nodes.destruct(n);
-				continue;
-			}
+//			if (closed.find(n->packed)) {
+//				nodes.destruct(n);
+//				continue;
+//			}
 
 			typename D::State state;
 			this->dom.unpack(state, n->packed);
@@ -105,9 +105,11 @@ public:
 				break;
 			}
 
-			closed.add(n);
-
+//			closed.add(n);
 			this->expd++;
+			if (this->expd % 1000000 == 0) {
+				printf("expd: %u\n", this->expd);
+			}
 //			printf("nops = %u\nexpd: ", this->dom.nops(state));
 //			printf("expd = %d\n\n", this->expd);
 //			printf("f, h = %f %f\n", n->f, n->f - n->g);
@@ -115,9 +117,10 @@ public:
 			for (int i = 0; i < this->dom.nops(state); i++) {
 				int op = this->dom.nthop(state, i);
 //				printf("%u ", op);
-				if (op == n->pop)
-					continue;
+//				if (op == n->pop)
+//					continue;
 				Edge<D> e = this->dom.apply(state, op);
+
 
 				Node* next = wrap(state, n, e.cost, e.pop);
 
@@ -138,15 +141,24 @@ public:
 //							next->g);
 //				}
 
-
+				// Pruning methods
 				if (next->f > incumbent) {
 //					delete next;
 //					printf("f > incumbent: %f > %u\n", next->f, incumbent);
+					nodes.destruct(next);
 					this->dom.undo(state, e);
 					continue;
 				}
+				if (closed.find(next->packed)) {
+					nodes.destruct(next);
+					this->dom.undo(state, e);
+					continue;
+				}
+
 				this->gend++;
 				open.push(next);
+				closed.add(next);
+
 //				open.push(wrap(state, n, e.cost, e.pop));
 				this->dom.undo(state, e);
 			}
@@ -169,7 +181,7 @@ public:
 //		printf("h, wh = %u, %u\n", this->dom.h(s), static_cast<unsigned int>(this->dom.h(s) * w));
 //		printf("h = %f\n", static_cast<double>(this->dom.h(s)) * w);
 //		printf("f = %f\n", n->f);
-		n->pop = pop;
+//		n->pop = pop;
 		n->parent = p;
 		this->dom.pack(n->packed, s);
 		return n;

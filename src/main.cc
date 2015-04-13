@@ -555,7 +555,8 @@ int main(int argc, const char *argv[]) {
 
 			} else if (strcmp(argv[1], "hdastar") == 0) {
 
-				unsigned int closedlistsize = 0;
+				unsigned int closedlistsize = 9834497;
+//				unsigned int closedlistsize = 45212177;
 				for (unsigned int i = 0; i < argc; ++i) {
 					if (sscanf(argv[i], "closed-%u", &closedlistsize) == 1) {
 					}
@@ -592,9 +593,17 @@ int main(int argc, const char *argv[]) {
 				dfpair(stdout, "precalc nodes expanded", "%lu", search->expd);
 				dfpair(stdout, "precalc nodes generated", "%lu", search->gend);
 				delete search;
+
+				unsigned int closedlistsize = 9834497;
+//				unsigned int closedlistsize = 45212177;
+				for (unsigned int i = 0; i < argc; ++i) {
+					if (sscanf(argv[i], "closed-%u", &closedlistsize) == 1) {
+					}
+				}
+
 				search = new HDAstarHeap<MSA, MSAZobrist<MSA> >(msa,
 						std::stoi(argv[2]), 1000000, 1000000,
-						std::stoi(argv[3]), 0, 45212177, max_h, cost);
+						std::stoi(argv[3]), 0, closedlistsize, max_h, cost + 1);
 			} else {
 				throw Fatal("Unknown algorithm: %s", argv[1]);
 			}

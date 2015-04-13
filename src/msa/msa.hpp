@@ -8,34 +8,35 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cassert>
-#include <stdint.h>
 #include <vector>
 #include <iostream>
+#include <stdint.h>
 
 struct MSA {
 
 	// TODO: 9 short unsigned int? maybe vector is too heavy.
 	struct State {
-		std::vector<unsigned int> sequence;
+		std::vector<uint16_t> sequence;
 		int h;
 	};
 
 	struct PackedState {
-		// TODO: max number of sequence = 8.
-		uint64_t word;
+		unsigned long word;
+		std::vector<uint16_t> sequence;
 
 		unsigned long hash() const {
 			return word;
 		}
 
+		// however long you take for the hash, it does not cover all the sequences.
 		bool eq(const PackedState &h) const {
-			return word == h.word;
-//			for (unsigned int i = 0; i < num_of_sequences; ++i) {
-//				if (sequence[i] != h.sequence[i]) {
-//					return false;
-//				}
-//			}
-//			return true;
+//			return word == h.word;
+			for (unsigned int i = 0; i < h.sequence.size(); ++i) {
+				if (sequence[i] != h.sequence[i]) {
+					return false;
+				}
+			}
+			return true;
 		}
 	};
 
@@ -193,26 +194,29 @@ struct MSA {
 
 	}
 
-	// pack packes state s into the packed state dst.
+	// pack: packes state s into the packed state dst.
 	void pack(PackedState &dst, State &s) const {
 		dst.word = 0; // to make g++ shut up about uninitialized usage.
 		for (int i = 0; i < num_of_sequences; i++) {
-			dst.word = (dst.word << 8) | s.sequence[i];
+			dst.word = (dst.word << 16) | s.sequence[i];
 		}
+		dst.sequence = s.sequence; // copy
 //		printf("hash = %lu\n", dst.word);
 	}
 
-	// unpack unpacks the packed state s into the state dst.
+	// unpack: unpacks the packed state s into the state dst.
 	void unpack(State &dst, PackedState s) const {
 		dst.h = 0;
-		dst.sequence.resize(num_of_sequences);
-//		printf("t = ");
-		for (int i = num_of_sequences - 1; i >= 0; i--) {
-			unsigned int t = s.word & 0xFF;
-//			printf("%d ", t);
-			s.word >>= 8;
-			dst.sequence[i] = t;
-		}
+//		dst.sequence.resize(num_of_sequences);
+////		printf("t = ");
+//		for (int i = num_of_sequences - 1; i >= 0; i--) {
+//			unsigned int t = s.word & 0xFFFF;
+////			printf("%d ", t);
+//			s.word >>= 16;
+//			dst.sequence[i] = t;
+//		}
+		dst.sequence = s.sequence;
+		dst.h = heuristic(dst);
 //		printf("\n");
 
 	}

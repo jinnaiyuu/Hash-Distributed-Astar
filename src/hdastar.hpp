@@ -262,6 +262,7 @@ public:
 		printf("id = %d\n", id);
 
 		unsigned int over_incumbent_count = 0;
+		unsigned int no_work_iteration = 0;
 
 		while (true) {
 			Node *n;
@@ -321,6 +322,7 @@ public:
 					printf("terminated\n");
 					break;
 				}
+				++no_work_iteration;
 				continue; // ad hoc
 			}
 			n = static_cast<Node*>(open.pop());
@@ -588,6 +590,7 @@ public:
 		this->ctime = cputime();
 
 		printf("useless = %d\n", useless);
+		printf("no_work_iteration = %u\n", no_work_iteration);
 
 		this->open_sizes[id] = open.getsize();
 

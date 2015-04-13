@@ -93,7 +93,7 @@ public:
 		} else {
 			HeapElm *top = heap[0];
 //			printf("top->f = %u, incumbent = %d\n", top->f, incumbent);
-			return ((incumbent - 1 + overrun) <= top->f);
+			return ((incumbent + overrun) <= top->f);
 		}
 	}
 

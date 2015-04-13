@@ -30,15 +30,17 @@
 #include "random_hash.hpp"
 
 // DELAY 10,000,000 -> 3000 nodes per second
-#define DELAY 0
+#define DELAY 100000000
+//#define DELAY 0
 
 template<class D, class hash> class HDAstarHeap: public SearchAlg<D> {
 
 	struct Node {
-		double f, g;
-		char pop;
-		unsigned int zbr; // zobrist value. stored here for now. Also the size is char for now.
-		int openind;
+		uint16_t f, g;
+//		char pop;
+		uint8_t zbr; // TODO: too small for 12 threads?
+//		unsigned int zbr; // zobrist value. stored here for now. Also the size is char for now.
+//		int openind;
 //		char thrown; // How many times this node has been outsourced.
 		Node *parent;
 		typename D::PackedState packed;
@@ -172,14 +174,14 @@ public:
 
 	HDAstarHeap(D &d, int tnum_, int income_threshold_ = 1000000,
 			int outgo_threshold_ = 10000000, int abst_ = 0, int overrun_ = 0,
-			unsigned int closedlistsize = 110503,
-			unsigned int openlistsize = 100,
-			unsigned int maxcost = 1000000) :
+			unsigned int closedlistsize = 110503, unsigned int openlistsize =
+					100, unsigned int maxcost = 1000000) :
 			SearchAlg<D>(d), tnum(tnum_), thread_id(0), z(d,
-					static_cast<typename hash::ABST>(abst_)), incumbent(maxcost), income_threshold(
-					income_threshold_), outgo_threshold(outgo_threshold_), globalOrder(
-					0), overrun(overrun_), closedlistsize(closedlistsize),
-					openlistsize(openlistsize), initmaxcost(maxcost) {
+					static_cast<typename hash::ABST>(abst_)), incumbent(
+					maxcost), income_threshold(income_threshold_), outgo_threshold(
+					outgo_threshold_), globalOrder(0), overrun(overrun_), closedlistsize(
+					closedlistsize), openlistsize(openlistsize), initmaxcost(
+					maxcost) {
 		income_buffer = new buffer<Node> [tnum];
 		terminate = new bool[tnum];
 		for (int i = 0; i < tnum; ++i) {
@@ -243,6 +245,8 @@ public:
 		uint gend_here = 0;
 		int max_outgo_buffer_size = 0;
 		int max_income_buffer_size = 0;
+
+		unsigned int discarded_here = 0;
 		int duplicate_here = 0;
 
 		int current_f = 0;
@@ -260,8 +264,9 @@ public:
 		//		while (path.size() == 0) {
 
 		printf("id = %d\n", id);
-
+		printf("incumbent = %d\n", incumbent.load());
 		unsigned int over_incumbent_count = 0;
+		unsigned int no_work_iteration = 0;
 
 		while (true) {
 			Node *n;
@@ -321,9 +326,25 @@ public:
 					printf("terminated\n");
 					break;
 				}
+				++no_work_iteration;
+				for (int i = 0; i < tnum; ++i) {
+					if (i != id && outgo_buffer[i].size() > 0) {
+						if (income_buffer[i].try_lock()) {
+							// acquired lock
+							income_buffer[i].push_all_with_lock(
+									outgo_buffer[i]);
+							income_buffer[i].release_lock();
+							outgo_buffer[i].clear();
+						}
+					}
+				}
 				continue; // ad hoc
 			}
 			n = static_cast<Node*>(open.pop());
+
+			if (n->f >= incumbent.load()) {
+				printf("open list error: n->f >= incumbent: %u > %d\n", n->f, incumbent.load());
+			}
 //			printf("f,g = %d, %d\n", n->f, n->g);
 
 #ifdef ANALYZE_LAPSE
@@ -365,6 +386,7 @@ public:
 			if (duplicate) {
 				if (duplicate->f <= n->f) {
 					dbgprintf("Discarded\n");
+					++discarded_here;
 					nodes.destruct(n);
 					continue;
 #ifdef ANALYZE_DUPLICATE
@@ -445,6 +467,9 @@ public:
 			closed.add(n);
 #endif
 			expd_here++;
+			if (expd_here % 100000 == 0) {
+				printf("expd: %u\n", expd_here);
+			}
 			//		printf("expd: %d\n", id);
 
 #ifdef ANALYZE_LAPSE
@@ -453,17 +478,17 @@ public:
 
 //			buffer<Node>* buffers;
 
+			useless += uselessCalc(useless);
+
 			for (int i = 0; i < this->dom.nops(state); i++) {
 				// op is the next blank position.
 				int op = this->dom.nthop(state, i);
-				if (op == n->pop) {
-					//					printf("erase %d \n", i);
-					continue;
-				}
+//				if (op == n->pop) {
+//					//					printf("erase %d \n", i);
+//					continue;
+//				}
 
 //				printf("gend: %d\n", id);
-
-				useless += uselessCalc(useless);
 
 //				int moving_tile = 0;
 //				int blank = 0; // Make this available for Grid pathfinding.
@@ -481,33 +506,58 @@ public:
 				/// Compare states
 				/// 1. operation working fine
 				///////////////////////////
-//				if (n->f > next->f) {
+				if (n->f > next->f) {
 //					// heuristic was calculating too big.
-//					printf("!!!ERROR: f decreases: %u %u\n", n->f, next->f);
+					printf("!!!ERROR: f decreases: %u %u\n", n->f, next->f);
 //					unsigned int nh = n->f - n->g;
 //					unsigned int nxh = next->f - next->g;
 //					printf("h = %u %u\n", nh, nxh);
 //					printf("cost = %d\n", e.cost);
-//				}
+				}
 //				if (static_cast<unsigned int>(n->g + e.cost) != static_cast<unsigned int>(next->g)) {
 //					printf("!!!ERROR: g is wrong: %u + %d != %u\n", n->g, e.cost, next->g);
 //				}
 
-
-				if (next->f > incumbent.load()) {
-//					printf("needless\n");
+				if (next->f >= incumbent.load()) {
+//					printf("needless\n");-
 					++over_incumbent_count;
+					nodes.destruct(next);
 					this->dom.undo(state, e);
+//					printf("%u >= %d\n", next->f, incumbent.load());
 					continue;
 				}
+//				Node *duplicate = closed.find(next->packed);
+//				if (duplicate) {
+//					if (duplicate->f <= next->f) {
+//						dbgprintf("Discarded\n");
+//						++discarded_here;
+//						nodes.destruct(next);
+//						this->dom.undo(state, e);
+//						continue;
+//					} else {
+//						++duplicate_here;
+//					}
+//				}
+//				printf("inc: %d, inc.load: %d\n", incumbent.load());
+
+//				if (next->f >= initmaxcost || next->g >= initmaxcost
+//						|| next->f >= incumbent || next->g >= incumbent
+//						|| next->f >= incumbent.load()
+//						|| next->g >= incumbent.load()) {
+//					printf("f >= initmaxcost: %d > %d\n", next->f, initmaxcost);
+//				}
+
 				gend_here++;
+				if (gend_here % 1000000 == 0) {
+					printf("gend: %u\n", gend_here);
+//					printf("%u < %d\n", next->f, incumbent.load());
+				}
 				//printf("mv blank op = %d %d %d \n", moving_tile, blank, op);
 //				print_state(state);
 
 				// TODO: Make dist hash available for Grid pathfinding.
 				// TODO: Make Zobrist hash appropriate for 24 threads.
-				next->zbr = z.inc_hash(n->zbr, 0, 0, op,
-						0, state);
+				next->zbr = z.inc_hash(n->zbr, 0, 0, op, 0, state);
 //				next->zbr = z.inc_hash(n->zbr, moving_tile, blank, op,
 //						0, state);
 
@@ -522,21 +572,20 @@ public:
 					open.push(next);
 //				}
 #ifdef SEMISYNC
-				// Synchronous communication to avoid search overhead
-				else if (outgo_buffer[zbr].size() > outgo_threshold) {
-					income_buffer[zbr].lock();
-					income_buffer[zbr].push_with_lock(next);
-					income_buffer[zbr].push_all_with_lock(outgo_buffer[zbr]);
+					// Synchronous communication to avoid search overhead
+					else if (outgo_buffer[zbr].size() > outgo_threshold) {
+						income_buffer[zbr].lock();
+						income_buffer[zbr].push_with_lock(next);
+						income_buffer[zbr].push_all_with_lock(outgo_buffer[zbr]);
 //					printf("%d", __LINE__);
-					income_buffer[zbr].release_lock();
-					outgo_buffer[zbr].clear();
+						income_buffer[zbr].release_lock();
+						outgo_buffer[zbr].clear();
 #ifdef ANALYZE_SEMISYNC
-					++force_outgo;
+						++force_outgo;
 //					printf("semisync = %d to %d\n", id, zbr);
 #endif // ANALYZE_SEMISYNC
-				}
+					}
 #endif // SEMISYNC
-
 //				else if (income_buffer[zbr].try_lock()) {
 //					// if able to acquire the lock, then push all nodes in local buffer.
 //					income_buffer[zbr].push_with_lock(next);
@@ -549,6 +598,7 @@ public:
 //					outgo_buffer[zbr].clear();
 
 				} else {
+//					printf("zbr = %u \% %d\n", next->zbr, tnum);
 					// Stacking over threshold would not happen so often.
 					// Therefore, first try to acquire the lock & then check whether the size
 					// exceeds the threshold.
@@ -564,17 +614,16 @@ public:
 				}
 
 				for (int i = 0; i < tnum; ++i) {
-					if (i != id && outgo_buffer[i].size() > 0) {
-						if (income_buffer[zbr].try_lock()) {
+					if (i != id && outgo_buffer[i].size() > 100) {
+						if (income_buffer[i].try_lock()) {
 							// acquired lock
-							income_buffer[zbr].push_all_with_lock(
-									outgo_buffer[zbr]);
-							income_buffer[zbr].release_lock();
-							outgo_buffer[zbr].clear();
+							income_buffer[i].push_all_with_lock(
+									outgo_buffer[i]);
+							income_buffer[i].release_lock();
+							outgo_buffer[i].clear();
 						}
 					}
 				}
-
 
 				this->dom.undo(state, e);
 			}
@@ -589,6 +638,10 @@ public:
 		this->ctime = cputime();
 
 		printf("useless = %d\n", useless);
+
+		printf("over_incumbent_count = %u\n", over_incumbent_count);
+		printf("discarded_here = %u\n", discarded_here);
+		printf("no_work_iteration = %u\n", no_work_iteration);
 
 		this->open_sizes[id] = open.getsize();
 
@@ -613,6 +666,20 @@ public:
 		self_pushes += self_push;
 
 		dbgprintf("END\n");
+
+
+//		printf("checking initmaxcost = %u over %u nodes...\n", initmaxcost, open.getsize());
+//		Node* n;
+//		while(open.getsize() > 0) {
+//			n = static_cast<Node*>(open.pop());
+//			if (n->f >= initmaxcost) {
+//				printf("ERROR: over maxt cost: %u >= %u\n", n->f, initmaxcost);
+//			} else if (n->f < incumbent){
+//				printf("ERROR: under incumbent: %u\n", n->f);
+//			}
+//			nodes.destruct(n);
+//		}
+//		printf("done!\n");
 		return 0;
 	}
 
@@ -626,7 +693,6 @@ public:
 		{
 			n->g = 0;
 			n->f = this->dom.h(init);
-			n->pop = -1;
 			n->parent = 0;
 			this->dom.pack(n->packed, init);
 		}
@@ -646,7 +712,7 @@ public:
 		for (int i = 0; i < tnum; ++i) {
 			pthread_create(&t[tnum], NULL,
 					(void*(*)(void*))&HDAstarHeap::thread_helper, this);
-		}
+				}
 		for (int i = 0; i < tnum; ++i) {
 			pthread_join(t[tnum], NULL);
 		}
@@ -742,7 +808,8 @@ public:
 
 	static void* thread_helper(void* arg) {
 //		return static_cast<HDAstarHeap*>(arg)->thread_search<Heap<Node> >(arg);
-		return static_cast<HDAstarHeap*>(arg)->thread_search<NaiveHeap<Node> >(arg);
+		return static_cast<HDAstarHeap*>(arg)->thread_search<NaiveHeap<Node> >(
+				arg);
 	}
 
 	inline Node *wrap(typename D::State &s, Node *p, int c, int pop,
@@ -753,7 +820,7 @@ public:
 			n->g += p->g;
 		n->f = n->g + this->dom.h(s);
 //		printf("h = %d\n", this->dom.weight_h(s));
-		n->pop = pop;
+//		n->pop = pop;
 		n->parent = p;
 		this->dom.pack(n->packed, s);
 		return n;
@@ -784,8 +851,6 @@ public:
 //		return z.inc_hash(previous, number, from, to,
 //				newBoard);
 //	}
-
-
 
 	void print_state(typename D::State state) {
 		for (int i = 0; i < D::Ntiles; ++i) {
