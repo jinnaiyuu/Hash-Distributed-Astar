@@ -17,7 +17,11 @@
 #include <iostream>
 
 struct Tsp {
-
+	enum {
+		Width = 4,
+		Height = 4,
+		Ntiles = Width*Height,
+	};
 	struct State {
 		char tiles[15];
 		char blank;

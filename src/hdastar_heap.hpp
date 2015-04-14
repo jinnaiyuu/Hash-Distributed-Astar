@@ -30,8 +30,8 @@
 #include "random_hash.hpp"
 
 // DELAY 10,000,000 -> 3000 nodes per second
-#define DELAY 100000000
-//#define DELAY 0
+//#define DELAY 1000000000
+#define DELAY 0
 
 template<class D, class hash> class HDAstarHeap: public SearchAlg<D> {
 
@@ -109,31 +109,13 @@ template<class D, class hash> class HDAstarHeap: public SearchAlg<D> {
 
 	struct LogNodeOrder {
 		int globalOrder;
-		uint64_t packedState;
+		std::vector<uint16_t> sequence;
 		int fvalue;
 		int openlistSize;
-		LogNodeOrder(int globalOrder_, char* tiles, int fvalue_ = -1,
+		LogNodeOrder(int globalOrder_, std::vector<uint16_t> sequence, int fvalue_ = -1,
 				int openlistSize_ = -1) :
-				globalOrder(globalOrder_), fvalue(fvalue_), openlistSize(
+				globalOrder(globalOrder_), sequence(sequence), fvalue(fvalue_), openlistSize(
 						openlistSize_) {
-			packedState = pack(tiles);
-		}
-		uint64_t pack(char* tiles) {
-			uint64_t word = 0; // to make g++ shut up about uninitialized usage.
-			for (int i = 0; i < D::Ntiles; i++) {
-				word = (word << 4) | tiles[i];
-			}
-			return word;
-		}
-		char* unpack() {
-			uint64_t word = packedState;
-			char* tiles = new char[D::Ntiles];
-			for (int i = D::Ntiles - 1; i >= 0; i--) {
-				int t = word & 0xF; // 15 Puzzle specific
-				word >>= 4;
-				tiles[i] = t;
-			}
-			return tiles;
 		}
 	};
 	std::vector<LogNodeOrder>* lognodeorder;
@@ -421,11 +403,11 @@ public:
 			if (fval != n->f) {
 				fval = n->f;
 				LogNodeOrder* ln = new LogNodeOrder(globalOrder.fetch_add(1),
-						state.tiles, fval, open.getsize());
+						state.sequence, fval, open.getsize());
 				lognodeorder[id].push_back(*ln);
 			} else {
 				LogNodeOrder* ln = new LogNodeOrder(globalOrder.fetch_add(1),
-						state.tiles, -1, open.getsize());
+						state.sequence, -1, open.getsize());
 				lognodeorder[id].push_back(*ln);
 			}
 #endif // ANALYZE_ORDER
@@ -467,9 +449,9 @@ public:
 			closed.add(n);
 #endif
 			expd_here++;
-			if (expd_here % 100000 == 0) {
-				printf("expd: %u\n", expd_here);
-			}
+//			if (expd_here % 100000 == 0) {
+//				printf("expd: %u\n", expd_here);
+//			}
 			//		printf("expd: %d\n", id);
 
 #ifdef ANALYZE_LAPSE
@@ -548,10 +530,10 @@ public:
 //				}
 
 				gend_here++;
-				if (gend_here % 1000000 == 0) {
-					printf("gend: %u\n", gend_here);
-//					printf("%u < %d\n", next->f, incumbent.load());
-				}
+//				if (gend_here % 1000000 == 0) {
+//					printf("gend: %u\n", gend_here);
+////					printf("%u < %d\n", next->f, incumbent.load());
+//				}
 				//printf("mv blank op = %d %d %d \n", moving_tile, blank, op);
 //				print_state(state);
 
@@ -568,8 +550,10 @@ public:
 
 				// If the node belongs to itself, just push to this open list.
 				if (zbr == id) {
+//					double w = walltime();
 					++self_push;
 					open.push(next);
+//					printf("self: %f\n", walltime() - w);
 //				}
 #ifdef SEMISYNC
 					// Synchronous communication to avoid search overhead
@@ -598,6 +582,7 @@ public:
 //					outgo_buffer[zbr].clear();
 
 				} else {
+//					double w = walltime();
 //					printf("zbr = %u \% %d\n", next->zbr, tnum);
 					// Stacking over threshold would not happen so often.
 					// Therefore, first try to acquire the lock & then check whether the size
@@ -611,11 +596,15 @@ public:
 						max_outgo_buffer_size = size;
 					}
 #endif // ANALYZE_OUTGO
+//					printf("other: %f\n", walltime() - w);
 				}
 
+//				double w = walltime();
+//				int pushed = 0;
 				for (int i = 0; i < tnum; ++i) {
 					if (i != id && outgo_buffer[i].size() > 100) {
 						if (income_buffer[i].try_lock()) {
+//							pushed += income_buffer[i].size();
 							// acquired lock
 							income_buffer[i].push_all_with_lock(
 									outgo_buffer[i]);
@@ -624,7 +613,9 @@ public:
 						}
 					}
 				}
-
+//				if (pushed > 0) {
+//					printf("pushing: nodes=%d sec=%f\n", pushed, walltime() - w);
+//				}
 				this->dom.undo(state, e);
 			}
 #ifdef ANALYZE_LAPSE
@@ -779,8 +770,12 @@ public:
 #ifdef ANALYZE_ORDER
 		for (int id = 0; id < tnum; ++id) {
 			for (int i = 0; i < lognodeorder[id].size(); ++i) {
-				printf("%d %d %016lx %d %d\n", id, lognodeorder[id][i].globalOrder, lognodeorder[id][i].packedState,
-						lognodeorder[id][i].fvalue, lognodeorder[id][i].openlistSize);
+				printf("%d %d ", id, lognodeorder[id][i].globalOrder);
+				std::vector<uint16_t> sequence = lognodeorder[id][i].sequence;
+				for (int s = 0; s < sequence.size(); ++s) {
+					printf("%u ", sequence[s]);
+				}
+				printf("%d %d\n", lognodeorder[id][i].fvalue, lognodeorder[id][i].openlistSize);
 			}
 		}
 #endif // ANALYZE_ORDER

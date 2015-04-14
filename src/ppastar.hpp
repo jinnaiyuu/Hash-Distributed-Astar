@@ -31,10 +31,11 @@
 
 #define INIT_INCUMBENT 10000000
 // DELAY 10,000,000 -> 3000 nodes per second
-#define DELAY 0
+//#define DELAY 0
 
 
 template<class D, class hash> class PPAstar: public SearchAlg<D> {
+	unsigned int delay = 10000000;
 
 	struct Node {
 		char f, g, pop;
@@ -723,7 +724,7 @@ public:
 //		static const int zero = 0;
 //		int test = 0;
 		int uselessLocal = 0;
-		for (int i = 0; i < DELAY; ++i) {
+		for (int i = 0; i < delay; ++i) {
 //			++test;
 			int l = 0;
 			l += useless;

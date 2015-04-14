@@ -30,7 +30,7 @@
 #include "random_hash.hpp"
 
 // DELAY 10,000,000 -> 3000 nodes per second
-#define DELAY 0
+//#define DELAY 0
 
 template<class D, class hash> class HDAstar: public SearchAlg<D> {
 
@@ -845,7 +845,8 @@ public:
 //		static const int zero = 0;
 //		int test = 0;
 		int uselessLocal = 0;
-		for (int i = 0; i < DELAY; ++i) {
+		// TODO: delay = DELAY
+		for (int i = 0; i < 0; ++i) {
 //			++test;
 			int l = 0;
 			l += useless;

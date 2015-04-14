@@ -11,11 +11,11 @@
 #include <iostream>
 
 struct Grid {
-//	enum {
-//		Width = 4,
-//		Height = 4,
-//		Ntiles = Width*Height,
-//	};
+	enum {
+		Width = 4,
+		Height = 4,
+		Ntiles = Width*Height,
+	};
 
 	struct State {
 		char tiles[4]; // not optimal

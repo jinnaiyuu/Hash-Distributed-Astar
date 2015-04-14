@@ -289,6 +289,7 @@ private:
 
 	int heuristic(const State& s) const {
 		int cost = 0;
+//		return 0;
 //		printf("heuristic\n");
 
 		for (unsigned int i = 0; i < num_of_sequences; ++i) {
