@@ -5,12 +5,12 @@
  */
 public class Generate {
 	
-	static int randomSlides = 70;
-	static int COLUMN = 4;
-	static int ROW = 4;
+	static int randomSlides = 100;
+	static int COLUMN = 5;
+	static int ROW = 5;
 	
 	public static void main(String[] args)  {
-		for (int i = 0; i < 100; ++i) {
+		for (int i = 0; i < 1000; ++i) {
 			int[][] initMap = new int[COLUMN][ROW];
 			Generate.initializeMap(initMap);
 			for(int r = 0; r < ROW; r++) {
@@ -26,7 +26,7 @@ public class Generate {
 	public static void initializeMap(int[][] map) {
 		for (int column = 0; column < COLUMN; column++) {
 			for (int row = 0; row < ROW; row++) {
-				map[column][row] = column * 4 + row;
+				map[column][row] = column * ROW + row;
 			}
 		}
 		int zeroC = 0; // local only for this method. similar to that in Fringe

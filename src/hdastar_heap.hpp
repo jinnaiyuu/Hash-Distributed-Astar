@@ -36,7 +36,7 @@
 template<class D, class hash> class HDAstarHeap: public SearchAlg<D> {
 
 	struct Node {
-		uint16_t f, g;
+		uint32_t f, g;
 //		char pop;
 		uint8_t zbr; // TODO: too small for 12 threads?
 //		unsigned int zbr; // zobrist value. stored here for now. Also the size is char for now.
@@ -324,9 +324,9 @@ public:
 			}
 			n = static_cast<Node*>(open.pop());
 
-			if (n->f >= incumbent.load()) {
-				printf("open list error: n->f >= incumbent: %u > %d\n", n->f, incumbent.load());
-			}
+//			if (n->f >= incumbent.load()) {
+//				printf("open list error: n->f >= incumbent: %u > %d\n", n->f, incumbent.load());
+//			}
 //			printf("f,g = %d, %d\n", n->f, n->g);
 
 #ifdef ANALYZE_LAPSE
@@ -491,10 +491,10 @@ public:
 				if (n->f > next->f) {
 //					// heuristic was calculating too big.
 					printf("!!!ERROR: f decreases: %u %u\n", n->f, next->f);
-//					unsigned int nh = n->f - n->g;
-//					unsigned int nxh = next->f - next->g;
-//					printf("h = %u %u\n", nh, nxh);
-//					printf("cost = %d\n", e.cost);
+					unsigned int nh = n->f - n->g;
+					unsigned int nxh = next->f - next->g;
+					printf("h = %u %u\n", nh, nxh);
+					printf("cost = %d\n", e.cost);
 				}
 //				if (static_cast<unsigned int>(n->g + e.cost) != static_cast<unsigned int>(next->g)) {
 //					printf("!!!ERROR: g is wrong: %u + %d != %u\n", n->g, e.cost, next->g);
@@ -537,15 +537,16 @@ public:
 				//printf("mv blank op = %d %d %d \n", moving_tile, blank, op);
 //				print_state(state);
 
-				// TODO: Make dist hash available for Grid pathfinding.
-				// TODO: Make Zobrist hash appropriate for 24 threads.
-				next->zbr = z.inc_hash(n->zbr, 0, 0, op, 0, state);
+
+				unsigned int zbr = z.inc_hash(n->zbr, 0, 0, op, 0, state);
+				next->zbr = zbr;
+				zbr = zbr % tnum;
 //				next->zbr = z.inc_hash(n->zbr, moving_tile, blank, op,
 //						0, state);
 
 //				next->zbr = z.inc_hash(state);
 
-				unsigned int zbr = next->zbr % tnum;
+//				unsigned int zbr = next->zbr % tnum;
 //				printf("zbr, zbr_tnum = (%u, %u)\n", next->zbr, zbr);
 
 				// If the node belongs to itself, just push to this open list.

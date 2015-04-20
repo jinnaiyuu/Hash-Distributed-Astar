@@ -468,9 +468,9 @@ int main(int argc, const char *argv[]) {
 			SearchAlg<Tsp> *search = NULL;
 
 			if (strcmp(argv[1], "astar") == 0) {
-				search = new Astar<Tsp>(tsp, 1500000);
+				search = new AstarHeap<Tsp>(tsp, 1500000);
 			} else if (strcmp(argv[1], "hdastar") == 0) {
-				search = new HDAstar<Tsp, TspHash<Tsp> >(tsp,
+				search = new HDAstarHeap<Tsp, TspHash<Tsp> >(tsp,
 						std::stoi(argv[3]), 1000000, 1000000,
 						std::stoi(argv[4]), 0, 193877777, 1500000);
 			}

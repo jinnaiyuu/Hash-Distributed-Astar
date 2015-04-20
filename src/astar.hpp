@@ -102,6 +102,17 @@ public:
 				Edge<D> e = this->dom.apply(state, op);
 
 				Node* next = wrap(state, n, e.cost, e.pop);
+				if (n->f > next->f) {
+//					// heuristic was calculating too big.
+					printf("!!!ERROR: f decreases\n");
+//
+					unsigned int nh = n->f - n->g;
+					unsigned int nxh = next->f - next->g;
+					printf("f = %u -> %u\n", n->f, next->f);
+					printf("h = %u -> %u\n", nh, nxh);
+					printf("edge cost = %d\n", e.cost);
+				}
+
 				if (next->f > incumbent) {
 //					delete next;
 //					printf("f > incumbent\n");

@@ -15,6 +15,7 @@
 #include <stdint.h>
 #include <math.h>
 #include <iostream>
+#include <algorithm>
 
 struct Tsp {
 	enum {
@@ -23,8 +24,6 @@ struct Tsp {
 		Ntiles = Width*Height,
 	};
 	struct State {
-		char tiles[15];
-		char blank;
 		std::vector<bool> visited; // include current city
 		unsigned int current; // current city
 		unsigned int h;
@@ -244,7 +243,7 @@ private:
 		}
 	}
 	unsigned int blind_h(const State &s) const {
-		return 1000000;
+		return 0;
 	}
 
 	unsigned int roundtrip_h(const State &s) const {
@@ -265,38 +264,83 @@ private:
 
 	unsigned int onetree_h(const State &s) const {
 		std::vector<bool> visited(s.visited);
-		visited[0] = true;
+		visited[s.current] = false;
 
-		// from current to not visited
-		unsigned int min_from = 1000000;
-		for (unsigned int i = 1; i < number_of_cities; ++i) {
-			if (!visited[i] && distances[s.current * number_of_cities + i] < min_from) {
-				min_from = distances[s.current * number_of_cities + i];
+		// if fewer than 3 nodes, then return MST.
+		if (std::count(visited.begin(), visited.end(), false) < 3) {
+//			printf("mst\n");
+			return mst(visited);
+		}
+
+		unsigned int biggest_cost_so_far = 0;
+		// Delete single node from the MST.
+		for (int i = 0; i < number_of_cities; ++i) {
+			if (visited[i] == false) {
+				visited[i] = true;
+				unsigned int cost = mst(visited);
+				visited[i] = false;
+
+				unsigned int smallest = 10000000;
+				unsigned int second_smallest = 10000000;
+
+				// Add two minimum edge to connect the node deleted.
+				for (unsigned int j = 0; j < number_of_cities; ++j) {
+					if (i != j && !visited[i] && distances[i * number_of_cities + j] < second_smallest) {
+						if (distances[i * number_of_cities + j] < smallest) {
+							second_smallest = smallest;
+							smallest = distances[i * number_of_cities + j];
+						} else {
+							second_smallest = distances[i * number_of_cities + j];
+						}
+					}
+				}
+//				printf("smallest = %u %u\n", smallest, second_smallest);
+				cost += smallest + second_smallest;
+				if (biggest_cost_so_far < cost) {
+					biggest_cost_so_far = cost;
+				}
+				printf("cost treeing %u = %u\n", i, cost);
+
 			}
 		}
-		if (min_from == 1000000) {
-			min_from = 0;
-		}
-		// from not visited to goal
-		unsigned int min_to = 1000000;
-		for (unsigned int i = 1; i < number_of_cities; ++i) {
-			if (!visited[i] && distances[s.current * number_of_cities + i] < min_to) {
-				min_to = distances[i * number_of_cities + 0];
-			}
-		}
-		if (min_to == 1000000) {
-			min_to = 0;
-		}
+//		printf("cost = %u\n", biggest_cost_so_far);
 
-		unsigned int smst = mst(visited);
-//		visited[0] = false;
-//		visited[s.current] = false;
-//		unsigned int fmst = mst(visited);
-		if (smst == 0) {
-//			printf("from, to, mst = %u, %u, %u\n", min_from, min_to, smst);
-		}
+		return biggest_cost_so_far;
 
-		return min_from + min_to + smst;
+
+//		std::vector<bool> visited(s.visited);
+//		visited[0] = true;
+//
+//		// from current to not visited
+//		unsigned int min_from = 1000000;
+//		for (unsigned int i = 1; i < number_of_cities; ++i) {
+//			if (!visited[i] && distances[s.current * number_of_cities + i] < min_from) {
+//				min_from = distances[s.current * number_of_cities + i];
+//			}
+//		}
+//		if (min_from == 1000000) {
+//			min_from = 0;
+//		}
+//		// from not visited to goal
+//		unsigned int min_to = 1000000;
+//		for (unsigned int i = 1; i < number_of_cities; ++i) {
+//			if (!visited[i] && distances[s.current * number_of_cities + i] < min_to) {
+//				min_to = distances[i * number_of_cities + 0];
+//			}
+//		}
+//		if (min_to == 1000000) {
+//			min_to = 0;
+//		}
+//
+//		unsigned int smst = mst(visited);
+////		visited[0] = false;
+////		visited[s.current] = false;
+////		unsigned int fmst = mst(visited);
+//		if (smst == 0) {
+////			printf("from, to, mst = %u, %u, %u\n", min_from, min_to, smst);
+//		}
+//
+//		return min_from + min_to + smst;
 	}
 
 	unsigned int mst(const std::vector<bool> visited) const {
@@ -333,7 +377,7 @@ private:
 	//	printf("t.size = %lu\n", t.size());
 	//	printf("vertices.size = %lu\n", vertices.size());
 		while (t.size() < vertices.size()) {
-			double min_edge = 100000.0; // max edge of this domain is 1.412 (or sqrt(2))
+			unsigned int min_edge = 100000; // max edge of this domain is 1.412 (or sqrt(2))
 			unsigned int new_vertex = -1;
 
 			// Get the minimum edge to a new vertex.
@@ -351,8 +395,9 @@ private:
 			g_minus_t.erase(g_minus_t.begin() + new_vertex); // This won't be a issue as the size of vector is <100.
 			cost += min_edge;
 		}
-//		printf("cost = %u\n", cost);
 		return cost;
+
+
 	}
 
 	double md(double fromx, double fromy, double tox, double toy) {
