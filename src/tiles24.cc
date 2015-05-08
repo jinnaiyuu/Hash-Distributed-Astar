@@ -38,7 +38,7 @@ Tiles24::Tiles24(FILE *in) {
 			throw Fatal("Non-canonical goal positions");
 	}
 
-	initmd();
+//	initmd();
 	initoptab();
 }
 
@@ -57,7 +57,7 @@ Tiles24::Tiles24(FILE *in, int line) {
 //			init[p] = t;
 		}
 	}
-	initmd();
+//	initmd();
 //	printf("initoptab\n");
 	initoptab();
 
@@ -74,31 +74,6 @@ Tiles24::Tiles24(FILE *in, int line) {
 
 }
 
-void Tiles24::initmd() {
-	for (int t = 1; t < Ntiles; t++) {
-		int grow = t / Width, gcol = t % Width;
-		for (int l = 0; l < Ntiles; l++) {
-			int row = l / Width, col = l % Width;
-			md[t][l] = abs(col - gcol) + abs(row - grow);
-		}
-	}
-
-	for (int t = 1; t < Ntiles; t++) {
-		for (int d = 0; d < Ntiles; d++) {
-			int newmd = md[t][d];
-			for (int s = 0; s < Ntiles; s++)
-				mdincr[t][d][s] = -100;	// some invalid value.
-			if (d >= Width)
-				mdincr[t][d][d - Width] = md[t][d - Width] - newmd;
-			if (d % Width > 0)
-				mdincr[t][d][d - 1] = md[t][d - 1] - newmd;
-			if (d % Width < Width - 1)
-				mdincr[t][d][d + 1] = md[t][d + 1] - newmd;
-			if (d < Ntiles - Width)
-				mdincr[t][d][d + Width] = md[t][d + Width] - newmd;
-		}
-	}
-}
 
 void Tiles24::initoptab() {
 	for (int i = 0; i < Ntiles; i++) {

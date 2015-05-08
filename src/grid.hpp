@@ -199,6 +199,9 @@ struct Grid {
 		return height;
 	}
 
+	// TODO: garbage method for debugging tiles.
+	unsigned int print_h(char tiles[]) const {}
+
 private:
 
 	// mdist returns the Manhattan distance of the given tile array.

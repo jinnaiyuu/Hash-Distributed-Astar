@@ -1,6 +1,8 @@
 // Copyright 2012 Ethan Burns. All rights reserved.
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
+#include <stdio.h>
+
 #include "search.hpp"
 #include "utils.hpp"
 #include "hashtbl.hpp"
@@ -8,7 +10,7 @@
 #include "naive_heap.hpp"
 #include "pool.hpp"
 
-template<class D> class Astar : public SearchAlg<D> {
+template<class D> class Astar: public SearchAlg<D> {
 
 	struct Node {
 		unsigned int f, g;
@@ -24,11 +26,16 @@ template<class D> class Astar : public SearchAlg<D> {
 			return f < o->f;
 		}
 
- 		void setindex(int i) { }
+		void setindex(int i) {
+		}
 
-		const typename D::PackedState &key() { return packed; }
+		const typename D::PackedState &key() {
+			return packed;
+		}
 
-		HashEntry<Node> &hashentry() { return hentry; }
+		HashEntry<Node> &hashentry() {
+			return hentry;
+		}
 	};
 
 	HashTable<typename D::PackedState, Node> closed;
@@ -44,17 +51,25 @@ public:
 	// closed might be waaaay too big for my memory....
 	// original 512927357
 	// now      200　000　000
-	Astar(D &d) : SearchAlg<D>(d), closed(512927357), open(120), w(1), incumbent(1000000) { }
+	Astar(D &d) :
+			SearchAlg<D>(d), closed(512927357), open(120), w(1), incumbent(
+					1000000) {
+	}
 
-	Astar(D &d, unsigned int opensize)
-	: SearchAlg<D>(d), closed(512927357), open(opensize), w(1), incumbent(1000000) { }
+	Astar(D &d, unsigned int opensize) :
+			SearchAlg<D>(d), closed(512927357), open(opensize), w(1), incumbent(
+					1000000) {
+	}
 
-	Astar(D &d, unsigned int opensize, double weight)
-	: SearchAlg<D>(d), closed(512927357), open(opensize), w(weight), incumbent(1000000) { }
+	Astar(D &d, unsigned int opensize, double weight) :
+			SearchAlg<D>(d), closed(512927357), open(opensize), w(weight), incumbent(
+					1000000) {
+	}
 
-	Astar(D &d, unsigned int opensize, double weight, unsigned int incumbent)
-	: SearchAlg<D>(d), closed(512927357), open(opensize), w(weight), incumbent(incumbent) { }
-
+	Astar(D &d, unsigned int opensize, double weight, unsigned int incumbent) :
+			SearchAlg<D>(d), closed(512927357), open(opensize), w(weight), incumbent(
+					incumbent) {
+	}
 
 	std::vector<typename D::State> search(typename D::State &init) {
 		open.push(wrap(init, 0, 0, -1));
@@ -66,7 +81,6 @@ public:
 				nodes.destruct(n);
 				continue;
 			}
-
 			typename D::State state;
 			this->dom.unpack(state, n->packed);
 
@@ -74,10 +88,6 @@ public:
 //			Grid::State s = static_cast<Grid::State>(state);
 //			printf("x = %u\n", state.blank);
 //			printf("f,g = %d, %d\n", n->f, n->g);
-//			for (int i = 0; i < 16; ++i) {
-//				printf("%d ", state.tiles[i]);
-//			}
-//			printf("\n");
 
 			if (this->dom.isgoal(state)) {
 				printf("goal!\n");
@@ -93,36 +103,62 @@ public:
 			closed.add(n);
 
 			this->expd++;
-//			printf("nops = %u\nexpd: ", this->dom.nops(state));
+//			printf("expd: \n");
+
 			for (int i = 0; i < this->dom.nops(state); i++) {
 				int op = this->dom.nthop(state, i);
-//				printf("%u ", op);
+//				printf("op = %u\n", op);
 				if (op == n->pop)
 					continue;
 				Edge<D> e = this->dom.apply(state, op);
 
 				Node* next = wrap(state, n, e.cost, e.pop);
-				if (n->f > next->f) {
-//					// heuristic was calculating too big.
-					printf("!!!ERROR: f decreases\n");
+//				if (n->f > next->f) {
+////					// heuristic was calculating too big.
+//					printf("!!!ERROR: f decreases\n");
+////
+//					unsigned int nh = n->f - n->g;
+//					unsigned int nxh = next->f - next->g;
+//					printf("f = %u -> %u\n", n->f, next->f);
+//					printf("h = %u -> %u\n", nh, nxh);
+//					printf("edge cost = %d\n", e.cost);
+//					printf("child : ");
+//					for (int i = 0; i < 25; ++i) {
+//						printf("%.2d ", state.tiles[i]);
+//					}
+//					printf("\n");
+//					this->dom.print_h(state.tiles);
 //
-					unsigned int nh = n->f - n->g;
-					unsigned int nxh = next->f - next->g;
-					printf("f = %u -> %u\n", n->f, next->f);
-					printf("h = %u -> %u\n", nh, nxh);
-					printf("edge cost = %d\n", e.cost);
-				}
+//					this->dom.undo(state, e);
+//					printf("parent: ");
+//					for (int i = 0; i < 25; ++i) {
+//						printf("%.2d ", state.tiles[i]);
+//					}
+//					printf("\n");
+//					this->dom.print_h(state.tiles);
+//					printf("\n");
+//
+//					continue;
+////					assert(false);
+//				}
 
 				if (next->f > incumbent) {
 //					delete next;
-//					printf("f > incumbent\n");
+					printf("f > incumbent\n");
+					this->dom.undo(state, e);
 					continue;
 				}
 				this->gend++;
 				open.push(next);
 //				open.push(wrap(state, n, e.cost, e.pop));
 				this->dom.undo(state, e);
+//				printf("undo: ");
+//				for (int i = 0; i < 25; ++i) {
+//					printf("%.2d ", state.tiles[i]);
+//				}
+//				printf("\n");
 			}
+//			printf("expd done\n\n");
 //			printf("\n");
 		}
 //		printf("return astar\n");
@@ -145,4 +181,5 @@ public:
 		this->dom.pack(n->packed, s);
 		return n;
 	}
+
 };

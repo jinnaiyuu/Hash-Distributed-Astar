@@ -22,13 +22,14 @@ struct Tiles24 {
 	};
 
 	struct State {
-		char tiles[Ntiles];
+		char tiles[Ntiles]; // tiles[a] = b means tile b is at position a.
 		char blank;
 		char h;
 	};
 
 	struct PackedState {
 		uint128_t word;
+		char h;
 
 		unsigned long hash() const {
 			return word;
@@ -56,7 +57,7 @@ struct Tiles24 {
 		}
 		if (s.blank < 0)
 			throw Fatal("No blank tile");
-		s.h = mdist(s.blank, s.tiles);
+		s.h = heuristic(s.tiles);
 		return s;
 	}
 
@@ -90,22 +91,51 @@ struct Tiles24 {
 		e.undo.h = s.h;
 		e.undo.blank = s.blank;
 
+//		printf("before apply: ");
+//		for (int i = 0; i < Ntiles; ++i) {
+//			printf("%.2d ", s.tiles[i]);
+//		}
+//		printf("\n");
+
 		int tile = s.tiles[newb];
 		s.tiles[(int) s.blank] = tile;
 
 		// TODO: Here we need to implement Pattern Databases Heuristic.
 //		s.h += mdincr[tile][newb][(int) s.blank];
-		s.h = mdist(static_cast<int>(s.blank), s.tiles);
+
+		s.tiles[newb] = 0;
 
 		s.blank = newb;
+
+//		printf("after  apply: ");
+//		for (int i = 0; i < Ntiles; ++i) {
+//			printf("%.2d ", s.tiles[i]);
+//		}
+//		printf("\n");
+
+		s.h = mdist(static_cast<int>(s.blank), s.tiles);
 
 		return e;
 	}
 
 	void undo(State &s, const Edge<Tiles24> &e) const {
+//		printf("before undo : ");
+//		for (int i = 0; i < Ntiles; ++i) {
+//			printf("%.2d ", s.tiles[i]);
+//		}
+//		printf("\n");
+
 		s.h = e.undo.h;
 		s.tiles[(int) s.blank] = s.tiles[(int) e.undo.blank];
+		s.tiles[e.undo.blank] = 0;
 		s.blank = e.undo.blank;
+
+//		printf("after  undo : ");
+//		for (int i = 0; i < Ntiles; ++i) {
+//			printf("%.2d ", s.tiles[i]);
+//		}
+//		printf("\n");
+
 	}
 
 	// pack packes state s into the packed state dst.
@@ -115,11 +145,11 @@ struct Tiles24 {
 		s.tiles[(int) s.blank] = 0;
 		for (int i = 0; i < Ntiles; i++)
 			dst.word = (dst.word << 5) | s.tiles[i];
+		dst.h = s.h;
 	}
 
 	// unpack unpacks the packed state s into the state dst.
 	void unpack(State &dst, PackedState s) const {
-		dst.h = 0;
 		dst.blank = -1;
 		for (int i = Ntiles - 1; i >= 0; i--) {
 			int t = s.word & 0x1F;
@@ -127,10 +157,29 @@ struct Tiles24 {
 			dst.tiles[i] = t;
 			if (t == 0)
 				dst.blank = i;
-			else
-				dst.h += md[t][i];
 		}
+		dst.h = heuristic(dst.tiles);
 		assert(dst.blank >= 0);
+	}
+
+	unsigned int print_h(char tiles[]) const {
+		// tiles[a] = b means tile b is at position a.
+		// inv[a] = b means tile a is at position b.
+		char inv[25];
+		for (int i = 0; i < Ntiles; ++i) {
+			inv[tiles[i]] = i;
+//			inv[i] = tiles[i];
+		}
+		unsigned int origin = hash0(inv) + hash1(inv) + hash2(inv) + hash3(inv);
+		unsigned int reflection = hashref0(inv) + hashref1(inv) + hashref2(inv)
+				+ hashref3(inv);
+
+//		printf("origin = %u + %u + %u + %u = %u\n", hash0(inv), hash1(inv), hash2(inv), hash3(inv), origin);
+//		printf("reflection = %u + %u + %u + %u = %u\n", hashref0(inv), hashref1(inv), hashref2(inv), hashref3(inv), reflection);
+//		printf("\n");
+//		printf("origin, reflection = %u, %u\n", origin, reflection);
+//		return max(origin, reflection);
+		return origin;
 	}
 
 private:
@@ -150,7 +199,7 @@ private:
 	}
 
 	// initmd initializes the md and mdincr tables.
-	void initmd();
+//	void initmd();
 
 	// initoptob initializes the operator table, optab.
 	void initoptab();
@@ -161,15 +210,35 @@ private:
 	int init[Ntiles];
 
 	unsigned int heuristic(char tiles[]) const {
-		char inv[25]; // TODO: Would this be transaction?
+		// tiles[a] = b means tile b is at position a.
+		// inv[a] = b means tile a is at position b.
+		char inv[25];
+
+		// TODO: is this interpretation right?
 		for (int i = 0; i < Ntiles; ++i) {
 			inv[tiles[i]] = i;
+//			inv[i] = tiles[i];
 		}
+//		unsigned int origin = hash0(inv) + hash1(inv) + hash2(inv) + hash3(inv);
 		unsigned int origin = hash0(inv) + hash1(inv) + hash2(inv) + hash3(inv);
 		unsigned int reflection = hashref0(inv) + hashref1(inv) + hashref2(inv)
 				+ hashref3(inv);
+//		printf("tile: ");
+//		for (int i = 0; i < Ntiles; ++i) {
+//			printf("%.2d ", tiles[i]);
+//		}
+//		printf("\n");
+//		printf("inv : ");
+//		for (int i = 0; i < Ntiles; ++i) {
+//			printf("%d ", inv[i]);
+//		}
+//		printf("\n");
+//		printf("origin = %u + %u + %u + %u = %u\n", hash0(inv), hash1(inv), hash2(inv), hash3(inv), origin);
+//		printf("reflection = %u + %u + %u + %u = %u\n", hashref0(inv), hashref1(inv), hashref2(inv), hashref3(inv), reflection);
+//		printf("\n");
 //		printf("origin, reflection = %u, %u\n", origin, reflection);
-		return max(origin, reflection);
+//		return max(origin, reflection);
+		return origin;
 	}
 
 	/* HASH0 takes an inverse state, and maps the tiles in the 0 pattern to an
@@ -266,14 +335,6 @@ private:
 	/* tiles in each reflected pattern, in the same order as above*/
 	/* {5,10,1,6,11,12} {15,20,16,21,17,22} {2,7,3,8,4,9} {13,18,23,14,19,24} */
 
-	// TODO: Those below is going to be deleted.
-	// md is indexed by tile and location.  Each entry
-	int md[Ntiles][Ntiles];
-
-	// mdincr is indexed by tile, source location, and
-	// destination location.  Each entry is the change
-	// in Manhattan distance for that particular move.
-	int mdincr[Ntiles][Ntiles][Ntiles];
 
 	// optab is indexed by the blank position.  Each
 	// entry is a description of the possible next
@@ -284,6 +345,9 @@ private:
 
 	unsigned int max(unsigned int a, unsigned int b) const{
 		return a > b ? a : b;
+	}
+	unsigned int min(unsigned int a, unsigned int b) const{
+		return a < b ? a : b;
 	}
 };
 

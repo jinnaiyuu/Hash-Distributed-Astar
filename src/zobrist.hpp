@@ -25,6 +25,9 @@ public:
 		ABSTRACTION = 123,
 		FAR_TILES = 1712,
 		FOURBLOCK_24 = 4024,
+		LINE_24 = 2401,
+		BLOCK_24 = 2402,
+		ODD_24 = 2403,
 		FOURABSTRACTION = 1234
 	};
 
@@ -103,6 +106,15 @@ private:
 			break;
 		case FOURBLOCK_24:
 			four24();
+			break;
+		case LINE_24:
+			line24();
+			break;
+		case BLOCK_24:
+			block24();
+			break;
+		case ODD_24:
+			odd24();
 			break;
 		case FOURABSTRACTION:
 			fourabstraction();
@@ -190,6 +202,92 @@ private:
 				zbr[i][four[j]] = r; // zbr[number][place]
 			}
 			zbr[i][12] = 0;
+		}
+	}
+
+	// AAAAA
+	// BBBBB
+	// CCCCC
+	// DDDDD
+	// EEEEE
+	void line24() {
+		for (int i = 1; i < size; ++i) {
+			for (int row = 0; row < 5; ++row) {
+				int r = random();
+				for (int column = 0; column < 5; ++column) {
+					zbr[i][row * 5 + column] = r; // zbr[number][place]
+				}
+			}
+		}
+	}
+
+	// AADDD
+	// AAEDD
+	// AEEEC
+	// BBECC
+	// BBBCC
+	void block24() {
+		int a[5] = { 0, 1, 5, 6, 10 };
+		int b[5] = { 15, 16, 20, 21, 22 };
+		int c[5] = { 14, 18, 19, 23, 24 };
+		int d[5] = { 2, 3, 4, 8, 9 };
+		int e[5] = { 7, 11, 12, 13, 17 };
+		for (int i = 1; i < size; ++i) {
+			int r = random();
+			for (int j = 0; j < 5; ++j) {
+				zbr[i][a[j]] = r; // zbr[number][place]
+			}
+			r = random();
+			for (int j = 0; j < 5; ++j) {
+				zbr[i][b[j]] = r; // zbr[number][place]
+			}
+			r = random();
+			for (int j = 0; j < 5; ++j) {
+				zbr[i][c[j]] = r; // zbr[number][place]
+			}
+			r = random();
+			for (int j = 0; j < 5; ++j) {
+				zbr[i][d[j]] = r; // zbr[number][place]
+			}
+			r = random();
+			for (int j = 0; j < 5; ++j) {
+				zbr[i][d[j]] = r; // zbr[number][place]
+			}
+		}
+	}
+
+	// AAECC
+	// AAECC
+	// ABECD
+	// BBEDD
+	// BBEDD
+	void odd24() {
+		int a[5] = { 0, 1, 5, 6, 10 };
+		int b[5] = { 11, 15, 16, 20, 21 };
+		int c[5] = { 3, 4, 8, 9, 13 };
+		int d[5] = { 14, 18, 19, 23, 24 };
+		int e[5] = { 2, 7, 12, 17, 22 };
+		for (int i = 1; i < size; ++i) {
+			int r = random();
+			for (int j = 0; j < 5; ++j) {
+				zbr[i][a[j]] = r; // zbr[number][place]
+			}
+			r = random();
+			for (int j = 0; j < 5; ++j) {
+				zbr[i][b[j]] = r; // zbr[number][place]
+			}
+			r = random();
+			for (int j = 0; j < 5; ++j) {
+				zbr[i][c[j]] = r; // zbr[number][place]
+			}
+			r = random();
+			for (int j = 0; j < 5; ++j) {
+				zbr[i][d[j]] = r; // zbr[number][place]
+			}
+			r = random();
+			for (int j = 0; j < 5; ++j) {
+				zbr[i][d[j]] = r; // zbr[number][place]
+			}
 		}
 	}
 

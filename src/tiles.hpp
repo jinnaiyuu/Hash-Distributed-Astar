@@ -132,6 +132,9 @@ struct Tiles {
 		this->weight = weight_;
 	}
 
+	// TODO: garbage method for debugging 24 tiles.
+	unsigned int print_h(char tiles[]) const {}
+
 private:
 
 	// mdist returns the Manhattan distance of the given tile array.
