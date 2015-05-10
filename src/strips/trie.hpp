@@ -25,9 +25,9 @@ class Trie {
 			mMarker = false;
 		}
 		~Node() {
-			for (int i = 0; i < mChildren.size(); ++i) {
-				delete mChildren.at(i);
-			}
+//			for (int i = 0; i < mChildren.size(); ++i) {
+//				delete mChildren.at(i);
+//			}
 		}
 		unsigned int precondition() {
 			return mPrecondition;
@@ -44,6 +44,7 @@ class Trie {
 		Node* findChild(unsigned int c);
 		void appendChild(Node* child) {
 			mChildren.push_back(child);
+			std::sort(mChildren.begin(), mChildren.end(), PointerCompare());
 		}
 		std::vector<Node*> children() {
 			return mChildren;
@@ -57,6 +58,18 @@ class Trie {
 			return mActions;
 		}
 
+		struct PointerCompare {
+			bool operator()(const Node* l, const Node* r) {
+				return *l < *r;
+			}
+		};
+
+		bool operator <(const Node& str) const {
+			return (mPrecondition < str.mPrecondition);
+		}
+
+		void printNode(unsigned int depth);
+
 	private:
 		unsigned int mPrecondition;
 		bool mMarker;
@@ -69,11 +82,11 @@ public:
 	~Trie(); // this gonna take some time.
 	void addAction(const Action& a);
 	std::vector<unsigned int> searchPossibleActions(
-			const std::vector<unsigned int>& p);
+			const std::vector<unsigned int>& p) const;
 	void printTree();
 private:
 	void searchNodes(Node* current, const std::vector<unsigned int>& p,
-			std::vector<unsigned int> actions);
+			std::vector<unsigned int>& actions) const;
 	Node* root;
 };
 

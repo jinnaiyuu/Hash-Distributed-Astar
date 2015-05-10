@@ -39,38 +39,74 @@ Strips::Strips(std::istream &domain, std::istream &instance) {
 	std::vector<Predicate> predicates; // uninstantiated
 	std::vector<Object> objects;
 
-	std::vector<GroundedPredicate> g_predicates; // uninstantiated
+	std::vector<unsigned int> g_feasible_predicates;
 
-
-	std::vector<GroundedPredicate> g_feasible_predicates;
 //	std::vector < Action >
 
 	// 1. learn predicates from domain.pddl
-	std::cout << "init predicates..." << std::endl;
+	std::cout << "parsing predicates..." << std::endl;
 	readPredicates(domain, predicates);
 	std::cout << "generated " << predicates.size() << " lifted predicates."
 			<< std::endl;
 
 	// 2. learn objects instance.pddl.
-	std::cout << "init objects..." << std::endl;
+	std::cout << "parsing objects..." << std::endl;
 	readObjects(instance, objects);
 	std::cout << "generated" << objects.size() << " objects." << std::endl;
 
 	// 3. instantiate all predicates.
-	std::cout << "ground all predicates..." << std::endl;
+	std::cout << "grounding all predicates..." << std::endl;
 	groundPredicates(predicates, objects, g_predicates);
 	std::cout << "generated " << g_predicates.size() << " grounded predicates."
 			<< std::endl;
 
 	// 4. read initial state from instance.pddl.
-	std::cout << "parse initial state..." << std::endl;
+	std::cout << "parsing initial state..." << std::endl;
 	readInit(instance, g_predicates);
 
 	// 5. read goal condition from instance.pddl.
-	std::cout << "parse goal condition..." << std::endl;
+	std::cout << "parsing goal condition..." << std::endl;
 	readGoal(instance, g_predicates);
 
 	// 6. read actions from domain.pddl.
+	std::cout << "parsing actions..." << std::endl;
+	readAction(domain, objects, g_predicates);
+
+	std::cout << "generated " << actionTable.getSize() << " grounded actions."
+			<< std::endl;
+//	actionTable.printAllActions();
+
+	// 7. list all feasible predicates to be true.
+	// init state, actions,
+	std::cout << "calculating feasible predicates..." << std::endl;
+	listFeasiblePredicates(g_feasible_predicates);
+	std::cout << g_feasible_predicates.size() << " predicates feasible."
+			<< std::endl;
+
+	// 8. list all feasible actions.
+	std::cout << "calculating feasible actions..." << std::endl;
+	std::vector<unsigned int> feasible_actions;
+	listFeasibleActions(g_feasible_predicates, feasible_actions);
+	std::cout << feasible_actions.size() << " actions feasible."
+			<< std::endl;
+
+	std::cout << "building action trie..." << std::endl;
+	buildActionTrie(feasible_actions);
+	std::cout << "done!" << std::endl;
+
+	actionTrie.printTree();
+
+	std::vector<unsigned int> init_actions = actionTrie.searchPossibleActions(init_state);
+
+	std::cout << "init state: ";
+	for (int i = 0; i < init_state.size(); ++i) {
+		std::cout << init_state[i] << " ";
+	}
+	std::cout << std::endl;
+	std::cout << init_actions.size() << " initial actions." << std::endl;
+	for (int i = 0; i < init_actions.size(); ++i) {
+		actionTable.getAction(init_actions[i]).print();
+	}
 
 	/**
 	 * input PDDL structure
@@ -310,6 +346,8 @@ void Strips::readInit(std::istream &instance,
 			}
 		}
 	}
+
+	std::sort(init_state.begin(), init_state.end());
 }
 
 void Strips::readGoal(std::istream &instance,
@@ -370,10 +408,227 @@ void Strips::readGoal(std::istream &instance,
 			}
 		}
 	}
+
+	std::sort(goal_condition.begin(), goal_condition.end());
+
 }
 
-void Strips::readAction(std::istream &domain) {
+/**
+ * PDDL format
+ * parameters:
+ * precondition:
+ * effect:       add&delete effect
+ *
+ */
+void Strips::readAction(std::istream &domain, std::vector<Object> obs,
+		std::vector<GroundedPredicate> gs) {
+	// 1. read parameters.
+	// 2. read precondition (lifted).
+	// 3. read add&delete effect (lifted).
+	// 4. assign objects for parameters and ground preconditions & effects.
+	// 5. build Action.
+	std::vector<std::string> parameters;
 
+	std::string text;
+
+	unsigned int actionNumber = 0;
+	unsigned int gActionNumber = 0;
+	while (getText(domain, ":action", ":action", actionNumber, text)) {
+//		std::cout << "action-> " << text << std::endl;
+		std::stringstream textstream(text);
+
+		// action name
+		std::vector<std::string> tokens;
+		std::copy(std::istream_iterator<std::string>(textstream),
+				std::istream_iterator<std::string>(), back_inserter(tokens));
+		std::string actionname = tokens[1];
+//		std::cout << "action name: " << actionname << std::endl;
+
+		// parameters
+		std::string parametersText = "";
+		getText(domain, ":parameters", ":precondition", actionNumber,
+				parametersText);
+//		std::cout << parametersText << std::endl;
+		std::vector<std::string> parameters;
+		std::vector<std::string> forward_delimeds = split(parametersText, '?');
+		for (int i = 1; i < forward_delimeds.size(); ++i) {
+//			std::cout << "fd = " << forward_delimeds[i] << std::endl;
+			std::vector<std::string> token = split(forward_delimeds[i], ')');
+			parameters.push_back("?" + trim(token[0]));
+		}
+//		std::cout << "parameters: ";
+//		for (int i = 0; i < parameters.size(); ++i) {
+//			std::cout << parameters[i];
+//		}
+//		std::cout << std::endl;
+
+		// instantiate grounded actions.
+		// TODO: enable typing
+		int newactnum = pow(obs.size(), parameters.size());
+		for (unsigned int newnum = 0; newnum < newactnum; ++newnum) {
+			std::vector<std::string> args;
+			args.resize(parameters.size());
+			// build arguments list.
+			for (unsigned int arg = 0; arg < parameters.size(); ++arg) {
+				args[arg] = obs[(newnum
+						/ pow(obs.size(), parameters.size() - 1 - arg))
+						% obs.size()].symbol;
+			}
+
+//			std::cout << "instantiate with ";
+//			for (unsigned int arg = 0; arg < parameters.size(); ++arg) {
+//				std::cout << args[arg];
+//			}
+//			std::cout << std::endl;
+
+			// replace arguments with objects.
+			std::string groundedText = text;
+			for (unsigned int arg = 0; arg < parameters.size(); ++arg) {
+				std::string buf = replace(groundedText, parameters[arg],
+						args[arg]);
+				groundedText = buf;
+//				std::cout << groundedText << std::endl;
+
+			}
+//			std::cout << "grounded text = " << groundedText << std::endl;
+
+			// read preconditions and translate into GroundedPredicate keys.
+			std::string preconditionText = findRange(groundedText,
+					":precondition", ":effect");
+//			std::cout << "prec = " << preconditionText << std::endl;
+
+			std::vector<std::string> preconditions;
+			std::vector<unsigned int> precnums;
+
+			forward_delimeds = split(preconditionText, '(');
+			for (int i = 1; i < forward_delimeds.size(); ++i) {
+				//			std::cout << "fd = " << forward_delimeds[i] << std::endl;
+				std::vector<std::string> token = split(forward_delimeds[i],
+						')');
+				if (token[0].compare("and") != 0) {
+					preconditions.push_back(token[0]);
+				}
+			}
+
+//			std::cout << "preconditions = ";
+//			for (int p = 0; p < preconditions.size(); ++p) {
+//				std::cout << "(" << preconditions[p] << ") ";
+//			}
+//			std::cout << std::endl;
+			for (int p = 0; p < preconditions.size(); ++p) {
+				for (int g = 0; g < gs.size(); ++g) {
+					if (preconditions[p].compare(gs[g].symbol) == 0) {
+						precnums.push_back(g);
+					}
+				}
+			}
+			std::sort(precnums.begin(), precnums.end());
+//			for (int p = 0; p < precnums.size(); ++p) {
+//				std::cout << "num = " << precnums[p] << std::endl;
+//			}
+
+			std::string effectText = findRange(groundedText, ":effect", ")))");
+
+			std::vector<std::string> effects;
+			std::vector<unsigned int> addnums;
+			std::vector<unsigned int> delnums;
+
+			forward_delimeds = split(effectText, '(');
+			for (int i = 2; i < forward_delimeds.size(); ++i) {
+				//			std::cout << "fd = " << forward_delimeds[i] << std::endl;
+				std::vector<std::string> token = split(forward_delimeds[i],
+						')');
+				effects.push_back(token[0]);
+			}
+
+//			std::cout << "effects = ";
+//			for (int p = 0; p < effects.size(); ++p) {
+//				std::cout << "(" << effects[p] << ") ";
+//			}
+//			std::cout << std::endl;
+			bool isDel = false;
+			for (int p = 0; p < effects.size(); ++p) {
+				if (effects[p].compare("not ") == 0) {
+					isDel = true;
+					continue;
+				}
+				for (int g = 0; g < gs.size(); ++g) {
+					if (effects[p].compare(gs[g].symbol) == 0) {
+						if (isDel) {
+							delnums.push_back(g);
+						} else {
+							addnums.push_back(g);
+						}
+						isDel = false;
+						break;
+					}
+				}
+			}
+			std::sort(addnums.begin(), addnums.end());
+			std::sort(delnums.begin(), delnums.end());
+
+//			for (int p = 0; p < addnums.size(); ++p) {
+//				std::cout << "add num = " << addnums[p] << std::endl;
+//			}
+//			for (int p = 0; p < delnums.size(); ++p) {
+//				std::cout << "del num = " << delnums[p] << std::endl;
+//			}
+
+			std::string groundedName = actionname;
+			for (int i = 0; i < args.size(); ++i) {
+				groundedName.append(" " + args[i]);
+			}
+//			std::cout << "gname = " << groundedName << std::endl;
+
+			Action a(groundedName, gActionNumber, precnums, addnums, delnums);
+			actionTable.addAction(a);
+			++gActionNumber;
+		}
+
+		++actionNumber;
+	}
+
+}
+
+void Strips::listFeasiblePredicates(std::vector<unsigned int>& gs) {
+	for (int i = 0; i < init_state.size(); ++i) {
+		gs.push_back(init_state[i]);
+	}
+
+	for (int a = 0; a < actionTable.getSize(); ++a) {
+		Action act = actionTable.getAction(a);
+		for (int p = 0; p < act.adds.size(); ++p) {
+			gs.push_back(act.adds[p]);
+		}
+	}
+
+	std::sort(gs.begin(), gs.end());
+	gs.erase(unique(gs.begin(), gs.end()), gs.end());
+}
+
+void Strips::listFeasibleActions(std::vector<unsigned int> gs, std::vector<unsigned int>& actions) {
+	for (int a = 0; a < actionTable.getSize(); ++a) {
+		Action action = actionTable.getAction(a);
+		bool isFeasible = true;
+		for (int prec = 0; prec < action.preconditions.size(); ++prec) {
+			if (std::find(gs.begin(), gs.end(), action.preconditions[prec]) == gs.end()) {
+				isFeasible = false;
+				break;
+			}
+		}
+		if (isFeasible) {
+			actions.push_back(a);
+		}
+	}
+}
+
+void Strips::buildActionTrie(std::vector<unsigned> keys) {
+	for (int a = 0; a < keys.size(); ++a) {
+		std::cout << a << std::endl;
+		Action action = actionTable.getAction(keys[a]);
+		action.print();
+		actionTrie.addAction(action);
+	}
 }
 
 int Strips::pow(int base, int p) {
@@ -383,3 +638,28 @@ int Strips::pow(int base, int p) {
 	}
 	return ret;
 }
+
+//////////////////////////////////////////////////////
+/// utilities
+//////////////////////////////////////////////////////
+
+void Strips::print_state(std::vector<unsigned int>& propositions) const {
+	std::cout << "state: ";
+	for (int p = 0; p < propositions.size(); ++p) {
+		std::cout << "(" << g_predicates[propositions[p]].symbol << ") ";
+	}
+	std::cout << std::endl;
+}
+
+void Strips::print_plan(std::vector<unsigned int>& path) const {
+	State s;
+	s.propositions = init_state;
+	print_state(s.propositions);
+	for (int i = 0; i < path.size(); ++i) {
+		std::cout << "action: " << actionTable.getAction(path[i]).name << std::endl;
+		apply_action(s, path[i]);
+		print_state(s.propositions);
+	}
+}
+
+

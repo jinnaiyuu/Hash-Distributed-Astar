@@ -52,11 +52,10 @@ struct Strips {
 	// expected to be in Wheeler's tiles instance
 	// format.
 	Strips(std::istream &domain, std::istream &instance);
-	~Strips() {}
-
+	~Strips() {
+	}
 
 	State initial() const {
-		// TODO: put an initial state.
 		State s;
 		s.propositions = init_state;
 		s.h = heuristic(s);
@@ -68,7 +67,7 @@ struct Strips {
 	}
 
 	bool isgoal(const State &s) const {
-	// TODO: should be optimized. 2 sequences are sorted.
+		// TODO: should be optimized. 2 sequences are sorted.
 		std::vector<unsigned int> p = s.propositions;
 		for (int i = 0; i < goal_condition.size(); ++i) {
 			if (std::find(p.begin(), p.end(), goal_condition[i]) != p.end()) {
@@ -81,14 +80,16 @@ struct Strips {
 	}
 
 	int nops(const State &s) const {
-		// TODO: accesss prefixtree
-		return 0;
+		std::vector<unsigned int> actions = actionTrie.searchPossibleActions(
+				s.propositions);
+		return actions.size();
 	}
 
 	// TODO: nops&nthop is duplication of work for STRIPS planning. should be optimized.
 	int nthop(const State &s, int n) const {
-		// TODO: access prefixtree
-		return 0;
+		std::vector<unsigned int> actions = actionTrie.searchPossibleActions(
+				s.propositions);
+		return actions[n];
 	}
 
 	struct Undo {
@@ -102,7 +103,10 @@ struct Strips {
 		e.undo.action = action;
 		e.undo.h = s.h;
 
-		// TODO: apply action here
+//		std::cout << "apply " << actionTable.getAction(action).name << std::endl;
+//		print_state(s.propositions);
+		apply_action(s, action);
+//		print_state(s.propositions);
 
 		s.h = heuristic(s);
 
@@ -112,15 +116,15 @@ struct Strips {
 	// invert the add&delete effect of the action
 	void undo(State &s, const Edge<Strips> &e) const {
 		s.h = e.undo.h;
-
-		// TODO: undo action here
+		undo_action(s, e.undo.action);
 	}
 
 	// pack: packes state s into the packed state dst.
 	void pack(PackedState &dst, State &s) const {
-		dst.word = 0; // to make g++ shut up about uninitialized usage.
+		// TODO: should optimize binary length.
+		dst.word = 0;
 		for (int i = 0; i < s.propositions.size(); i++) {
-			dst.word = (dst.word << 1) | s.propositions[i];
+			dst.word = (dst.word << 4) | s.propositions[i];
 		}
 		dst.propositions = s.propositions; // copy
 	}
@@ -130,7 +134,6 @@ struct Strips {
 		dst.propositions = s.propositions;
 		dst.h = heuristic(dst);
 	}
-
 
 	void set_heuristic(int h) {
 		which_heuristic = h;
@@ -146,12 +149,30 @@ private:
 	std::vector<unsigned int> init_state;
 	std::vector<unsigned int> goal_condition;
 
-	void apply_action(State& s, int action_key) {
-
+	void apply_action(State& s, int action_key) const {
+		Action action = actionTable.getAction(action_key);
+		for (int i = 0; i < action.adds.size(); ++i) {
+			s.propositions.push_back(action.adds[i]);
+		}
+		for (int i = 0; i < action.deletes.size(); ++i) {
+			s.propositions.erase(
+					std::remove(s.propositions.begin(), s.propositions.end(),
+							action.deletes[i]), s.propositions.end());
+		}
+		std::sort(s.propositions.begin(), s.propositions.end());
 	}
 
-	void undo_action(State& s, int action_key) {
-
+	void undo_action(State& s, int action_key) const {
+		Action action = actionTable.getAction(action_key);
+		for (int i = 0; i < action.deletes.size(); ++i) {
+			s.propositions.push_back(action.deletes[i]);
+		}
+		for (int i = 0; i < action.adds.size(); ++i) {
+			s.propositions.erase(
+					std::remove(s.propositions.begin(), s.propositions.end(),
+							action.adds[i]), s.propositions.end());
+		}
+		std::sort(s.propositions.begin(), s.propositions.end());
 	}
 
 	/////////////////////////////
@@ -180,21 +201,20 @@ private:
 	}
 
 	int goal_count(const State& s) const {
-		// TODO: should be optimized. 2 arrays are sorted.
-		int goals = 0;
+		int goals = goal_condition.size();
 		std::vector<unsigned int> p = s.propositions;
 		for (int i = 0; i < goal_condition.size(); ++i) {
 			if (std::find(p.begin(), p.end(), goal_condition[i]) != p.end()) {
-				++goals;
+				--goals;
 			}
 		}
 		return goals;
 	}
 
 	int hmax(const State& s) const {
+		assert(false);
 		return 0;
 	}
-
 
 	/////////////////////////////
 	// parser
@@ -206,9 +226,14 @@ public:
 		unsigned int key;
 		std::string symbol;
 		unsigned int number_of_arguments;
-		Predicate(){};
-		Predicate(unsigned int key, std::string symbol, unsigned int number_of_arguments)
-		: key(key), symbol(symbol), number_of_arguments(number_of_arguments){}
+		Predicate() {
+		}
+		;
+		Predicate(unsigned int key, std::string symbol,
+				unsigned int number_of_arguments) :
+				key(key), symbol(symbol), number_of_arguments(
+						number_of_arguments) {
+		}
 
 	};
 
@@ -226,15 +251,29 @@ public:
 		std::vector<unsigned int> arguments;
 	};
 
+	std::vector<GroundedPredicate> g_predicates;
+
+	void print_plan(std::vector<unsigned int>& path) const;
+	void print_state(std::vector<unsigned int>& propositions) const;
+
+
 private:
-	void readPredicates(std::istream &domain, std::vector<Predicate>& predicates);
+	void readPredicates(std::istream &domain,
+			std::vector<Predicate>& predicates);
 	void readObjects(std::istream &instance, std::vector<Object>& objects);
-	void ground(Predicate& p, std::vector<unsigned int> argv, unsigned int key, GroundedPredicate& g, std::vector<Object>& obs);
-	void groundPredicates(std::vector<Predicate>& ps, std::vector<Object>& obs, std::vector<GroundedPredicate>& gs);
+	void ground(Predicate& p, std::vector<unsigned int> argv, unsigned int key,
+			GroundedPredicate& g, std::vector<Object>& obs);
+	void groundPredicates(std::vector<Predicate>& ps, std::vector<Object>& obs,
+			std::vector<GroundedPredicate>& gs);
 	void readInit(std::istream &instance, std::vector<GroundedPredicate>& gs);
 	void readGoal(std::istream &instance, std::vector<GroundedPredicate>& gs);
-	void readAction(std::istream &domain);
-
+	void readAction(std::istream &domain, std::vector<Object> obs,
+			std::vector<GroundedPredicate> gs);
+	void listFeasiblePredicates(std::vector<unsigned int>& gs);
+	void listFeasibleActions(std::vector<unsigned int> gs,
+			std::vector<unsigned int>& actions);
+	void buildActionTrie(std::vector<unsigned> keys);
+//	bool getText(std::istream &file, std::string from, std::string to, unsigned int number, std::string& ret);
 	int pow(int base, int p);
 
 };

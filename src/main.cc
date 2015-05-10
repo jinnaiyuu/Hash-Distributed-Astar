@@ -36,7 +36,6 @@
 #define ANALYZE_SEMISYNC
 #endif
 
-
 #include "strips/strips.hpp"
 
 #include "astar.hpp"
@@ -45,7 +44,6 @@
 //
 //#include "astar_heap.hpp"
 //#include "hdastar_heap.hpp"
-
 
 //	 expd 32334 length 46   : 14 1 9 6 4 8 12 5 7 2 3 0 10 11 13 15
 //	 expd 909442 length 53  : 13 14 6 12 4 5 1 0 9 3 10 2 15 11 8 7
@@ -72,11 +70,21 @@ int main(int argc, const char *argv[]) {
 
 		Strips strips(domain, instance);
 
+//		return 0;
 		SearchAlg<Strips> *search = NULL;
 
 		if (strcmp(argv[1], "astar") == 0) {
 			search = new Astar<Strips>(strips);
 		}
+
+		unsigned int h = 0;
+		for (unsigned int i = 0; i < argc; ++i) {
+			if (sscanf(argv[i], "h-%u", &h) == 1) {
+				break;
+			}
+		}
+		strips.set_heuristic(h);
+
 		Strips::State init = strips.initial();
 
 		dfheader(stdout);
@@ -86,6 +94,11 @@ int main(int argc, const char *argv[]) {
 		std::vector<Strips::State> path = search->search(init);
 
 		double wtime = search->wtime - wall0, ctime = search->ctime - cpu0;
+
+		for (int i = path.size() - 1; i >= 0; --i) {
+			strips.print_state(path[i].propositions);
+		}
+
 		dfpair(stdout, "total wall time", "%g", wtime);
 		dfpair(stdout, "total cpu time", "%g", ctime);
 		dfpair(stdout, "total nodes expanded", "%lu", search->expd);
