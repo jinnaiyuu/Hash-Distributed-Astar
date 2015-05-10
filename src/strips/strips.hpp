@@ -220,14 +220,22 @@ public:
 	struct GroundedPredicate {
 		unsigned int key;
 		std::string symbol;
+
+		unsigned int lifted_key;
+		std::string lifted_symbol;
+		std::vector<unsigned int> arguments;
 	};
 
 private:
 	void readPredicates(std::istream &domain, std::vector<Predicate>& predicates);
 	void readObjects(std::istream &instance, std::vector<Object>& objects);
-	void readInit(std::istream &instance);
-	void readGoal(std::istream &instance);
+	void ground(Predicate& p, std::vector<unsigned int> argv, unsigned int key, GroundedPredicate& g, std::vector<Object>& obs);
+	void groundPredicates(std::vector<Predicate>& ps, std::vector<Object>& obs, std::vector<GroundedPredicate>& gs);
+	void readInit(std::istream &instance, std::vector<GroundedPredicate>& gs);
+	void readGoal(std::istream &instance, std::vector<GroundedPredicate>& gs);
 	void readAction(std::istream &domain);
+
+	int pow(int base, int p);
 
 };
 #endif
