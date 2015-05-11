@@ -27,12 +27,17 @@ Trie::Trie() {
 	root = new Node();
 }
 
+Trie::Trie(const Trie& other) {
+//	std::cout << "copy operator" << std::endl;
+	root = other.root;
+}
+
 Trie::~Trie() {
 	// Free memory
 //	for (int i = 0; i < root->children().size(); ++i) {
 //		delete root->children().at(i);
 //	}
-	delete root;
+//	delete root;
 }
 
 void Trie::addAction(const Action& a) {
@@ -108,6 +113,6 @@ void Trie::searchNodes(Node* c, const std::vector<unsigned int>& p,
 	}
 }
 
-void Trie::printTree() {
+void Trie::printTree() const {
 	root->printNode(0);
 }

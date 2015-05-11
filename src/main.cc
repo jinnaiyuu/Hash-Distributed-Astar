@@ -39,8 +39,9 @@
 #include "strips/strips.hpp"
 
 #include "astar.hpp"
-//
-//#include "hdastar.hpp"
+#include "hdastar.hpp"
+#include "strips/zobrist.hpp"
+
 //
 //#include "astar_heap.hpp"
 //#include "hdastar_heap.hpp"
@@ -70,13 +71,6 @@ int main(int argc, const char *argv[]) {
 
 		Strips strips(domain, instance);
 
-//		return 0;
-		SearchAlg<Strips> *search = NULL;
-
-		if (strcmp(argv[1], "astar") == 0) {
-			search = new Astar<Strips>(strips);
-		}
-
 		unsigned int h = 0;
 		for (unsigned int i = 0; i < argc; ++i) {
 			if (sscanf(argv[i], "h-%u", &h) == 1) {
@@ -84,6 +78,19 @@ int main(int argc, const char *argv[]) {
 			}
 		}
 		strips.set_heuristic(h);
+
+		SearchAlg<Strips> *search = NULL;
+		unsigned int n_threads = 1;
+
+		if (strcmp(argv[1], "astar") == 0) {
+			search = new Astar<Strips>(strips);
+		} else if (sscanf(argv[1], "hdastar-%u", &n_threads) == 1) {
+			search = new HDAstar<Strips, StripsZobrist<Strips> >(strips,
+					n_threads);
+		} else {
+			std::cout << "no algorithm" << std::endl;
+			assert(false);
+		}
 
 		Strips::State init = strips.initial();
 
@@ -95,9 +102,7 @@ int main(int argc, const char *argv[]) {
 
 		double wtime = search->wtime - wall0, ctime = search->ctime - cpu0;
 
-		for (int i = path.size() - 1; i >= 0; --i) {
-			strips.print_state(path[i].propositions);
-		}
+		strips.print_plan(path);
 
 		dfpair(stdout, "total wall time", "%g", wtime);
 		dfpair(stdout, "total cpu time", "%g", ctime);

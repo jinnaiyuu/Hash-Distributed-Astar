@@ -4,10 +4,18 @@
 #ifndef _HEAP_HPP_
 #define _HEAP_HPP_
 
+#ifndef DEBUG
+#define dbgprintf   1 ? (void) 0 : (void)
+#else // #ifdef DEBUG
+#define dbgprintf   printf
+#endif // #ifdef DEBUG
+
 #include "fatal.hpp"
 #include <vector>
 #include <limits>
 #include <cassert>
+
+
 
 template <class HeapElm> class Heap {
 

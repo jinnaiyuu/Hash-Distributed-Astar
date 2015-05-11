@@ -46,6 +46,8 @@ template<class D> class Astar: public SearchAlg<D> {
 	double w;
 	unsigned int incumbent;
 
+	std::vector<unsigned int> plan;
+
 public:
 
 	// closed might be waaaay too big for my memory....
@@ -68,6 +70,11 @@ public:
 
 	Astar(D &d, unsigned int opensize, double weight, unsigned int incumbent) :
 			SearchAlg<D>(d), closed(512927357), open(opensize), w(weight), incumbent(
+					incumbent) {
+	}
+
+	Astar(D &d, unsigned int opensize, double weight, unsigned int incumbent, unsigned int closed) :
+			SearchAlg<D>(d), closed(closed), open(opensize), w(weight), incumbent(
 					incumbent) {
 	}
 
@@ -104,8 +111,9 @@ public:
 
 			this->expd++;
 //			printf("expd: \n");
+			int nops = this->dom.nops(state);
 
-			for (int i = 0; i < this->dom.nops(state); i++) {
+			for (int i = 0; i < nops; i++) {
 				int op = this->dom.nthop(state, i);
 //				printf("op = %u\n", op);
 				if (op == n->pop)
@@ -113,35 +121,6 @@ public:
 				Edge<D> e = this->dom.apply(state, op);
 
 				Node* next = wrap(state, n, e.cost, e.pop);
-//				if (n->f > next->f) {
-////					// heuristic was calculating too big.
-//					printf("!!!ERROR: f decreases\n");
-////
-//					unsigned int nh = n->f - n->g;
-//					unsigned int nxh = next->f - next->g;
-//					printf("f = %u -> %u\n", n->f, next->f);
-//					printf("h = %u -> %u\n", nh, nxh);
-//					printf("edge cost = %d\n", e.cost);
-//					printf("child : ");
-//					for (int i = 0; i < 25; ++i) {
-//						printf("%.2d ", state.tiles[i]);
-//					}
-//					printf("\n");
-//					this->dom.print_h(state.tiles);
-//
-//					this->dom.undo(state, e);
-//					printf("parent: ");
-//					for (int i = 0; i < 25; ++i) {
-//						printf("%.2d ", state.tiles[i]);
-//					}
-//					printf("\n");
-//					this->dom.print_h(state.tiles);
-//					printf("\n");
-//
-//					continue;
-////					assert(false);
-//				}
-
 				if (next->f > incumbent) {
 //					delete next;
 					printf("f > incumbent\n");
@@ -150,13 +129,7 @@ public:
 				}
 				this->gend++;
 				open.push(next);
-//				open.push(wrap(state, n, e.cost, e.pop));
 				this->dom.undo(state, e);
-//				printf("undo: ");
-//				for (int i = 0; i < 25; ++i) {
-//					printf("%.2d ", state.tiles[i]);
-//				}
-//				printf("\n");
 			}
 //			printf("expd done\n\n");
 //			printf("\n");

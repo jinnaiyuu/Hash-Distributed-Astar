@@ -4,6 +4,8 @@
 #include "strips.hpp"
 #include "action.hpp"
 #include "utils.hpp"
+#include "../astar.hpp"
+#include "../search.hpp"
 
 #include <string>
 #include <iostream>
@@ -28,13 +30,64 @@ using qi::_val;
 using qi::_1;
 using qi::eps;
 using qi::alpha;
+using qi::alnum;
 using qi::double_;
 using qi::lexeme;
 using qi::phrase_parse;
 using ascii::char_;
 using boost::spirit::ascii::space;
 
-Strips::Strips(std::istream &domain, std::istream &instance) {
+////////////////////////////////////////////
+/// heuristics
+////////////////////////////////////////////
+
+int Strips::hmax(const State& s) const {
+//	$h_max$ (a simplification of the delete relaxation; admissible).
+//	Ignore all delete effects, then for each goal proposition, compute the
+//	minimal cost of achieving that single proposition. Compute the max
+//	over all goal propositions. This is clearly a lower bound on the
+//	delete relaxation, and is also an admissible heuristic for the
+//	original planning problem.
+	Strips relaxed;
+	relaxed.setActionTable(actionTable);
+	relaxed.setActionTrie(actionTrie);
+	relaxed.setInitState(s.propositions);
+	relaxed.set_heuristic(0); // goal count doesn't make sense as there is only a single goal.
+	relaxed.setGroundedPredicates(g_predicates);
+	relaxed.setIsDeleteRelaxed(true);
+	int max = 0;
+	for (int i = 0; i < goal_condition.size(); ++i) {
+		std::cout << i << ": goal condition = " << goal_condition[i]
+				<< std::endl;
+		std::vector<unsigned int> g;
+		g.push_back(goal_condition[i]);
+		relaxed.setGoalCondition(g);
+		// TODO: a bit adhoc, but wouldn't matter.
+		SearchAlg<Strips>* search = new Astar<Strips>(relaxed, 20, 1.0, 1000,
+				197);
+		State copy = relaxed.initial();
+		std::cout << "start" << std::endl;
+		print_state(copy.propositions);
+		std::vector<Strips::State> path = search->search(copy);
+		std::cout << "length = " << path.size() << std::endl;
+		if (max < path.size()) {
+			max = path.size();
+		}
+		delete search;
+	}
+	std::cout << "max = " << max << std::endl;
+	return max;
+}
+
+////////////////////////////////////////////
+/// parser
+////////////////////////////////////////////
+Strips::Strips() {
+}
+
+Strips::Strips(std::istream & domain, std::istream & instance) {
+	domain.seekg(0, std::ios_base::beg);
+	instance.seekg(0, std::ios_base::beg);
 
 	std::vector<Predicate> predicates; // uninstantiated
 	std::vector<Object> objects;
@@ -56,21 +109,22 @@ Strips::Strips(std::istream &domain, std::istream &instance) {
 
 	// 3. instantiate all predicates.
 	std::cout << "grounding all predicates..." << std::endl;
-	groundPredicates(predicates, objects, g_predicates);
-	std::cout << "generated " << g_predicates.size() << " grounded predicates."
+	g_predicates = new std::vector<GroundedPredicate>();
+	groundPredicates(predicates, objects, *g_predicates);
+	std::cout << "generated " << g_predicates->size() << " grounded predicates."
 			<< std::endl;
 
 	// 4. read initial state from instance.pddl.
 	std::cout << "parsing initial state..." << std::endl;
-	readInit(instance, g_predicates);
+	readInit(instance, *g_predicates);
 
 	// 5. read goal condition from instance.pddl.
 	std::cout << "parsing goal condition..." << std::endl;
-	readGoal(instance, g_predicates);
+	readGoal(instance, *g_predicates);
 
 	// 6. read actions from domain.pddl.
 	std::cout << "parsing actions..." << std::endl;
-	readAction(domain, objects, g_predicates);
+	readAction(domain, objects, *g_predicates);
 
 	std::cout << "generated " << actionTable.getSize() << " grounded actions."
 			<< std::endl;
@@ -87,8 +141,7 @@ Strips::Strips(std::istream &domain, std::istream &instance) {
 	std::cout << "calculating feasible actions..." << std::endl;
 	std::vector<unsigned int> feasible_actions;
 	listFeasibleActions(g_feasible_predicates, feasible_actions);
-	std::cout << feasible_actions.size() << " actions feasible."
-			<< std::endl;
+	std::cout << feasible_actions.size() << " actions feasible." << std::endl;
 
 	std::cout << "building action trie..." << std::endl;
 	buildActionTrie(feasible_actions);
@@ -96,7 +149,8 @@ Strips::Strips(std::istream &domain, std::istream &instance) {
 
 	actionTrie.printTree();
 
-	std::vector<unsigned int> init_actions = actionTrie.searchPossibleActions(init_state);
+	std::vector<unsigned int> init_actions = actionTrie.searchPossibleActions(
+			init_state);
 
 	std::cout << "init state: ";
 	for (int i = 0; i < init_state.size(); ++i) {
@@ -154,8 +208,8 @@ struct predicate_parser: qi::grammar<Iterator, Strips::Predicate(),
 		ascii::space_type> {
 	predicate_parser() :
 			predicate_parser::base_type(start) {
-		symbol %= lexeme[+(alpha)];
-		args = eps[_val = 0] >> *(lexeme['?' >> +(alpha)])[_val += 1];
+		symbol %= lexeme[+(alnum)];
+		args = eps[_val = 0] >> *(lexeme['?' >> +(alnum)])[_val += 1];
 		start %= '(' >> symbol >> args >> ')';
 	}
 	qi::rule<Iterator, std::string(), ascii::space_type> symbol;
@@ -165,39 +219,31 @@ struct predicate_parser: qi::grammar<Iterator, Strips::Predicate(),
 
 void Strips::readPredicates(std::istream &domain,
 		std::vector<Predicate>& predicates) {
-	std::string line;
-	std::string search = ":predicates";
-	size_t pos;
+	domain.seekg(0, std::ios_base::beg);
+
+	std::string text;
+	getText(domain, ":predicates", ":action", 0, text);
+	text = text.substr(15);
+	std::cout << "predicates text = " << text << std::endl;
+
 	predicate_parser<std::string::const_iterator> g;
 
-	while (domain.good()) {
-		getline(domain, line); // get line from file
-		std::transform(line.begin(), line.end(), line.begin(), ::tolower);
-		pos = line.find(search); // search
-		if (pos != std::string::npos) {
-			std::cout << "Found!: " << line << std::endl;
-			std::size_t pos = line.find(":precondition") + 15;
-			std::string prec = line.substr(pos);
-			std::cout << prec << std::endl;
-			int pnum = 0;
-			std::string symbol;
-//			Predicate* p = new Predicate();
-			predicates.resize(1);
-			while (phrase_parse((std::string::const_iterator) prec.begin(),
-					(std::string::const_iterator) prec.end(), g, space,
-					predicates[pnum])) {
-				predicates[pnum].key = pnum;
-				++pnum;
-				predicates.resize(predicates.size() + 1);
-				getline(domain, prec);
-				std::transform(prec.begin(), prec.end(), prec.begin(),
-						::tolower);
-			}
-			predicates.pop_back();
-			break;
-//				p = new Predicate();
-		}
-//			delete p;
+	std::vector<std::string> symbols;
+	std::vector<unsigned int> argcs;
+	std::vector<std::string> forward_delimeds = split(text, '(');
+	for (int i = 1; i < forward_delimeds.size(); ++i) {
+		std::vector<std::string> predicate = split(forward_delimeds[i], ')');
+		std::vector<std::string> token = split(predicate[0], ' ');
+
+		symbols.push_back(token[0]);
+		argcs.push_back(token.size() - 1);
+	}
+
+	predicates.resize(symbols.size());
+	for (int i = 0; i < predicates.size(); ++i) {
+		predicates[i].key = i;
+		predicates[i].symbol = symbols[i];
+		predicates[i].number_of_arguments = argcs[i];
 	}
 
 	for (int i = 0; i < predicates.size(); ++i) {
@@ -207,32 +253,19 @@ void Strips::readPredicates(std::istream &domain,
 }
 
 void Strips::readObjects(std::istream &instance, std::vector<Object>& objects) {
-	std::string line;
-	std::string search = ":objects";
-	size_t pos;
 	std::vector<std::string> strings;
+	std::string text;
+	getText(instance, ":objects", ":init", 0, text);
 
-	while (instance.good()) {
-		getline(instance, line); // get line from file
-		std::transform(line.begin(), line.end(), line.begin(), ::tolower);
-		pos = line.find(search); // search
-		if (pos != std::string::npos) {
-			std::cout << "Found: " << line << std::endl;
+	std::vector<std::string> tokens;
+	std::istringstream iss(text);
+	std::copy(std::istream_iterator<std::string>(iss),
+			std::istream_iterator<std::string>(), back_inserter(tokens));
 
-			std::vector<std::string> tokens;
-			std::istringstream iss(line);
-			std::copy(std::istream_iterator<std::string>(iss),
-					std::istream_iterator<std::string>(),
-					back_inserter(tokens));
-
-			for (int i = 1; i < tokens.size() - 1; ++i) {
-				strings.push_back(tokens[i]);
-			}
-
-			break;
-		}
+	for (int i = 1; i < tokens.size() - 1; ++i) {
+		strings.push_back(tokens[i]);
 	}
-	std::cout << "strings" << std::endl;
+//	std::cout << "strings" << std::endl;
 	objects.resize(strings.size());
 	for (int i = 0; i < strings.size(); ++i) {
 		std::cout << strings[i] << std::endl;
@@ -354,41 +387,18 @@ void Strips::readGoal(std::istream &instance,
 		std::vector<GroundedPredicate>& gs) {
 	instance.seekg(0, std::ios_base::beg);
 
-	std::string total_text;
-	std::string line;
-	std::string init_ = ":goal";
-	size_t pos;
 	std::vector<std::string> strings;
-
-	// put total_text the text for inital state.
-	while (instance.good()) {
-		getline(instance, line); // get line from file
-		std::transform(line.begin(), line.end(), line.begin(), ::tolower);
-		pos = line.find(init_); // search
-		if (pos != std::string::npos) {
-			std::cout << "Found: " << line << std::endl;
-			total_text = line;
-			while (instance.good()) {
-				getline(instance, line); // get line from file
-				std::transform(line.begin(), line.end(), line.begin(),
-						::tolower);
-				if (pos != std::string::npos) {
-					break;
-				} else {
-					total_text.append(line);
-				}
-			}
-			break;
-		}
-	}
+	std::string text;
+	getText(instance, ":goal", ")))", 0, text);
+	instance.clear();
 
 	// parse the total_text.
-	std::cout << "goal state: " << total_text << std::endl;
+	std::cout << "goal state: " << text << std::endl;
 
 	std::vector<std::string> symbols; // parse into here.
 
 	// now we need to parse total text into vector of strings(symbols).
-	std::vector<std::string> forward_delimeds = split(total_text, '(');
+	std::vector<std::string> forward_delimeds = split(text, '(');
 	for (int i = 3; i < forward_delimeds.size(); ++i) {
 		std::vector<std::string> token = split(forward_delimeds[i], ')');
 
@@ -434,7 +444,7 @@ void Strips::readAction(std::istream &domain, std::vector<Object> obs,
 	unsigned int actionNumber = 0;
 	unsigned int gActionNumber = 0;
 	while (getText(domain, ":action", ":action", actionNumber, text)) {
-//		std::cout << "action-> " << text << std::endl;
+		std::cout << "action-> " << text << std::endl;
 		std::stringstream textstream(text);
 
 		// action name
@@ -477,7 +487,7 @@ void Strips::readAction(std::istream &domain, std::vector<Object> obs,
 
 //			std::cout << "instantiate with ";
 //			for (unsigned int arg = 0; arg < parameters.size(); ++arg) {
-//				std::cout << args[arg];
+//				std::cout << args[arg] << " ";
 //			}
 //			std::cout << std::endl;
 
@@ -534,11 +544,13 @@ void Strips::readAction(std::istream &domain, std::vector<Object> obs,
 			std::vector<unsigned int> delnums;
 
 			forward_delimeds = split(effectText, '(');
-			for (int i = 2; i < forward_delimeds.size(); ++i) {
+			for (int i = 1; i < forward_delimeds.size(); ++i) {
 				//			std::cout << "fd = " << forward_delimeds[i] << std::endl;
 				std::vector<std::string> token = split(forward_delimeds[i],
 						')');
-				effects.push_back(token[0]);
+				if (token[0].compare("and ") != 0) {
+					effects.push_back(token[0]);
+				}
 			}
 
 //			std::cout << "effects = ";
@@ -566,6 +578,17 @@ void Strips::readAction(std::istream &domain, std::vector<Object> obs,
 			}
 			std::sort(addnums.begin(), addnums.end());
 			std::sort(delnums.begin(), delnums.end());
+
+
+			// Prune trivial predicates.
+			std::vector<unsigned int> dif;
+			std::set_difference(addnums.begin(),
+					addnums.end(), delnums.begin(),
+					delnums.end(), std::inserter(dif, dif.end()));
+			if (dif.size() == 0) {
+//				std::cout << "trivial predicate. should discard." << std::endl;
+				continue;
+			}
 
 //			for (int p = 0; p < addnums.size(); ++p) {
 //				std::cout << "add num = " << addnums[p] << std::endl;
@@ -606,12 +629,14 @@ void Strips::listFeasiblePredicates(std::vector<unsigned int>& gs) {
 	gs.erase(unique(gs.begin(), gs.end()), gs.end());
 }
 
-void Strips::listFeasibleActions(std::vector<unsigned int> gs, std::vector<unsigned int>& actions) {
+void Strips::listFeasibleActions(std::vector<unsigned int> gs,
+		std::vector<unsigned int>& actions) {
 	for (int a = 0; a < actionTable.getSize(); ++a) {
 		Action action = actionTable.getAction(a);
 		bool isFeasible = true;
 		for (int prec = 0; prec < action.preconditions.size(); ++prec) {
-			if (std::find(gs.begin(), gs.end(), action.preconditions[prec]) == gs.end()) {
+			if (std::find(gs.begin(), gs.end(), action.preconditions[prec])
+					== gs.end()) {
 				isFeasible = false;
 				break;
 			}
@@ -640,26 +665,25 @@ int Strips::pow(int base, int p) {
 }
 
 //////////////////////////////////////////////////////
-/// utilities
+/// print
 //////////////////////////////////////////////////////
 
-void Strips::print_state(std::vector<unsigned int>& propositions) const {
+void Strips::print_state(const std::vector<unsigned int>& propositions) const {
 	std::cout << "state: ";
 	for (int p = 0; p < propositions.size(); ++p) {
-		std::cout << "(" << g_predicates[propositions[p]].symbol << ") ";
+		std::cout << "(" << g_predicates->at(propositions[p]).symbol << ") ";
 	}
 	std::cout << std::endl;
 }
 
-void Strips::print_plan(std::vector<unsigned int>& path) const {
-	State s;
-	s.propositions = init_state;
-	print_state(s.propositions);
-	for (int i = 0; i < path.size(); ++i) {
-		std::cout << "action: " << actionTable.getAction(path[i]).name << std::endl;
-		apply_action(s, path[i]);
-		print_state(s.propositions);
+void Strips::print_plan(std::vector<State>& path) const {
+	if (path.size() == 0) {
+		std::cout << "failed to find a plan." << std::endl;
+		return;
+	}
+	print_state(path[path.size() - 1].propositions);
+	for (int i = path.size() - 2; i >= 0; --i) {
+		print_state(path[i + 1].propositions);
 	}
 }
-
 

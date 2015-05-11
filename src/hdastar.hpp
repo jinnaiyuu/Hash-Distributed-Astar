@@ -467,10 +467,10 @@ public:
 
 				useless += uselessCalc(useless);
 
-//				int moving_tile = 0;
-//				int blank = 0; // Make this available for Grid pathfinding.
-				int moving_tile = state.tiles[op];
-				int blank = state.blank; // Make this available for Grid pathfinding.
+				int moving_tile = 0;
+				int blank = 0; // Make this available for Grid pathfinding.
+//				int moving_tile = state.tiles[op];
+//				int blank = state.blank; // Make this available for Grid pathfinding.
 				Edge<D> e = this->dom.apply(state, op);
 				Node* next = wrap(state, n, e.cost, e.pop, nodes);
 
@@ -507,10 +507,10 @@ public:
 
 				// TODO: Make dist hash available for Grid pathfinding.
 				// TODO: Make Zobrist hash appropriate for 24 threads.
-				next->zbr = z.inc_hash(n->zbr, moving_tile, blank, op,
-						state.tiles, state);
 //				next->zbr = z.inc_hash(n->zbr, moving_tile, blank, op,
-//						0, state);
+//						state.tiles, state);
+				next->zbr = z.inc_hash(n->zbr, moving_tile, blank, op,
+						0, state);
 
 //				next->zbr = z.inc_hash(state);
 

@@ -36,6 +36,8 @@ template<class D> struct SearchAlg {
 	// dom is the domain over which this search is defined.
 	D &dom;
 
+	std::vector<unsigned int> plan;
+
 	// expd and gend are the number of states that have been
 	// expanded and generated respectively.
 	unsigned long expd, gend;

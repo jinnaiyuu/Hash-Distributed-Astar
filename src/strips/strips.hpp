@@ -18,7 +18,15 @@
 #include <iostream>
 #include <stdint.h>
 
-// Burns' implementation: block-14 5 sec in A*.
+/**
+ * Possible Optimizations
+ * 1. std::find from ordered vector (all predicates are sorted)
+ * 2. static predicates
+ * 3. incremental zobrist
+ * 4. duplication of nops & nthop
+ * 5.
+ *
+ */
 struct Strips {
 
 	// TODO: would 16 bit enough
@@ -52,6 +60,7 @@ struct Strips {
 	// expected to be in Wheeler's tiles instance
 	// format.
 	Strips(std::istream &domain, std::istream &instance);
+	Strips();
 	~Strips() {
 	}
 
@@ -68,6 +77,7 @@ struct Strips {
 
 	bool isgoal(const State &s) const {
 		// TODO: should be optimized. 2 sequences are sorted.
+		//	std::cout << "isgoal" << std::endl;
 		std::vector<unsigned int> p = s.propositions;
 		for (int i = 0; i < goal_condition.size(); ++i) {
 			if (std::find(p.begin(), p.end(), goal_condition[i]) != p.end()) {
@@ -80,27 +90,34 @@ struct Strips {
 	}
 
 	int nops(const State &s) const {
+//		std::cout << "nops" << std::endl;
+//		actionTrie.printTree();
 		std::vector<unsigned int> actions = actionTrie.searchPossibleActions(
 				s.propositions);
+//		std::cout << "expand state: " << actions.size() << std::endl;
 		return actions.size();
 	}
 
 	// TODO: nops&nthop is duplication of work for STRIPS planning. should be optimized.
 	int nthop(const State &s, int n) const {
+//		std::cout << "nthop" << std::endl;
+//		print_state(s.propositions);
 		std::vector<unsigned int> actions = actionTrie.searchPossibleActions(
 				s.propositions);
+//		std::cout << "action size = " << actions.size() << std::endl;
 		return actions[n];
 	}
 
 	struct Undo {
-		int action;
+		std::vector<unsigned int> propositions;
 		int h;
 	};
 
 	Edge<Strips> apply(State &s, int action) const {
+//		std::cout << "apply" << std::endl;
 		int cost = 1;
 		Edge<Strips> e(cost, action, -100);
-		e.undo.action = action;
+		e.undo.propositions = s.propositions;
 		e.undo.h = s.h;
 
 //		std::cout << "apply " << actionTable.getAction(action).name << std::endl;
@@ -115,12 +132,14 @@ struct Strips {
 
 	// invert the add&delete effect of the action
 	void undo(State &s, const Edge<Strips> &e) const {
+		//		std::cout << "undo" << std::endl;
 		s.h = e.undo.h;
-		undo_action(s, e.undo.action);
+		undo_action(s, e.undo);
 	}
 
 	// pack: packes state s into the packed state dst.
 	void pack(PackedState &dst, State &s) const {
+		//		std::cout << "pack" << std::endl;
 		// TODO: should optimize binary length.
 		dst.word = 0;
 		for (int i = 0; i < s.propositions.size(); i++) {
@@ -131,13 +150,66 @@ struct Strips {
 
 	// unpack: unpacks the packed state s into the state dst.
 	void unpack(State &dst, PackedState s) const {
+		//	std::cout << "unpack" << std::endl;
 		dst.propositions = s.propositions;
 		dst.h = heuristic(dst);
 	}
 
 	void set_heuristic(int h) {
+
 		which_heuristic = h;
+		if (h == 2) {
+			// hmax heuristics
+//			strips.resize(goal_condition.size());
+//			for (int i = 0; i < strips.size(); ++i) {
+//				strips[i] = new Strips();
+
+//			}
+//			search = new Astar<Strips>(*strips);
+//			strips->set_heuristic(1);
+		}
 	}
+
+	unsigned int getActionSize() {
+		return actionTable.getSize();
+	}
+
+	struct GroundedPredicate {
+		unsigned int key;
+		std::string symbol;
+
+		unsigned int lifted_key;
+		std::string lifted_symbol;
+		std::vector<unsigned int> arguments;
+	};
+
+	// this copies only a pointer.
+	void setActionTrie(Trie trie) {
+		this->actionTrie = trie;
+	}
+
+	// this copies only a pointer.
+	void setActionTable(ActionTable table) {
+		this->actionTable = table;
+	}
+
+	void setInitState(std::vector<unsigned int> init_state) {
+		this->init_state = init_state;
+	}
+
+	void setGoalCondition(std::vector<unsigned int> goal_condition) {
+		this->goal_condition = goal_condition;
+	}
+
+	// this copies only a pointer.
+	void setGroundedPredicates(std::vector<GroundedPredicate>* gs){
+		this->g_predicates = gs;
+	}
+
+	void setIsDeleteRelaxed(bool is) {
+		is_delete_relaxed = is;
+	}
+
 
 private:
 	// proposition library (prefixtree)
@@ -148,31 +220,40 @@ private:
 	ActionTable actionTable; // table of action_key to action description.
 	std::vector<unsigned int> init_state;
 	std::vector<unsigned int> goal_condition;
+	std::vector<GroundedPredicate>* g_predicates;
+
+
+	bool is_delete_relaxed = false;
 
 	void apply_action(State& s, int action_key) const {
 		Action action = actionTable.getAction(action_key);
 		for (int i = 0; i < action.adds.size(); ++i) {
 			s.propositions.push_back(action.adds[i]);
 		}
-		for (int i = 0; i < action.deletes.size(); ++i) {
-			s.propositions.erase(
-					std::remove(s.propositions.begin(), s.propositions.end(),
-							action.deletes[i]), s.propositions.end());
+		if (!is_delete_relaxed) {
+			for (int i = 0; i < action.deletes.size(); ++i) {
+				s.propositions.erase(
+						std::remove(s.propositions.begin(),
+								s.propositions.end(), action.deletes[i]),
+						s.propositions.end());
+			}
 		}
 		std::sort(s.propositions.begin(), s.propositions.end());
 	}
 
-	void undo_action(State& s, int action_key) const {
-		Action action = actionTable.getAction(action_key);
-		for (int i = 0; i < action.deletes.size(); ++i) {
-			s.propositions.push_back(action.deletes[i]);
-		}
-		for (int i = 0; i < action.adds.size(); ++i) {
-			s.propositions.erase(
-					std::remove(s.propositions.begin(), s.propositions.end(),
-							action.adds[i]), s.propositions.end());
-		}
-		std::sort(s.propositions.begin(), s.propositions.end());
+	void undo_action(State& s, const Undo& undo) const {
+		s.propositions = undo.propositions;
+//		if (!is_delete_relaxed) {
+//			for (int i = 0; i < action.deletes.size(); ++i) {
+//				s.propositions.push_back(action.deletes[i]);
+//			}
+//		}
+//		for (int i = 0; i < action.adds.size(); ++i) {
+//			s.propositions.erase(
+//					std::remove(s.propositions.begin(), s.propositions.end(),
+//							action.adds[i]), s.propositions.end());
+//		}
+//		std::sort(s.propositions.begin(), s.propositions.end());
 	}
 
 	/////////////////////////////
@@ -201,6 +282,7 @@ private:
 	}
 
 	int goal_count(const State& s) const {
+		// TODO: optimize
 		int goals = goal_condition.size();
 		std::vector<unsigned int> p = s.propositions;
 		for (int i = 0; i < goal_condition.size(); ++i) {
@@ -211,10 +293,7 @@ private:
 		return goals;
 	}
 
-	int hmax(const State& s) const {
-		assert(false);
-		return 0;
-	}
+	int hmax(const State& s) const;
 
 	/////////////////////////////
 	// parser
@@ -242,22 +321,13 @@ public:
 		std::string symbol;
 	};
 
-	struct GroundedPredicate {
-		unsigned int key;
-		std::string symbol;
-
-		unsigned int lifted_key;
-		std::string lifted_symbol;
-		std::vector<unsigned int> arguments;
-	};
-
-	std::vector<GroundedPredicate> g_predicates;
-
-	void print_plan(std::vector<unsigned int>& path) const;
-	void print_state(std::vector<unsigned int>& propositions) const;
-
+	void print_plan(std::vector<State>& path) const;
+	void print_state(const std::vector<unsigned int>& propositions) const;
 
 private:
+//	std::istream domain_;
+//	std::istream instance_;
+
 	void readPredicates(std::istream &domain,
 			std::vector<Predicate>& predicates);
 	void readObjects(std::istream &instance, std::vector<Object>& objects);

@@ -79,11 +79,12 @@ class Trie {
 
 public:
 	Trie();
+	Trie(const Trie& other);
 	~Trie(); // this gonna take some time.
 	void addAction(const Action& a);
 	std::vector<unsigned int> searchPossibleActions(
 			const std::vector<unsigned int>& p) const;
-	void printTree();
+	void printTree() const;
 private:
 	void searchNodes(Node* current, const std::vector<unsigned int>& p,
 			std::vector<unsigned int>& actions) const;

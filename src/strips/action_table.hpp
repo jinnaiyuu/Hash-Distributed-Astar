@@ -2,6 +2,7 @@
 #define ACTION_TABLE_HPP_
 
 #include "action.hpp"
+#include <assert.h>
 #include <vector>
 #include <iostream>
 
@@ -13,29 +14,38 @@
  */
 class ActionTable {
 public:
-	ActionTable(){};
+	ActionTable(){
+		table = new std::vector<Action>();
+	};
+	ActionTable(const ActionTable& other) {
+		table = other.table;
+	}
 
 	void addAction(Action a) {
-		table.push_back(a);
+		if (table->size() <= a.action_key) {
+			table->resize(a.action_key + 1);
+		}
+		table->at(a.action_key) = a;
 	}
 
 	Action getAction(unsigned int key) const {
-		return table[key];
+		assert(table->at(key).action_key == key);
+		return table->at(key);
 	}
 
 	unsigned int getSize() {
-		return table.size();
+		return table->size();
 	}
 
 	void printAllActions() {
-		for (int i = 0; i < table.size(); ++i) {
-			table[i].print();
+		for (int i = 0; i < table->size(); ++i) {
+			table->at(i).print();
 		}
 	}
 
 private:
 
-	std::vector<Action> table;
+	std::vector<Action>* table;
 
 };
 
