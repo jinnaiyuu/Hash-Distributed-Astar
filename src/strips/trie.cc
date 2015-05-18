@@ -12,6 +12,49 @@ Trie::Node* Trie::Node::findChild(unsigned int c) {
 	return NULL;
 }
 
+/**
+ * @param propositions are ordered.
+ *
+ */
+std::vector<Trie::Node*> Trie::Node::findMatchingChildren(const std::vector<unsigned int>& propositions) {
+	std::vector<Node*> intersection;
+	unsigned int cit = 0;
+	unsigned int pit = 0;
+
+//	std::cout << "findMatchingChildren" << std::endl;
+//	std::cout << "children ";
+//	for (int i = 0; i < mChildren.size(); ++i) {
+//		std::cout << mChildren[i]->mPrecondition << " ";
+//	}
+//
+//	std::cout << std::endl << "propositions ";
+//	for (int i = 0; i < propositions.size(); ++i) {
+//		std::cout << propositions[i] << " ";
+//	}
+
+	while(cit < mChildren.size() && pit < propositions.size()) {
+		if(mChildren[cit]->mPrecondition == propositions[pit]) {
+			intersection.push_back(mChildren[cit]);
+			++cit;
+			++pit;
+		} else if (mChildren[cit]->mPrecondition < propositions[pit]) {
+			++cit;
+		} else {
+			++pit;
+		}
+	}
+
+
+//	std::cout << std::endl << "returns ";
+//	for (int i = 0; i < intersection.size(); ++i) {
+//		std::cout << intersection[i]->mPrecondition << " ";
+//	}
+//	std::cout << std::endl;
+
+	return intersection;
+}
+
+
 void Trie::Node::printNode(unsigned int depth) {
 	std::cout << std::string(depth * 2, ' ') << mPrecondition << "(";
 	for (int i = 0; i < mActions.size(); ++i) {
@@ -74,13 +117,17 @@ std::vector<unsigned int> Trie::searchPossibleActions(
 		const std::vector<unsigned int>& p) const {
 	std::vector<unsigned int> actions;
 
-	for (int i = 0; i < root->children().size(); ++i) {
-		Node* c = root->children().at(i);
-		unsigned int precond = c->precondition();
-		// TODO: should be optimized.
-		if (find(p.begin(), p.end(), precond) != p.end()) { // matched
-			searchNodes(c, p, actions);
-		}
+//	std::cout << "searchPossibleActions" << std::endl;
+	std::vector<Node*> matchingChildren = root->findMatchingChildren(p);
+
+//	std::cout << "returns ";
+//	for (int i = 0; i < matchingChildren.size(); ++i) {
+//		std::cout << matchingChildren[i]->precondition() << " ";
+//	}
+//	std::cout << std::endl;
+
+	for (int i = 0; i < matchingChildren.size(); ++i) {
+		searchNodes(matchingChildren[i], p, actions);
 	}
 
 	std::sort(actions.begin(), actions.end());
@@ -96,22 +143,26 @@ std::vector<unsigned int> Trie::searchPossibleActions(
  */
 void Trie::searchNodes(Node* c, const std::vector<unsigned int>& p,
 		std::vector<unsigned int>& actions) const {
+//	std::cout << "searchNodes" << std::endl;
+
+
 	if (c->wordMarker()) {
 //		std::cout << "marked: " << c->action().size() << " actions added." << std::endl;
+		// TODO: push all
 		for (int i = 0; i < c->action().size(); ++i) {
 			actions.push_back(c->action()[i]);
 		}
 	}
 	// if c is inner node, then search deeper
-	for (int i = 0; i < c->children().size(); ++i) {
-		Node* cc = c->children().at(i);
-		int precond = cc->precondition();
-		// TODO: should be optimized.
-		if (find(p.begin(), p.end(), precond) != p.end()) { // matched
-			searchNodes(cc, p, actions);
-		}
+
+	std::vector<Node*> matchingChildren = c->findMatchingChildren(p);
+
+	for (int i = 0; i < matchingChildren.size(); ++i) {
+		searchNodes(matchingChildren[i], p, actions);
 	}
 }
+
+
 
 void Trie::printTree() const {
 	root->printNode(0);

@@ -78,6 +78,7 @@ public:
 					incumbent) {
 	}
 
+
 	std::vector<typename D::State> search(typename D::State &init) {
 		open.push(wrap(init, 0, 0, -1));
 
@@ -97,8 +98,8 @@ public:
 //			printf("f,g = %d, %d\n", n->f, n->g);
 
 			if (this->dom.isgoal(state)) {
-				printf("goal!\n");
-				printf("f = %u\n", n->f);
+//				printf("goal!\n");
+//				printf("f = %u\n", n->f);
 				for (Node *p = n; p; p = p->parent) {
 					typename D::State s;
 					this->dom.unpack(s, p->packed);

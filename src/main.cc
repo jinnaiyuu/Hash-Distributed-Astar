@@ -70,6 +70,7 @@ int main(int argc, const char *argv[]) {
 		std::ifstream instance(argv[3]);
 
 		Strips strips(domain, instance);
+//		return 0;
 
 		unsigned int h = 0;
 		for (unsigned int i = 0; i < argc; ++i) {
@@ -83,10 +84,30 @@ int main(int argc, const char *argv[]) {
 		unsigned int n_threads = 1;
 
 		if (strcmp(argv[1], "astar") == 0) {
-			search = new Astar<Strips>(strips);
+			unsigned int open = 100;
+			double weight = 1.0;
+			unsigned int incumbent = 100000;
+			unsigned int closed = 7919;
+			search = new Astar<Strips>(strips, open, weight, incumbent, closed);
 		} else if (sscanf(argv[1], "hdastar-%u", &n_threads) == 1) {
+			unsigned int abst = 0;
+			for (unsigned int i = 0; i < argc; ++i) {
+				if (sscanf(argv[i], "abst-%u", &abst) == 1) {
+					break;
+				}
+			}
+
 			search = new HDAstar<Strips, StripsZobrist<Strips> >(strips,
-					n_threads);
+					n_threads,
+					1000000,  // income threshould
+					10000000, // outgo threshould
+					abst,     // abstraction
+					0,        // overrun
+					110503,   // closed list size
+					100,      // open list size
+					10000000  // max cost
+					);
+
 		} else {
 			std::cout << "no algorithm" << std::endl;
 			assert(false);

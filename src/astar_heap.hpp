@@ -69,6 +69,12 @@ public:
 					incumbent) {
 	}
 
+	AstarHeap(D &d, unsigned int opensize, double weight,
+			unsigned int incumbent, unsigned int closed) :
+			SearchAlg<D>(d), closed(closed), open(opensize), w(weight), incumbent(
+					incumbent) {
+	}
+
 	std::vector<typename D::State> search(typename D::State &init) {
 		open.push(wrap(init, 0, 0, -1));
 
@@ -93,10 +99,10 @@ public:
 //			printf("\n");
 
 			if (this->dom.isgoal(state)) {
-				printf("goal!\n");
-				printf("f = %f\n", n->f);
+//				printf("goal!\n");
+//				printf("f = %f\n", n->f);
 				this->incm = n->f;
-				printf("incm = %f\n", this->incm);
+//				printf("incm = %f\n", this->incm);
 				for (Node *p = n; p; p = p->parent) {
 					typename D::State s;
 					this->dom.unpack(s, p->packed);
@@ -107,14 +113,18 @@ public:
 
 //			closed.add(n);
 			this->expd++;
-			if (this->expd % 1000000 == 0) {
-				printf("expd: %u\n", this->expd);
-			}
+//			if (this->expd % 1 == 0) {
+////				printf("expd: %u\n", this->expd);
+//				this->dom.print_state(state.propositions);
+//
+//			}
+
 //			printf("nops = %u\nexpd: ", this->dom.nops(state));
 //			printf("expd = %d\n\n", this->expd);
 //			printf("f, h = %f %f\n", n->f, n->f - n->g);
+			unsigned int ops = this->dom.nops(state);
 
-			for (int i = 0; i < this->dom.nops(state); i++) {
+			for (int i = 0; i < ops; i++) {
 				int op = this->dom.nthop(state, i);
 //				printf("%u ", op);
 //				if (op == n->pop)

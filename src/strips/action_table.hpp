@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <vector>
 #include <iostream>
+#include <algorithm>
 
 // should this be an ActionTable?
 
@@ -31,6 +32,28 @@ public:
 	Action getAction(unsigned int key) const {
 		assert(table->at(key).action_key == key);
 		return table->at(key);
+	}
+
+	std::vector<Action> getActionsWhichAdds(unsigned int pred) const {
+		std::vector<Action> ret;
+		for (int i = 0; i < table->size(); ++i) {
+			Action a = table->at(i);
+			if (std::find(a.adds.begin(), a.adds.end(), pred) != a.adds.end()) {
+				ret.push_back(a);
+			}
+		}
+		return ret;
+	}
+
+	std::vector<Action> getActionsWhichDeletes(unsigned int pred) const {
+		std::vector<Action> ret;
+		for (int i = 0; i < table->size(); ++i) {
+			Action a = table->at(i);
+			if (std::find(a.deletes.begin(), a.deletes.end(), pred) != a.deletes.end()) {
+				ret.push_back(a);
+			}
+		}
+		return ret;
 	}
 
 	unsigned int getSize() {

@@ -11,6 +11,9 @@
 #include "../fatal.hpp"
 #include "../hashtbl.hpp"
 
+// for pattern databases
+#include "pdb.hpp"
+
 #include <cstdio>
 #include <cstdlib>
 #include <cassert>
@@ -202,14 +205,13 @@ struct Strips {
 	}
 
 	// this copies only a pointer.
-	void setGroundedPredicates(std::vector<GroundedPredicate>* gs){
+	void setGroundedPredicates(std::vector<GroundedPredicate>* gs) {
 		this->g_predicates = gs;
 	}
 
 	void setIsDeleteRelaxed(bool is) {
 		is_delete_relaxed = is;
 	}
-
 
 private:
 	// proposition library (prefixtree)
@@ -221,7 +223,6 @@ private:
 	std::vector<unsigned int> init_state;
 	std::vector<unsigned int> goal_condition;
 	std::vector<GroundedPredicate>* g_predicates;
-
 
 	bool is_delete_relaxed = false;
 
@@ -239,6 +240,9 @@ private:
 			}
 		}
 		std::sort(s.propositions.begin(), s.propositions.end());
+		s.propositions.erase(
+				unique(s.propositions.begin(), s.propositions.end()),
+				s.propositions.end());
 	}
 
 	void undo_action(State& s, const Undo& undo) const {
@@ -270,6 +274,9 @@ private:
 		case 2: // hmax
 			return hmax(s);
 			break;
+		case 3: // pattern database
+			return pdb(s);
+			break;
 		default:
 			assert(false);
 			break;
@@ -295,6 +302,11 @@ private:
 
 	int hmax(const State& s) const;
 
+	int pdb(const State& s) const;
+
+	void buildPDB();
+
+
 	/////////////////////////////
 	// parser
 	/////////////////////////////
@@ -305,13 +317,30 @@ public:
 		unsigned int key;
 		std::string symbol;
 		unsigned int number_of_arguments;
+		int group_key;
 		Predicate() {
 		}
 		;
 		Predicate(unsigned int key, std::string symbol,
 				unsigned int number_of_arguments) :
 				key(key), symbol(symbol), number_of_arguments(
-						number_of_arguments) {
+						number_of_arguments), group_key(-1) {
+		}
+
+	};
+
+	struct PredicateArg {
+		unsigned int key;
+		Predicate pred;
+		unsigned int instantiated_arg;
+		int group_key;
+		bool isEqual(unsigned int pred_key, unsigned int inst_arg) {
+			return pred.key == pred_key && instantiated_arg == inst_arg;
+		}
+
+		bool matches(const GroundedPredicate& g, unsigned int obj) {
+			return pred.key == g.lifted_key &&
+					g.arguments[instantiated_arg] == obj;
 		}
 
 	};
@@ -321,16 +350,45 @@ public:
 		std::string symbol;
 	};
 
+	struct LiftedAction {
+		unsigned int key;
+		std::string symbol;
+		unsigned int n_arguments;
+		std::vector<std::pair<unsigned int, std::vector<unsigned int>>>adds;
+		std::vector<std::pair<unsigned int, std::vector<unsigned int>>> dels;
+
+		std::vector<unsigned int> addsInst; // PredicateArg keys.
+		std::vector<unsigned int> delsInst;
+	};
+
+	struct LiftedActionArg {
+		unsigned int key;
+		LiftedAction lf;
+		unsigned int instantiated_arg; // which argument is instantiated
+	};
+
 	void print_plan(std::vector<State>& path) const;
 	void print_state(const std::vector<unsigned int>& propositions) const;
 
 private:
+	bool typing = false;
+	bool action_costs = false;
+	std::vector<Object> objects;
+	std::vector<LiftedAction> lActions; // for abstractions.
+	std::vector<PredicateArg> predargs;
+	std::vector<unsigned int> g_feasible_predicates;
+
+	PDB* pd; // need deallocate
+	int n_groups = 0;
+
 //	std::istream domain_;
 //	std::istream instance_;
-
+	void readRequirements(std::istream &domain);
 	void readPredicates(std::istream &domain,
 			std::vector<Predicate>& predicates);
-	void readObjects(std::istream &instance, std::vector<Object>& objects);
+	void readTypes(std::istream &domain,
+			std::vector<Predicate>& predicates);
+	void readObjects(std::istream &instance);
 	void ground(Predicate& p, std::vector<unsigned int> argv, unsigned int key,
 			GroundedPredicate& g, std::vector<Object>& obs);
 	void groundPredicates(std::vector<Predicate>& ps, std::vector<Object>& obs,
@@ -338,12 +396,17 @@ private:
 	void readInit(std::istream &instance, std::vector<GroundedPredicate>& gs);
 	void readGoal(std::istream &instance, std::vector<GroundedPredicate>& gs);
 	void readAction(std::istream &domain, std::vector<Object> obs,
+			std::vector<Predicate> ps,
 			std::vector<GroundedPredicate> gs);
 	void listFeasiblePredicates(std::vector<unsigned int>& gs);
 	void listFeasibleActions(std::vector<unsigned int> gs,
 			std::vector<unsigned int>& actions);
 	void buildActionTrie(std::vector<unsigned> keys);
-//	bool getText(std::istream &file, std::string from, std::string to, unsigned int number, std::string& ret);
+
+	std::vector<unsigned int> analyzeBalance(unsigned int p,
+			const std::vector<unsigned int>& predicates,
+			const std::vector<LiftedActionArg>& laas);
+	void analyzeAllBalances(std::vector<Predicate> ps);
 	int pow(int base, int p);
 
 };

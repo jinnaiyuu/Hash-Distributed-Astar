@@ -42,11 +42,13 @@ class Trie {
 			mMarker = true;
 		}
 		Node* findChild(unsigned int c);
+		std::vector<Node*> findMatchingChildren(const std::vector<unsigned int>& propositions);
+
 		void appendChild(Node* child) {
 			mChildren.push_back(child);
 			std::sort(mChildren.begin(), mChildren.end(), PointerCompare());
 		}
-		std::vector<Node*> children() {
+		std::vector<Node*>& children() {
 			return mChildren;
 		}
 
@@ -54,7 +56,7 @@ class Trie {
 			mActions.push_back(action_key);
 		}
 
-		std::vector<unsigned int> action() {
+		std::vector<unsigned int>& action() {
 			return mActions;
 		}
 
@@ -67,6 +69,7 @@ class Trie {
 		bool operator <(const Node& str) const {
 			return (mPrecondition < str.mPrecondition);
 		}
+
 
 		void printNode(unsigned int depth);
 

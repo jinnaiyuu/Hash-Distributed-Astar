@@ -28,6 +28,7 @@ public:
 	}
 
 	/**
+	 * TODO: incremental hash
 	 * @param number: The number slided
 	 * @param from : Where the number is in parent node
 	 * @param to : Where the number is in child node
@@ -64,23 +65,22 @@ private:
 		srand(time(NULL));
 #endif
 
-		if (abst < 1000) {
-			// ###### Abstraction
-			abstraction(abst);
-		} else {
-			abstraction(abst % 1000, abst / 1000);
-		}
+		abstraction(abst);
+
 	}
 
 	// TODO: read automatic abstraction.
-	void abstraction(unsigned int abst, unsigned int features = 100) {
+	void abstraction(unsigned int abst) {
 		printf("abst = %u\n", abst);
-		printf("features = %u\n", features);
 		if (abst == 0) {
 			++abst;
 		}
 		for (unsigned int i = 0; i < map.size(); ++i) {
-			map[i] = random();
+			if (i % abst == 0) {
+				map[i] = random();
+			} else {
+				map[i] = 0;
+			}
 		}
 	}
 

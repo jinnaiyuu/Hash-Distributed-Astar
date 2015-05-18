@@ -5,37 +5,40 @@
 #include "action.hpp"
 #include "utils.hpp"
 #include "../astar.hpp"
+#include "../astar_heap.hpp"
 #include "../search.hpp"
+
 
 #include <string>
 #include <iostream>
 #include <algorithm>
+#include <iterator>
 
 // spirit
-#include <boost/config/warning_disable.hpp>
-#include <boost/spirit/include/qi.hpp>
-#include <boost/spirit/include/phoenix_core.hpp>
-#include <boost/spirit/include/phoenix_operator.hpp>
-#include <boost/spirit/include/phoenix_object.hpp>
-#include <boost/spirit/include/phoenix_stl.hpp>
-#include <boost/fusion/include/adapt_struct.hpp>
-#include <boost/fusion/include/io.hpp>
-
-namespace qi = boost::spirit::qi;
-namespace ascii = boost::spirit::ascii;
-namespace phoenix = boost::phoenix;
-using qi::int_;
-using qi::lit;
-using qi::_val;
-using qi::_1;
-using qi::eps;
-using qi::alpha;
-using qi::alnum;
-using qi::double_;
-using qi::lexeme;
-using qi::phrase_parse;
-using ascii::char_;
-using boost::spirit::ascii::space;
+//#include <boost/config/warning_disable.hpp>
+//#include <boost/spirit/include/qi.hpp>
+//#include <boost/spirit/include/phoenix_core.hpp>
+//#include <boost/spirit/include/phoenix_operator.hpp>
+//#include <boost/spirit/include/phoenix_object.hpp>
+//#include <boost/spirit/include/phoenix_stl.hpp>
+//#include <boost/fusion/include/adapt_struct.hpp>
+//#include <boost/fusion/include/io.hpp>
+//
+//namespace qi = boost::spirit::qi;
+//namespace ascii = boost::spirit::ascii;
+//namespace phoenix = boost::phoenix;
+//using qi::int_;
+//using qi::lit;
+//using qi::_val;
+//using qi::_1;
+//using qi::eps;
+//using qi::alpha;
+//using qi::alnum;
+//using qi::double_;
+//using qi::lexeme;
+//using qi::phrase_parse;
+//using ascii::char_;
+//using boost::spirit::ascii::space;
 
 ////////////////////////////////////////////
 /// heuristics
@@ -48,6 +51,7 @@ int Strips::hmax(const State& s) const {
 //	over all goal propositions. This is clearly a lower bound on the
 //	delete relaxation, and is also an admissible heuristic for the
 //	original planning problem.
+	double start = walltime();
 	Strips relaxed;
 	relaxed.setActionTable(actionTable);
 	relaxed.setActionTrie(actionTrie);
@@ -55,28 +59,115 @@ int Strips::hmax(const State& s) const {
 	relaxed.set_heuristic(0); // goal count doesn't make sense as there is only a single goal.
 	relaxed.setGroundedPredicates(g_predicates);
 	relaxed.setIsDeleteRelaxed(true);
+	double init = walltime();
 	int max = 0;
+
+//	std::cout << "init " << init - start << std::endl;
 	for (int i = 0; i < goal_condition.size(); ++i) {
-		std::cout << i << ": goal condition = " << goal_condition[i]
-				<< std::endl;
+		double init_i = walltime();
+//		std::cout << i << ": goal condition = " << g_predicates->at(goal_condition[i]).symbol << ": ";
 		std::vector<unsigned int> g;
 		g.push_back(goal_condition[i]);
 		relaxed.setGoalCondition(g);
 		// TODO: a bit adhoc, but wouldn't matter.
-		SearchAlg<Strips>* search = new Astar<Strips>(relaxed, 20, 1.0, 1000,
-				197);
+//		SearchAlg<Strips>* search = new Astar<Strips>(relaxed, 50, 1.0, 20000, 1973);
+		SearchAlg<Strips>* search = new AstarHeap<Strips>(relaxed, 50, 1.0,
+				20000, 1973);
 		State copy = relaxed.initial();
-		std::cout << "start" << std::endl;
-		print_state(copy.propositions);
+//		std::cout << "start" << std::endl;
+//		print_state(copy.propositions);
 		std::vector<Strips::State> path = search->search(copy);
-		std::cout << "length = " << path.size() << std::endl;
-		if (max < path.size()) {
-			max = path.size();
+//		std::cout << "length = " << path.size() << std::endl;
+		if (max < path.size() - 1) {
+			max = path.size() - 1;
 		}
 		delete search;
+//		std::cout << walltime() - init_i << ", " << std::endl;
 	}
-	std::cout << "max = " << max << std::endl;
+	double total = walltime();
+//	std::cout << std::endl << "total " << total - start << std::endl;
+//	dffooter(stdout);
+//	std::cout << "max = " << max << std::endl;
 	return max;
+}
+
+int Strips::pdb(const State& s) const {
+	return pd->heuristic(s.propositions);
+}
+
+void Strips::buildPDB() {
+	pd = new PDB();
+	// instantiate PredicateArgs group for all objects.
+
+	// unsigned ints arekeys for GroundedPredicates.
+	std::vector<std::vector<unsigned int>> groups;
+
+	for (int g = 0; g < n_groups; ++g) {
+		std::vector<unsigned int> preds;
+
+		// list predicates in group.
+		for (int p = 0; p < predargs.size(); ++p) {
+			if (predargs[p].group_key == g) {
+				preds.push_back(p);
+			}
+		}
+
+//		std::cout << "lifted group: ";
+//		for (int g = 0; g < preds.size(); ++g) {
+//			std::cout << "(" << predargs[preds[g]].pred.symbol << "-"
+//					<< predargs[preds[g]].instantiated_arg << ") ";
+//		}
+//		std::cout << std::endl;
+
+		// instantiate predicates for all objects.
+		// HERE, in this iteration, we build one abstraction.
+		for (int obj = 0; obj < objects.size(); ++obj) {
+			std::vector<unsigned int> g_preds;
+//			std::cout << objects[obj].symbol << " grounded group: ";
+			for (int p = 0; p < preds.size(); ++p) {
+				// find GroundedPredicate that matches
+				// predicates symbol & arguments.
+				for (int g = 0; g < g_predicates->size(); ++g) {
+					if (predargs[preds[p]].matches(g_predicates->at(g), obj)
+//							&& find(g_feasible_predicates.begin(),
+//									g_feasible_predicates.end(), g)
+//									!= g_feasible_predicates.end()
+							) {
+						g_preds.push_back(g);
+					}
+				}
+			}
+
+			groups.push_back(g_preds);
+		}
+	}
+
+	// g_preds will be a list of grounded predicates to be balanced.
+	for (int g = 0; g < groups.size(); ++g) {
+		std::cout << g << " group: ";
+		for (int p = 0; p < groups[g].size(); ++p) {
+			std::cout << "(" << g_predicates->at(groups[g][p]).symbol << ") ";
+		}
+		std::cout << std::endl;
+	}
+
+
+	unsigned int size = 1;
+	for (int g = 0; g < groups.size(); ++g) {
+		size *= groups[g].size();
+	}
+	std::cout << size << " patterns to build" << std::endl;
+
+	// TODO: pattern database can be expanded by adding more elements from
+
+	// 1. for all abstract states
+	// 2.     run A* search for each abstract state. (backward search?)
+	// 3.     put
+
+	// pattern: abstract
+
+//	pd.addPattern()
+
 }
 
 ////////////////////////////////////////////
@@ -85,16 +176,28 @@ int Strips::hmax(const State& s) const {
 Strips::Strips() {
 }
 
+/**
+ * TODO: other PDDL specifications that I need to read
+ * :requirements :typing :action-cost :adl
+ * :constants
+ * :functions
+ *
+ */
 Strips::Strips(std::istream & domain, std::istream & instance) {
 	domain.seekg(0, std::ios_base::beg);
 	instance.seekg(0, std::ios_base::beg);
 
-	std::vector<Predicate> predicates; // uninstantiated
-	std::vector<Object> objects;
+	std::vector<Predicate> predicates; // uninstantiated, ungrounded
+//	std::vector<Object> objects;
 
-	std::vector<unsigned int> g_feasible_predicates;
+//	std::vector<unsigned int> g_feasible_predicates;
 
 //	std::vector < Action >
+	readRequirements(domain);
+
+	// TODO: if (:requirements :typing) then
+	// TODO: learning types needed.
+	readTypes(domain, predicates);
 
 	// 1. learn predicates from domain.pddl
 	std::cout << "parsing predicates..." << std::endl;
@@ -104,8 +207,8 @@ Strips::Strips(std::istream & domain, std::istream & instance) {
 
 	// 2. learn objects instance.pddl.
 	std::cout << "parsing objects..." << std::endl;
-	readObjects(instance, objects);
-	std::cout << "generated" << objects.size() << " objects." << std::endl;
+	readObjects(instance);
+	std::cout << "generated " << objects.size() << " objects." << std::endl;
 
 	// 3. instantiate all predicates.
 	std::cout << "grounding all predicates..." << std::endl;
@@ -124,7 +227,7 @@ Strips::Strips(std::istream & domain, std::istream & instance) {
 
 	// 6. read actions from domain.pddl.
 	std::cout << "parsing actions..." << std::endl;
-	readAction(domain, objects, *g_predicates);
+	readAction(domain, objects, predicates, *g_predicates);
 
 	std::cout << "generated " << actionTable.getSize() << " grounded actions."
 			<< std::endl;
@@ -132,6 +235,9 @@ Strips::Strips(std::istream & domain, std::istream & instance) {
 
 	// 7. list all feasible predicates to be true.
 	// init state, actions,
+	// TODO: this can be a bit more pruned by forward delete-reduction search.
+	//       if the predicate doesn't appear in delete-reduction brute force search, then
+	//       the predicate is not feasible.
 	std::cout << "calculating feasible predicates..." << std::endl;
 	listFeasiblePredicates(g_feasible_predicates);
 	std::cout << g_feasible_predicates.size() << " predicates feasible."
@@ -147,20 +253,25 @@ Strips::Strips(std::istream & domain, std::istream & instance) {
 	buildActionTrie(feasible_actions);
 	std::cout << "done!" << std::endl;
 
-	actionTrie.printTree();
+//	actionTrie.printTree();
 
 	std::vector<unsigned int> init_actions = actionTrie.searchPossibleActions(
 			init_state);
 
 	std::cout << "init state: ";
 	for (int i = 0; i < init_state.size(); ++i) {
-		std::cout << init_state[i] << " ";
+		std::cout << "(" << g_predicates->at(init_state[i]).symbol << ") ";
 	}
 	std::cout << std::endl;
-	std::cout << init_actions.size() << " initial actions." << std::endl;
-	for (int i = 0; i < init_actions.size(); ++i) {
-		actionTable.getAction(init_actions[i]).print();
-	}
+//	std::cout << init_actions.size() << " initial actions." << std::endl;
+//	for (int i = 0; i < init_actions.size(); ++i) {
+//		actionTable.getAction(init_actions[i]).print();
+//	}
+
+	std::cout << "analyzing balances of predicates..." << std::endl;
+
+
+//	analyzeAllBalances(predicates);
 
 	/**
 	 * input PDDL structure
@@ -200,22 +311,33 @@ Strips::Strips(std::istream & domain, std::istream & instance) {
 	// 7. make prefix tree of preconditions&actions. (TODO: search how to make prefix tree)
 }
 
-BOOST_FUSION_ADAPT_STRUCT( Strips::Predicate,
-		(std::string, symbol) (unsigned int, number_of_arguments))
-
-template<typename Iterator>
-struct predicate_parser: qi::grammar<Iterator, Strips::Predicate(),
-		ascii::space_type> {
-	predicate_parser() :
-			predicate_parser::base_type(start) {
-		symbol %= lexeme[+(alnum)];
-		args = eps[_val = 0] >> *(lexeme['?' >> +(alnum)])[_val += 1];
-		start %= '(' >> symbol >> args >> ')';
+//BOOST_FUSION_ADAPT_STRUCT( Strips::Predicate,
+//		(std::string, symbol) (unsigned int, number_of_arguments))
+//
+//template<typename Iterator>
+//struct predicate_parser: qi::grammar<Iterator, Strips::Predicate(),
+//		ascii::space_type> {
+//	predicate_parser() :
+//			predicate_parser::base_type(start) {
+//		symbol %= lexeme[+(alnum)];
+//		args = eps[_val = 0] >> *(lexeme['?' >> +(alnum)])[_val += 1];
+//		start %= '(' >> symbol >> args >> ')';
+//	}
+//	qi::rule<Iterator, std::string(), ascii::space_type> symbol;
+//	qi::rule<Iterator, unsigned(), ascii::space_type> args;
+//	qi::rule<Iterator, Strips::Predicate(), ascii::space_type> start;
+//};
+void Strips::readRequirements(std::istream &domain) {
+	domain.seekg(0, std::ios_base::beg);
+	std::string text;
+	getBracket(domain, ":requirements", 0, text);
+	if (text.find("typing") != std::string::npos) {
+		typing = true;
 	}
-	qi::rule<Iterator, std::string(), ascii::space_type> symbol;
-	qi::rule<Iterator, unsigned(), ascii::space_type> args;
-	qi::rule<Iterator, Strips::Predicate(), ascii::space_type> start;
-};
+	if (text.find("action-cost") != std::string::npos) {
+		action_costs = true;
+	}
+}
 
 void Strips::readPredicates(std::istream &domain,
 		std::vector<Predicate>& predicates) {
@@ -223,10 +345,10 @@ void Strips::readPredicates(std::istream &domain,
 
 	std::string text;
 	getText(domain, ":predicates", ":action", 0, text);
-	text = text.substr(15);
-	std::cout << "predicates text = " << text << std::endl;
+	replace(text, "(:predicates", "");
+//	std::cout << "predicates text = " << text << std::endl;
 
-	predicate_parser<std::string::const_iterator> g;
+//	predicate_parser<std::string::const_iterator> g;
 
 	std::vector<std::string> symbols;
 	std::vector<unsigned int> argcs;
@@ -251,8 +373,30 @@ void Strips::readPredicates(std::istream &domain,
 				<< predicates[i].number_of_arguments << std::endl;
 	}
 }
+/**
+ * what should I implement for enabling types
+ * 1. read types and make type graph.
+ * 2. create predicates for types like is_type1, is_type2.
+ * 3. for all actions, add precondition for the types of arguments.
+ * 4. for all objects and their types, add initial state their propositions.
+ *
+ */
+void Strips::readTypes(std::istream &domain,
+		std::vector<Predicate>& predicates) {
+	if (!typing) {
+		return;
+	}
+	domain.seekg(0, std::ios_base::beg);
 
-void Strips::readObjects(std::istream &instance, std::vector<Object>& objects) {
+	std::string text;
+	getBracket(domain, ":types", 0, text);
+	std::cout << "types = " << text << std::endl;
+	// structure
+	// type type type - type
+
+}
+
+void Strips::readObjects(std::istream &instance) {
 	std::vector<std::string> strings;
 	std::string text;
 	getText(instance, ":objects", ":init", 0, text);
@@ -266,13 +410,15 @@ void Strips::readObjects(std::istream &instance, std::vector<Object>& objects) {
 		strings.push_back(tokens[i]);
 	}
 //	std::cout << "strings" << std::endl;
-	objects.resize(strings.size());
+//	objects.resize(strings.size());
 	for (int i = 0; i < strings.size(); ++i) {
-		std::cout << strings[i] << std::endl;
-		objects[i].key = i;
-		objects[i].symbol = strings[i];
+		std::cout << strings[i] << " ";
+		Object obj;
+		obj.key = i;
+		obj.symbol = strings[i];
+		objects.push_back(obj);
 	}
-
+	std::cout << std::endl;
 }
 
 void Strips::ground(Predicate& p, std::vector<unsigned int> argv,
@@ -314,9 +460,9 @@ void Strips::groundPredicates(std::vector<Predicate>& ps,
 		}
 	}
 
-	for (int gnum = 0; gnum < gs.size(); ++gnum) {
-		std::cout << gs[gnum].symbol << std::endl;
-	}
+//	for (int gnum = 0; gnum < gs.size(); ++gnum) {
+//		std::cout << gs[gnum].symbol << std::endl;
+//	}
 }
 
 void Strips::readInit(std::istream &instance,
@@ -336,7 +482,7 @@ void Strips::readInit(std::istream &instance,
 		std::transform(line.begin(), line.end(), line.begin(), ::tolower);
 		pos = line.find(init_); // search
 		if (pos != std::string::npos) {
-			std::cout << "Found: " << line << std::endl;
+//			std::cout << "Found: " << line << std::endl;
 			total_text = line;
 			while (instance.good()) {
 				getline(instance, line); // get line from file
@@ -354,7 +500,7 @@ void Strips::readInit(std::istream &instance,
 	}
 
 	// parse the total_text.
-	std::cout << "inital state: " << total_text << std::endl;
+//	std::cout << "inital state: " << total_text << std::endl;
 
 	std::vector<std::string> symbols; // parse into here.
 
@@ -367,13 +513,13 @@ void Strips::readInit(std::istream &instance,
 	}
 
 	for (int i = 0; i < symbols.size(); ++i) {
-		std::cout << i << ": " << symbols[i];
+//		std::cout << i << ": " << symbols[i];
 
 		for (int j = 0; j < gs.size(); ++j) {
 //			std::cout << j << ": " << gs[j].symbol << std::endl;
 			if (symbols[i].compare(gs[j].symbol) == 0) {
 				// if two symbols are equal, then same predicates.
-				std::cout << " matches " << j << std::endl;
+//				std::cout << " matches " << j << std::endl;
 				init_state.push_back(j);
 				break;
 			}
@@ -393,7 +539,7 @@ void Strips::readGoal(std::istream &instance,
 	instance.clear();
 
 	// parse the total_text.
-	std::cout << "goal state: " << text << std::endl;
+//	std::cout << "goal state: " << text << std::endl;
 
 	std::vector<std::string> symbols; // parse into here.
 
@@ -406,13 +552,13 @@ void Strips::readGoal(std::istream &instance,
 	}
 
 	for (int i = 0; i < symbols.size(); ++i) {
-		std::cout << i << ": " << symbols[i];
+//		std::cout << i << ": " << symbols[i];
 
 		for (int j = 0; j < gs.size(); ++j) {
 //			std::cout << j << ": " << gs[j].symbol << std::endl;
 			if (symbols[i].compare(gs[j].symbol) == 0) {
 				// if two symbols are equal, then same predicates.
-				std::cout << " matches " << j << std::endl;
+//				std::cout << " matches " << j << std::endl;
 				goal_condition.push_back(j);
 				break;
 			}
@@ -431,7 +577,7 @@ void Strips::readGoal(std::istream &instance,
  *
  */
 void Strips::readAction(std::istream &domain, std::vector<Object> obs,
-		std::vector<GroundedPredicate> gs) {
+		std::vector<Predicate> ps, std::vector<GroundedPredicate> gs) {
 	// 1. read parameters.
 	// 2. read precondition (lifted).
 	// 3. read add&delete effect (lifted).
@@ -444,7 +590,7 @@ void Strips::readAction(std::istream &domain, std::vector<Object> obs,
 	unsigned int actionNumber = 0;
 	unsigned int gActionNumber = 0;
 	while (getText(domain, ":action", ":action", actionNumber, text)) {
-		std::cout << "action-> " << text << std::endl;
+//		std::cout << "action-> " << text << std::endl;
 		std::stringstream textstream(text);
 
 		// action name
@@ -471,6 +617,63 @@ void Strips::readAction(std::istream &domain, std::vector<Object> obs,
 //			std::cout << parameters[i];
 //		}
 //		std::cout << std::endl;
+
+		// Read in lifted expression
+		LiftedAction lf;
+		lf.key = actionNumber;
+		lf.n_arguments = parameters.size();
+		lf.symbol = actionname;
+
+		std::string effectText = findRange(text, ":effect", ")))");
+
+		std::vector<std::string> effects;
+		std::vector<std::pair<unsigned int, std::vector<unsigned int>>>addnums;
+		std::vector<std::pair<unsigned int, std::vector<unsigned int>>>delnums;
+
+		forward_delimeds = split(effectText, '(');
+		for (int i = 1; i < forward_delimeds.size(); ++i) {
+			//			std::cout << "fd = " << forward_delimeds[i] << std::endl;
+			std::vector<std::string> token = split(forward_delimeds[i], ')');
+			if (token[0].compare("and ") != 0) {
+				effects.push_back(token[0]);
+			}
+		}
+
+		bool isDel = false;
+		for (int p = 0; p < effects.size(); ++p) {
+			if (effects[p].compare("not ") == 0) {
+				isDel = true;
+				continue;
+			}
+			for (int o = 0; o < ps.size(); ++o) {
+				std::vector<std::string> lits = split(effects[p], ' ');
+				if (lits[0].compare(ps[o].symbol) == 0) {
+					std::pair<unsigned int, std::vector<unsigned int>> predicate;
+					predicate.first = o;
+					for (int i = 1; i < lits.size(); ++i) {
+						for (int parms = 0; parms < parameters.size();
+								++parms) {
+							if (lits[i].compare(parameters[parms]) == 0) {
+								predicate.second.push_back(parms);
+								break;
+							}
+						}
+					}
+					if (isDel) {
+						delnums.push_back(predicate);
+					} else {
+						addnums.push_back(predicate);
+					}
+					isDel = false;
+					break;
+				}
+			}
+		}
+
+		lf.adds = addnums;
+		lf.dels = delnums;
+
+		lActions.push_back(lf);
 
 		// instantiate grounded actions.
 		// TODO: enable typing
@@ -579,11 +782,9 @@ void Strips::readAction(std::istream &domain, std::vector<Object> obs,
 			std::sort(addnums.begin(), addnums.end());
 			std::sort(delnums.begin(), delnums.end());
 
-
 			// Prune trivial predicates.
 			std::vector<unsigned int> dif;
-			std::set_difference(addnums.begin(),
-					addnums.end(), delnums.begin(),
+			std::set_difference(addnums.begin(), addnums.end(), delnums.begin(),
 					delnums.end(), std::inserter(dif, dif.end()));
 			if (dif.size() == 0) {
 //				std::cout << "trivial predicate. should discard." << std::endl;
@@ -649,12 +850,417 @@ void Strips::listFeasibleActions(std::vector<unsigned int> gs,
 
 void Strips::buildActionTrie(std::vector<unsigned> keys) {
 	for (int a = 0; a < keys.size(); ++a) {
-		std::cout << a << std::endl;
+//		std::cout << a << std::endl;
 		Action action = actionTable.getAction(keys[a]);
-		action.print();
+//		action.print();
 		actionTrie.addAction(action);
 	}
 }
+
+/**
+ * Greedy algorithm to find balances.
+ *
+ */
+std::vector<unsigned int> Strips::analyzeBalance(unsigned int p,
+		const std::vector<unsigned int>& predicates,
+		const std::vector<LiftedActionArg>& laas) {
+
+	std::string prefix((predicates.size() - 1) * 4, ' ');
+
+	if (predicates.size() == predargs.size()) {
+		std::cout << prefix << "failed" << std::endl;
+		return std::vector<unsigned int>();
+	}
+
+	// list all actions which adds p.
+	// TODO: would this be predicates not p? let's try it.
+	std::vector<LiftedActionArg> actions_add_p;
+	for (int a = 0; a < laas.size(); ++a) {
+		std::vector<unsigned int> adds = laas[a].lf.addsInst;
+		for (int ps = 0; ps < predicates.size(); ++ps) {
+			if (find(adds.begin(), adds.end(), predicates[ps]) != adds.end()) {
+				// found
+				actions_add_p.push_back(laas[a]);
+			}
+		}
+	}
+
+	std::cout << prefix << actions_add_p.size() << " actions: ";
+	for (int a = 0; a < actions_add_p.size(); ++a) {
+		std::cout << "(" << actions_add_p[a].lf.symbol << "-"
+				<< actions_add_p[a].instantiated_arg << ") ";
+	}
+	std::cout << std::endl;
+
+// Check if ALL actions should hold the balance.
+	bool allActionsValid = true;
+	for (int a = 0; a < actions_add_p.size(); ++a) {
+		// check delete effect that contains the argument referred as lfa.instantiated_arg
+		std::vector<unsigned int> dels = actions_add_p[a].lf.delsInst;
+		if (howManyContainedSortedVectors(dels, predicates) != 1) {
+			allActionsValid = false;
+			break;
+		}
+	}
+
+	// if all actions valid, then the set "predicates" are balanced.
+	if (allActionsValid) {
+		// Here, we got the return we really want to.
+		std::cout << prefix << "  group found!: ";
+		for (int g = 0; g < predicates.size(); ++g) {
+			if (predargs[predicates[g]].group_key != -1) {
+				std::cout << prefix << "  reserved" << std::endl;
+				return predicates;
+			}
+		}
+		// if all the group_keys == -1, then we can make new group
+		for (int g = 0; g < predicates.size(); ++g) {
+			predargs[predicates[g]].group_key = n_groups;
+		}
+		++n_groups;
+		for (int g = 0; g < predicates.size(); ++g) {
+			std::cout << "(" << predargs[predicates[g]].pred.symbol << "-"
+					<< predargs[predicates[g]].instantiated_arg << ") ";
+		}
+
+		std::cout << std::endl;
+		return predicates;
+	}
+
+	std::vector<std::vector<unsigned int> > ret_preds;
+	ret_preds.resize(actions_add_p.size());
+	for (int a = 0; a < actions_add_p.size(); ++a) {
+		// check delete effect that contains the argument referred as lfa.instantiated_arg
+		std::vector<unsigned int> dels = actions_add_p[a].lf.delsInst;
+//		std::cout << prefix << "  delsInst: ";
+//		for (int g = 0; g < dels.size(); ++g) {
+//			std::cout << "(" << predargs[dels[g]].pred.symbol << "-" << predargs[dels[g]].instantiated_arg << ") ";
+//		}
+//		std::cout << std::endl;
+
+		if (howManyContainedSortedVectors(dels, predicates) != 1) {
+			std::vector<unsigned int> difs;
+			std::set_difference(dels.begin(), dels.end(), predicates.begin(),
+					predicates.end(), std::back_inserter(difs));
+//			std::cout << prefix << "  difs: ";
+//			for (int g = 0; g < difs.size(); ++g) {
+//				std::cout << "(" << predargs[difs[g]].pred.symbol << "-" << predargs[difs[g]].instantiated_arg << ") ";
+//			}
+//			std::cout << std::endl;
+
+			std::vector<unsigned int> children;
+			children.resize(difs.size());
+			// difs are delete effect - predicates
+			for (int df = 0; df < difs.size(); ++df) {
+				std::vector<unsigned int> args = predicates;
+				// df
+				args.push_back(difs[df]);
+				std::sort(args.begin(), args.end());
+
+				std::cout << prefix << "  ";
+				for (int g = 0; g < args.size(); ++g) {
+					std::cout << "(" << predargs[args[g]].pred.symbol << "-"
+							<< predargs[args[g]].instantiated_arg << ") ";
+				}
+				std::cout << std::endl;
+
+				std::vector<unsigned int> c = analyzeBalance(difs[df], args,
+						laas);
+				// TODO: should be smallest?
+				if (c.size() > children.size()) {
+					children = c;
+				}
+			}
+			ret_preds[a] = children;
+		} else {
+			ret_preds[a] = predicates;
+		}
+	}
+
+	std::vector<unsigned int> ret;
+	for (int r = 0; r < ret_preds.size(); ++r) {
+		if (ret_preds[r].size() == 0) {
+			// failed to find balance in any of the action.
+//			std::cout << prefix << "  failed" << std::endl;
+//			return ret_preds[r];
+		} else {
+			uniquelyMergeSortedVectors(ret, ret_preds[r]);
+		}
+	}
+// 1. find all actions that adds the predicates.
+// 2.    for all actions found, list all delete effects.
+// 3.       for all delete effects, do analyzeBalance().
+	return ret;
+}
+
+void Strips::analyzeAllBalances(std::vector<Predicate> ps) {
+	for (int i = 0; i < lActions.size(); ++i) {
+		std::cout << lActions[i].symbol << std::endl;
+		for (int a = 0; a < lActions[i].adds.size(); ++a) {
+//			std::cout << lActions[i].adds[a].first << " ";
+			std::cout << "(" << ps[lActions[i].adds[a].first].symbol;
+			for (int arg = 0; arg < lActions[i].adds[a].second.size(); ++arg) {
+				std::cout << " " << lActions[i].adds[a].second[arg];
+			}
+			std::cout << ")";
+			std::cout << std::endl;
+		}
+	}
+
+//	return;
+//	std::vector<PredicateArg> predargs;
+	unsigned int key = 0;
+	for (int i = 0; i < ps.size(); ++i) {
+		for (int arg = 0; arg < ps[i].number_of_arguments; ++arg) {
+			PredicateArg paa;
+			paa.key = key++;
+			paa.pred = ps[i];
+			paa.instantiated_arg = arg;
+			paa.group_key = -1;
+			predargs.push_back(paa);
+		}
+	}
+
+//	std::cout << "PredicateArgs" << std::endl;
+//	for (int i = 0; i < predargs.size(); ++i) {
+//		if (predargs[i].group_key == -1) {
+//			std::vector<PredicateArg> pss;
+//			pss.push_back(predargs[i]);
+//			std::cout << predargs[i].pred.symbol << "-"
+//					<< predargs[i].instantiated_arg << std::endl
+//		}
+//	}
+
+	std::vector<LiftedActionArg> laas;
+	key = 0;
+	for (int i = 0; i < lActions.size(); ++i) {
+		for (int arg = 0; arg < lActions[i].n_arguments; ++arg) {
+			LiftedActionArg laa;
+			laa.lf = lActions[i];
+			laa.instantiated_arg = arg;
+			laa.key = key++;
+
+			for (int as = 0; as < lActions[i].adds.size(); ++as) {
+				std::vector<unsigned int> args = lActions[i].adds[as].second;
+				std::vector<unsigned int>::iterator it = std::find(args.begin(),
+						args.end(), arg);
+				if (it == args.end()) {
+					continue;
+				} else {
+					for (int p = 0; p < predargs.size(); ++p) {
+						if (predargs[p].isEqual(lActions[i].adds[as].first,
+								it - args.begin())) {
+							laa.lf.addsInst.push_back(p);
+							break;
+						}
+					}
+					std::sort(laa.lf.addsInst.begin(), laa.lf.addsInst.end());
+				}
+			}
+			for (int as = 0; as < lActions[i].dels.size(); ++as) {
+				std::vector<unsigned int> args = lActions[i].dels[as].second;
+				std::vector<unsigned int>::iterator it = std::find(args.begin(),
+						args.end(), arg);
+				if (it == args.end()) {
+					continue;
+				} else {
+					for (int p = 0; p < predargs.size(); ++p) {
+						if (predargs[p].isEqual(lActions[i].dels[as].first,
+								it - args.begin())) {
+							laa.lf.delsInst.push_back(p);
+						}
+					}
+					std::sort(laa.lf.delsInst.begin(), laa.lf.delsInst.end());
+				}
+			}
+			laas.push_back(laa);
+		}
+	}
+
+	std::cout << "LiftedActionArgs & adds" << std::endl;
+	for (int i = 0; i < laas.size(); ++i) {
+		std::cout << laas[i].lf.symbol << "-" << laas[i].instantiated_arg
+				<< std::endl;
+		std::cout << "adds: ";
+		for (int a = 0; a < laas[i].lf.addsInst.size(); ++a) {
+			std::cout << "(" << predargs[laas[i].lf.addsInst[a]].pred.symbol
+					<< "-" << predargs[laas[i].lf.addsInst[a]].instantiated_arg
+					<< ") ";
+		}
+
+		std::cout << std::endl << "dels: ";
+		for (int a = 0; a < laas[i].lf.delsInst.size(); ++a) {
+			std::cout << "(" << predargs[laas[i].lf.delsInst[a]].pred.symbol
+					<< "-" << predargs[laas[i].lf.delsInst[a]].instantiated_arg
+					<< ") ";
+		}
+		std::cout << std::endl;
+	}
+
+	std::vector<std::vector<unsigned int>> groups;
+	std::cout << "PredicateArgs" << std::endl;
+	for (int i = 0; i < predargs.size(); ++i) {
+		if (predargs[i].group_key == -1) {
+			std::vector<unsigned int> pss;
+			pss.push_back(predargs[i].key);
+			std::cout << predargs[i].pred.symbol << "/"
+					<< predargs[i].instantiated_arg << std::endl;
+			groups.push_back(analyzeBalance(predargs[i].key, pss, laas));
+		}
+	}
+
+	for (int i = 0; i < predargs.size(); ++i) {
+		std::cout << "(" << predargs[i].pred.symbol << "-"
+				<< predargs[i].instantiated_arg << "):" << predargs[i].group_key
+				<< " ";
+		std::cout << std::endl;
+	}
+
+	buildPDB();
+
+}
+
+//std::vector<unsigned int> Strips::analyzeBalance(unsigned int tail,
+//		const std::vector<unsigned int>& predicates) {
+//
+//	std::string prefix((predicates.size() - 1) * 4, ' ');
+//
+//	std::vector<Action> actions = actionTable.getActionsWhichAdds(tail);
+//
+//	std::cout << prefix << "actions: "; // << "testing preds: ";
+//	for (int i = 0; i < actions.size(); ++i) {
+//		std::cout << "(" << actions[i].name << ")" << " ";
+//	}
+//	std::cout << std::endl;
+//	std::cout << prefix; // << "testing preds: ";
+//	for (int i = 0; i < predicates.size(); ++i) {
+//		GroundedPredicate g = g_predicates->at(predicates[i]);
+//		std::cout << "(" << g.symbol << ")" << " ";
+//	}
+//
+////	std::cout << std::endl;
+//
+//
+//	if (actions.size() == 0) {
+//		// is there any case for it?
+//		return predicates;
+//	}
+//
+//	std::vector<std::vector<unsigned int>> rets;
+//	rets.resize(actions.size());
+//
+//	bool isEdge = true;
+//
+//	// For All Actions, there need to be the exact same balancing predicates.
+//	for (int a = 0; a < actions.size(); ++a) {
+//		std::vector<unsigned int> ret_a;
+//		std::vector<unsigned int> dels = actions[a].deletes;
+//		bool hasFound = false;
+//
+//		// If one of the delete effect is in predicates, then the action is balancing.
+//		// TODO: what if there are two delete effects for predicates? it will break the balance.
+//		for (int d = 0; d < dels.size(); ++d) {
+//			if (std::find(predicates.begin(), predicates.end(), dels[d])
+//					!= predicates.end()) {
+//				ret_a = predicates;
+//				hasFound = true;
+//				break;
+//			}
+//		}
+//		if (hasFound) {
+////			std::cout << "- o" << std::endl;
+//			rets[a] = ret_a;
+//			continue;
+//		}
+//
+//		if (isEdge) {
+//			isEdge = false;
+//			std::cout << std::endl;
+//		}
+////		std::cout << std::endl;
+//
+//
+//		std::cout << prefix << "  " << "a: " << actions[a].name
+//				<< std::endl;
+//		// If none of the delete effect is in predicates, then need to find
+//		// any of them can be balanced if you add new predicate in predicates.
+//		for (int d = 0; d < dels.size(); ++d) {
+//			std::vector<unsigned int> newpreds(predicates);
+//			newpreds.push_back(dels[d]);
+//			std::vector<unsigned int> r = analyzeBalance(dels[d], newpreds);
+//			// TODO: not sure it works or not.
+//			if (r.size() > 0) {
+//				rets[a] = r;
+//				hasFound = true;
+//				break;
+//			}
+//		}
+//		if (hasFound) {
+//			rets[a] = ret_a;
+//			continue;
+//		}
+//
+//		rets[a] = predicates;
+//	}
+//
+//	if (isEdge == true) {
+//		std::cout << "- o" << std::endl;
+//	}
+//	std::vector<unsigned int> ret = rets[0];
+//
+//	// 1. if any of the action is not valid, then we failed to make correct group of predicates.
+//	// 2. if all of the action is valid, then we got a correct group.
+//	//    we further need to add all predicates that children contain.
+//	for (int a = 0; a < actions.size(); ++a) {
+//		if (rets[a].size() == 0) {
+//			// This means we failed to make correct group of predicates.
+//			std::cout << prefix << "didn't work" << std::endl;
+//			return rets[a];
+//		}
+//		uniquelyMergeSortedVectors(ret, rets[a]);
+//	}
+////	std::cout << prefix << "grouped: ";
+////
+////	for (int i = 0; i < ret.size(); ++i) {
+////		GroundedPredicate g = g_predicates->at(ret[i]);
+////		std::cout << "(" << g.symbol << ")" << " ";
+////	}
+////	std::cout << std::endl;
+//	return ret;
+//}
+
+//void Strips::analyzeAllBalances() {
+//	// TODO: is goal conditions enough?
+//	std::vector<std::vector<unsigned int> > groups;
+//	groups.resize(goal_condition.size());
+//	for (int i = 0; i < goal_condition.size(); ++i) {
+//		std::vector<unsigned int> gs(1, goal_condition[i]);
+//		groups[i] = analyzeBalance(goal_condition[i], gs);
+//	}
+//
+//
+//	for (int g = 0; g < groups.size(); ++g) {
+//		std::cout << "group" << g << ": ";
+//		for (int p = 0; p < groups[g].size(); ++p) {
+//			GroundedPredicate gp = g_predicates->at(groups[g][p]);
+//			std::cout << "(" << gp.symbol << ")" << " ";
+//		}
+//		std::cout << std::endl;
+//	}
+//
+//
+//	// for all goal condition,
+//	//    initialize a list of predicates P.
+//	//    find all actions that add the predicate.
+//	//    for all actions found,
+//	//       list delete effects.
+//	//       for all delete effects (del)
+//	//          if it is in P, then continue.
+//	//          if it is not in P,
+//	//             analyze balance of P + del.
+//	//             if P + del balances, then return P + del.
+//	//             if not, then return false.
+//}
 
 int Strips::pow(int base, int p) {
 	int ret = 1;
