@@ -16,13 +16,13 @@ struct MSA {
 
 	// TODO: 9 short unsigned int? maybe vector is too heavy.
 	struct State {
-		std::vector<uint16_t> propositions;
+		std::vector<uint16_t> sequence;
 		int h;
 	};
 
 	struct PackedState {
 		unsigned long word;
-		std::vector<uint16_t> propositions;
+		std::vector<uint16_t> sequence;
 
 		unsigned long hash() const {
 			return word;
@@ -31,8 +31,8 @@ struct MSA {
 		// however long you take for the hash, it does not cover all the sequences.
 		bool eq(const PackedState &h) const {
 //			return word == h.word;
-			for (unsigned int i = 0; i < h.propositions.size(); ++i) {
-				if (propositions[i] != h.propositions[i]) {
+			for (unsigned int i = 0; i < h.sequence.size(); ++i) {
+				if (sequence[i] != h.sequence[i]) {
 					return false;
 				}
 			}
@@ -58,10 +58,10 @@ struct MSA {
 
 	State initial() const {
 		State s;
-		s.propositions.resize(num_of_sequences);
+		s.sequence.resize(num_of_sequences);
 //		printf("init %u\n", num_of_sequences);
 		for (unsigned int i = 0; i < num_of_sequences; ++i) {
-			s.propositions[i] = 0;
+			s.sequence[i] = 0;
 		}
 		s.h = heuristic(s);
 		return s;
@@ -74,7 +74,7 @@ struct MSA {
 	bool isgoal(const State &s) const {
 //		printf("isgoal\n");
 		for (unsigned int i = 0; i < num_of_sequences; ++i) {
-			if (s.propositions[i] != sequences[i].size()) {
+			if (s.sequence[i] != sequences[i].size()) {
 				return false;
 			}
 		}
@@ -86,7 +86,7 @@ struct MSA {
 		int ops = num_of_sequences;
 
 		for (unsigned int i = 0; i < num_of_sequences; ++i) {
-			if (s.propositions[i] == sequences[i].size()) {
+			if (s.sequence[i] == sequences[i].size()) {
 				--ops;
 			}
 		}
@@ -100,7 +100,7 @@ struct MSA {
 		int op = n + 1;
 //		printf("n = %d -> ", n);
 		for (unsigned int i = 0; i < num_of_sequences; ++i) {
-			if (s.propositions[i] == sequences[i].size()) {
+			if (s.sequence[i] == sequences[i].size()) {
 //				printf("X");
 				int upper = op / (1 << i);
 				int lower = op % (1 << i);
@@ -147,7 +147,7 @@ struct MSA {
 			incs[i] = path & 0x1;
 			path >>= 1;
 //			printf("%u", incs[i]);
-			s.propositions[i] += incs[i];
+			s.sequence[i] += incs[i];
 		}
 //		printf("\n");
 
@@ -159,12 +159,12 @@ struct MSA {
 				if (incs[i] == 0) {
 					amino0 = 24;
 				} else {
-					amino0 = sequences[i][s.propositions[i] - 1];
+					amino0 = sequences[i][s.sequence[i] - 1];
 				}
 				if (incs[j] == 0) {
 					amino1 = 24;
 				} else {
-					amino1 = sequences[j][s.propositions[j] - 1];
+					amino1 = sequences[j][s.sequence[j] - 1];
 				}
 //				printf("%ux%u: %d\n", i, j, pam[amino0 * 25 + amino1]);
 //				printf("amino: %c %c\n", pamcode[amino0], pamcode[amino1]);
@@ -189,7 +189,7 @@ struct MSA {
 		for (int i = 0; i < num_of_sequences; ++i) {
 			int inc = path & 0x1;
 			path >>= 1;
-			s.propositions[i] -= inc;
+			s.sequence[i] -= inc;
 		}
 
 	}
@@ -198,9 +198,9 @@ struct MSA {
 	void pack(PackedState &dst, State &s) const {
 		dst.word = 0; // to make g++ shut up about uninitialized usage.
 		for (int i = 0; i < num_of_sequences; i++) {
-			dst.word = (dst.word << 16) | s.propositions[i];
+			dst.word = (dst.word << 16) | s.sequence[i];
 		}
-		dst.propositions = s.propositions; // copy
+		dst.sequence = s.sequence; // copy
 //		printf("hash = %lu\n", dst.word);
 	}
 
@@ -215,7 +215,7 @@ struct MSA {
 //			s.word >>= 16;
 //			dst.sequence[i] = t;
 //		}
-		dst.propositions = s.propositions;
+		dst.sequence = s.sequence;
 		dst.h = heuristic(dst);
 //		printf("\n");
 
@@ -228,11 +228,11 @@ struct MSA {
 			unsigned int b0 = 100;
 			for (int i = 0; i < solution.size(); ++i) {
 				MSA::State s = solution[i];
-				if (b0 == s.propositions[sq]) {
+				if (b0 == s.sequence[sq]) {
 					l0[i] = '.';
 				} else {
-					l0[i] = pamcode[sequences[sq][s.propositions[sq]]];
-					b0 = s.propositions[sq];
+					l0[i] = pamcode[sequences[sq][s.sequence[sq]]];
+					b0 = s.sequence[sq];
 				}
 			}
 			for (int i = solution.size() - 1; i > 0; --i) {
@@ -249,8 +249,8 @@ struct MSA {
 			MSA::State s = solution[sq];
 			bool* isgap = new bool[num_of_sequences];
 			for (unsigned int i = 0; i < num_of_sequences; ++i) {
-				isgap[i] = (s.propositions[i] == 0) ||
-						(s.propositions[i] == solution[sq + 1].propositions[i]);
+				isgap[i] = (s.sequence[i] == 0) ||
+						(s.sequence[i] == solution[sq + 1].sequence[i]);
 			}
 
 //			printf("\ncosts = \n");
@@ -261,12 +261,12 @@ struct MSA {
 					if (isgap[i] == true) {
 						amino0 = 24;
 					} else {
-						amino0 = sequences[i][s.propositions[i]];
+						amino0 = sequences[i][s.sequence[i]];
 					}
 					if (isgap[j] == true) {
 						amino1 = 24;
 					} else {
-						amino1 = sequences[j][s.propositions[j]];
+						amino1 = sequences[j][s.sequence[j]];
 					}
 //					printf("%ux%u: %u\n", i, j, pam[amino0 * 25 + amino1]);
 					cost += pam[amino0 * 25 + amino1];
@@ -301,8 +301,8 @@ private:
 //				printf("%ux%u: %u\n", i, j,
 //						pairwise_tables[i + j * num_of_sequences][s.sequence[i]
 //								+ s.sequence[j] * (sequences[i].size() + 1)]);
-				cost += pairwise_tables[i + j * num_of_sequences][s.propositions[i]
-						+ s.propositions[j] * (sequences[i].size() + 1)];
+				cost += pairwise_tables[i + j * num_of_sequences][s.sequence[i]
+						+ s.sequence[j] * (sequences[i].size() + 1)];
 //				cost += pairwise_heuristic(i, s.sequence[i], j, s.sequence[j]);
 //				}
 			}

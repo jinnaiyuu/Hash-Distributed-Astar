@@ -90,6 +90,7 @@
 //		 "65610001, 126247697, 193877777, 303595777, 384160001, "
 //		 "406586897, 562448657, 655360001");*/
 //		/*
+//		 * 288580489
 //		 if (!(3 <= argc && argc <= 7))
 //		 throw Fatal(
 //		 "Usage: tiles <domain (if 24)> <algorithm> <problem number> "
@@ -415,7 +416,7 @@
 //				search = new Astar<Grid>(grid, max_f);
 //			} else if (strcmp(argv[1], "hdastar") == 0) {
 //
-//				unsigned int closedlistsize = 0;
+//				unsigned int closedlistsize = 59969537;
 //				unsigned int abstraction = 1;
 //				for (unsigned int i = 0; i < argc; ++i) {
 //					if (sscanf(argv[i], "closed-%u", &closedlistsize) == 1) {
@@ -510,7 +511,7 @@
 //
 //			SearchAlg<MSA> *search = NULL;
 //
-//			Strips::State init = msa.initial();
+//			MSA::State init = msa.initial();
 //
 //			unsigned int max_h = init.h * 1.5;
 //
@@ -541,7 +542,7 @@
 //					}
 //				}
 //				search = new AstarHeap<MSA>(msa, max_h * weight, weight);
-//				Strips::State init = msa.initial();
+//				MSA::State init = msa.initial();
 //				double wall0 = walltime();
 //				std::vector<MSA::State> path = search->search(init);
 //				double wtime = search->wtime - wall0;
@@ -613,7 +614,7 @@
 //			dfpair(stdout, "initial heuristic", "%d", msa.h(init));
 //			double wall0 = walltime(), cpu0 = cputime();
 //			// HERE!
-//			std::vector<Strips::State> path = search->search(init);
+//			std::vector<MSA::State> path = search->search(init);
 //
 ////			double wtime = walltime() - wall0, ctime = cputime() - cpu0;
 //			double wtime = search->wtime - wall0, ctime = search->ctime - cpu0;

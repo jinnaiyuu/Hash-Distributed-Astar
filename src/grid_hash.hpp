@@ -28,13 +28,13 @@ public:
 	unsigned char inc_hash(const unsigned char previous, const int number,
 			const int from, const int to, const char* const newBoard, const typename D::State s) {
 		// from = x * 100000 + y
-		unsigned int x = from / 100000;
-		unsigned int y = from % 100000;
+		unsigned int x = s.x / 100000;
+		unsigned int y = s.y % 100000;
 		return ((x / structure) * 23 + (y / structure));
 	}
 
 	unsigned char inc_hash(typename D::State s) {
-		return s.x * 19 + s.y;
+		return ((s.x / structure) * 23 + (s.y / structure));
 	}
 
 	unsigned char hash_tnum(const char* const board) {
