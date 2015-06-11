@@ -97,7 +97,7 @@ int Strips::pdb(const State& s) const {
 
 // TODO: implement true or false group. binary condition.
 void Strips::buildPDB() {
-	const unsigned int TRUE_PREDICATE = -2;
+	const unsigned int TRUE_PREDICATE = 10000000;
 	pd = new PDB();
 
 	std::string name = domain_ + "_" + instance_ + ".pat";
@@ -135,7 +135,7 @@ void Strips::buildPDB() {
 
 		unsigned int rest = 1 << (goal_condition.size() - pdb_groups.size() - 1);
 
-		if (size * xor_groups[g].size() * rest > 500000) {
+		if (size * xor_groups[g].size() * rest > 100000) {
 			full = true;
 			continue;
 		}
@@ -332,7 +332,7 @@ void Strips::dijkstra(std::vector<std::vector<unsigned int> > patterns,
 	std::vector<unsigned int> costs = search->get_costs();
 
 	for (int p = 0; p < costs.size(); ++p) {
-		std::cout << p << " " << costs[p] << std::endl;
+//		std::cout << p << " " << costs[p] << std::endl;
 		if (costs[p] != -1) {
 			pd->addPattern(p, costs[p]);
 		}

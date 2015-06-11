@@ -487,17 +487,17 @@ public:
 				/// Compare states
 				/// 1. operation working fine
 				///////////////////////////
-				if (n->f > next->f) {
-					// heuristic was calculating too big.
-					printf("!!!ERROR: f decreases: %u %u\n", n->f, next->f);
-					unsigned int nh = n->f - n->g;
-					unsigned int nxh = next->f - next->g;
-					printf("h = %u %u\n", nh, nxh);
-					printf("cost = %d\n", e.cost);
-				}
-				if (static_cast<unsigned int>(n->g + e.cost) != static_cast<unsigned int>(next->g)) {
-					printf("!!!ERROR: g is wrong: %u + %d != %u\n", n->g, e.cost, next->g);
-				}
+//				if (n->f > next->f) {
+//					// heuristic was calculating too big.
+//					printf("!!!ERROR: f decreases: %u %u\n", n->f, next->f);
+//					unsigned int nh = n->f - n->g;
+//					unsigned int nxh = next->f - next->g;
+//					printf("h = %u %u\n", nh, nxh);
+//					printf("cost = %d\n", e.cost);
+//				}
+//				if (static_cast<unsigned int>(n->g + e.cost) != static_cast<unsigned int>(next->g)) {
+//					printf("!!!ERROR: g is wrong: %u + %d != %u\n", n->g, e.cost, next->g);
+//				}
 
 
 //				if (next->f > incumbent.load()) {

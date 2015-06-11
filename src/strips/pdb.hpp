@@ -6,12 +6,15 @@
 #include <vector>
 #include <utility>
 #include <fstream>
+#include <iterator>
+#include <algorithm>
 
 /**
  * pattern database to store abstract state and its
  *
  */
 class PDB {
+	const unsigned int TRUE_PREDICATE = 10000000;
 public:
 	PDB() {
 	}
@@ -55,7 +58,7 @@ public:
 					}
 					break;
 				}
-				if (groups[gs][ps] == -2) {
+				if (groups[gs][ps] == TRUE_PREDICATE) {
 //					std::cout << gs << "," << ps << ": -2" << std::endl;
 					arg_pat += ps;
 					if (gs != 0) {
@@ -121,6 +124,10 @@ public:
 	bool read_database(std::string name) {
 		std::string fname = "../pdb/" + name;
 		std::ifstream infile(fname);
+//		std::ios_base::sync_with_stdio(false);
+//		std::istream_iterator<int> start(infile), end;
+//		std::istream_iterator<unsigned int> start(infile);
+
 		if (!infile.good()) {
 			std::cout << "no database available." << std::endl;
 			return false;
@@ -128,15 +135,23 @@ public:
 		}
 
 		std::cout << "reading database..." << std::endl;
+		std::cout << "is it working? " << std::endl;
 
 		// 1. get groups
-		std::string line;
+		std::string line = "";
 
-		while (std::getline(infile, line)) {
+		unsigned int size = 1;
+		while (!infile.eof()) {
+//			std::cout << "line: " << line;
+			std::getline(infile, line);
+			std::cout << "line: " << line << " ";
 			std::stringstream iss(line);
 			std::vector<unsigned int> g;
 			int input;
 			iss >> input;
+//			std::cout << "in: " << input;
+
+			//			++start;
 			if (input == -1) {
 				break;
 			}
@@ -144,19 +159,31 @@ public:
 			while (!iss.eof()) {
 				g.push_back(input);
 				iss >> input;
+//				++start;
 			}
 			groups.push_back(g);
+			size *= g.size();
+			std::cout << size << " patterns to read..." << std::endl;
 		}
+		std::cout << size << " patterns to read...";
+
 
 		// g0 g1 g2 ... gn -1 heuristic
 
 		// 2. get
-//		infile >>
-		while(!infile.eof()) {
-			unsigned int h;
-			infile >> h;
-			database.push_back(h);
-		}
+		std::istream_iterator<unsigned int> start(infile);
+
+
+		database = std::vector<unsigned int>((start), std::istream_iterator<unsigned int>());
+//		std::vector<unsigned int> d = std::vector<unsigned int>((start), std::istream_iterator<unsigned int>());
+//		std::copy(d.begin(), d.end(), database.begin());
+//		database(d);
+
+//		while(!infile.eof()) {
+//			unsigned int h;
+//			infile >> h;
+//			database.push_back(h);
+//		}
 //		while (std::getline(infile, line)) {
 //			std::stringstream iss(line);
 //			std::vector<unsigned int> pat;
@@ -178,7 +205,7 @@ public:
 //			std::pair<std::vector<unsigned int>, int> p(pat, h);
 //			database.push_back(p);
 //		}
-		std::cout << database.size() << " patterns read." << std::endl;
+		std::cout << "done!" << std::endl;
 		return true;
 
 	}
