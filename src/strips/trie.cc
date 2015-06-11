@@ -68,6 +68,7 @@ void Trie::Node::printNode(unsigned int depth) {
 
 Trie::Trie() {
 	root = new Node();
+	nActions = 0;
 }
 
 Trie::Trie(const Trie& other) {
@@ -85,6 +86,7 @@ Trie::~Trie() {
 
 void Trie::addAction(const Action& a) {
 	Node* current = root;
+	++nActions;
 	if (a.preconditions.size() == 0) {
 		current->setWordMarker(); // an empty word
 //		std::cout << "empty preconditions" << std::endl;
@@ -103,6 +105,36 @@ void Trie::addAction(const Action& a) {
 			current = tmp;
 		}
 		if (i == a.preconditions.size() - 1) {
+			current->setWordMarker();
+			current->addAction(a.action_key);
+		}
+	}
+}
+
+// for regression planning, adds will be the preconditions.
+// preconditions will be the add action.
+void Trie::addRegressionAction(const Action& a) {
+	Node* current = root;
+	++nActions;
+
+	if (a.adds.size() == 0) {
+		current->setWordMarker(); // an empty word
+//		std::cout << "empty preconditions" << std::endl;
+		current->addAction(a.action_key);
+		return;
+	}
+
+	for (int i = 0; i < a.adds.size(); i++) {
+		Node* child = current->findChild(a.adds[i]);
+		if (child != NULL) {
+			current = child;
+		} else {
+			Node* tmp = new Node();
+			tmp->setPrecondition(a.adds[i]);
+			current->appendChild(tmp);
+			current = tmp;
+		}
+		if (i == a.adds.size() - 1) {
 			current->setWordMarker();
 			current->addAction(a.action_key);
 		}

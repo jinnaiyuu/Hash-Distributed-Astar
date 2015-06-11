@@ -22,6 +22,10 @@ public:
 		table = other.table;
 	}
 
+	~ActionTable() {
+		delete table;
+	}
+
 	void addAction(Action a) {
 		if (table->size() <= a.action_key) {
 			table->resize(a.action_key + 1);
@@ -60,11 +64,13 @@ public:
 		return table->size();
 	}
 
+
 	void printAllActions() {
 		for (int i = 0; i < table->size(); ++i) {
 			table->at(i).print();
 		}
 	}
+
 
 private:
 

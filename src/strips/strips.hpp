@@ -41,6 +41,7 @@ struct Strips {
 	struct PackedState {
 		unsigned long word;
 		std::vector<unsigned int> propositions;
+		unsigned int h;
 
 		unsigned long hash() const {
 			return word;
@@ -101,6 +102,15 @@ struct Strips {
 		return actions.size();
 	}
 
+	std::vector<unsigned int> ops(const State &s) const {
+//		std::cout << "nops" << std::endl;
+//		actionTrie.printTree();
+		std::vector<unsigned int> actions = actionTrie.searchPossibleActions(
+				s.propositions);
+//		std::cout << "expand state: " << actions.size() << std::endl;
+		return actions;
+	}
+
 	// TODO: nops&nthop is duplication of work for STRIPS planning. should be optimized.
 	int nthop(const State &s, int n) const {
 //		std::cout << "nthop" << std::endl;
@@ -149,13 +159,14 @@ struct Strips {
 			dst.word = (dst.word << 4) | s.propositions[i];
 		}
 		dst.propositions = s.propositions; // copy
+		dst.h = s.h;
 	}
 
 	// unpack: unpacks the packed state s into the state dst.
 	void unpack(State &dst, PackedState s) const {
 		//	std::cout << "unpack" << std::endl;
 		dst.propositions = s.propositions;
-		dst.h = heuristic(dst);
+		dst.h = s.h;
 	}
 
 	void set_heuristic(int h) {
@@ -171,6 +182,14 @@ struct Strips {
 //			search = new Astar<Strips>(*strips);
 //			strips->set_heuristic(1);
 		}
+		if (h == 3) {
+			// pattern database heuristic
+			buildPDB();
+		}
+	}
+
+	void set_pdb(bool pdb) {
+		built_pdb = pdb;
 	}
 
 	unsigned int getActionSize() {
@@ -213,6 +232,45 @@ struct Strips {
 		is_delete_relaxed = is;
 	}
 
+	//////////////////////////////////////////
+	/// methods for regression planning
+	//////////////////////////////////////////
+	std::vector<unsigned int> r_nops(const State &s) const {
+		// TODO: Add ungroupeds in propositions.
+		std::vector<unsigned int> ps = uniquelyMergeSortedVectors(
+				s.propositions, ungroupeds);
+		std::vector<unsigned int> actions = rActionTrie.searchPossibleActions(
+				ps);
+		return actions;
+	}
+
+	// TODO: nops&nthop is duplication of work for STRIPS planning. should be optimized.
+	int r_nthop(const State &s, int n) const {
+		// TODO: Add ungroupeds in propositions.
+		std::vector<unsigned int> ps = uniquelyMergeSortedVectors(
+				s.propositions, ungroupeds);
+		std::vector<unsigned int> actions = rActionTrie.searchPossibleActions(
+				ps);
+		return actions[n];
+	}
+
+	Edge<Strips> r_apply(State &s, int action) const {
+//		std::cout << "apply" << std::endl;
+		int cost = 1;
+		Edge<Strips> e(cost, action, -100);
+		e.undo.propositions = s.propositions;
+		e.undo.h = s.h;
+
+//		std::cout << "apply " << actionTable.getAction(action).name << std::endl;
+//		print_state(s.propositions);
+		r_apply_action(s, action);
+//		print_state(s.propositions);
+
+//		s.h = heuristic(s);
+
+		return e;
+	}
+
 private:
 	// proposition library (prefixtree)
 	// action library (table of number to action)
@@ -225,6 +283,10 @@ private:
 	std::vector<GroundedPredicate>* g_predicates;
 
 	bool is_delete_relaxed = false;
+
+	Trie rActionTrie; // trie for regression planning. keys are adds.
+	std::vector<unsigned int> ungroupeds;
+	bool built_pdb = false;
 
 	void apply_action(State& s, int action_key) const {
 		Action action = actionTable.getAction(action_key);
@@ -245,19 +307,25 @@ private:
 				s.propositions.end());
 	}
 
+	// TODO: can we optimize this?
+	// In regression model,
+	// ADD: preconditions
+	// DEL: add effects
+	void r_apply_action(State& s, int action_key) const {
+		Action action = actionTable.getAction(action_key);
+
+		for (int i = 0; i < action.adds.size(); ++i) {
+			s.propositions.erase(
+					std::remove(s.propositions.begin(), s.propositions.end(),
+							action.adds[i]), s.propositions.end());
+		}
+
+		std::vector<unsigned int> n = uniquelyMergeSortedVectors(s.propositions, action.preconditions);
+		s.propositions = n;
+	}
+
 	void undo_action(State& s, const Undo& undo) const {
 		s.propositions = undo.propositions;
-//		if (!is_delete_relaxed) {
-//			for (int i = 0; i < action.deletes.size(); ++i) {
-//				s.propositions.push_back(action.deletes[i]);
-//			}
-//		}
-//		for (int i = 0; i < action.adds.size(); ++i) {
-//			s.propositions.erase(
-//					std::remove(s.propositions.begin(), s.propositions.end(),
-//							action.adds[i]), s.propositions.end());
-//		}
-//		std::sort(s.propositions.begin(), s.propositions.end());
 	}
 
 	/////////////////////////////
@@ -305,7 +373,9 @@ private:
 	int pdb(const State& s) const;
 
 	void buildPDB();
-
+	void dijkstra(std::vector<std::vector<unsigned int> > patterns,
+			std::vector<std::vector<unsigned int> > groups);
+	void buildRegressionTree();
 
 	/////////////////////////////
 	// parser
@@ -339,8 +409,8 @@ public:
 		}
 
 		bool matches(const GroundedPredicate& g, unsigned int obj) {
-			return pred.key == g.lifted_key &&
-					g.arguments[instantiated_arg] == obj;
+			return pred.key == g.lifted_key
+					&& g.arguments[instantiated_arg] == obj;
 		}
 
 	};
@@ -377,12 +447,18 @@ private:
 	std::vector<LiftedAction> lActions; // for abstractions.
 	std::vector<PredicateArg> predargs;
 	std::vector<unsigned int> g_feasible_predicates;
+	std::vector<std::vector<unsigned int>> xor_groups;
+	std::vector<unsigned int> xor_ungroupeds;
 
-	PDB* pd; // need deallocate
+
+	PDB* pd;// need deallocate
 	int n_groups = 0;
 
-//	std::istream domain_;
-//	std::istream instance_;
+	std::string domain_;
+	std::string instance_;
+	void readDomainName(std::istream &domain);
+	void readInstanceName(std::istream &instance);
+
 	void readRequirements(std::istream &domain);
 	void readPredicates(std::istream &domain,
 			std::vector<Predicate>& predicates);
@@ -399,6 +475,7 @@ private:
 			std::vector<Predicate> ps,
 			std::vector<GroundedPredicate> gs);
 	void listFeasiblePredicates(std::vector<unsigned int>& gs);
+	void listFeasiblePredicatesWithActions(std::vector<unsigned int>& gs, std::vector<unsigned int>& actions);
 	void listFeasibleActions(std::vector<unsigned int> gs,
 			std::vector<unsigned int>& actions);
 	void buildActionTrie(std::vector<unsigned> keys);
@@ -407,6 +484,7 @@ private:
 			const std::vector<unsigned int>& predicates,
 			const std::vector<LiftedActionArg>& laas);
 	void analyzeAllBalances(std::vector<Predicate> ps);
+	void analyzeXORGroups();
 	int pow(int base, int p);
 
 };

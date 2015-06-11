@@ -147,7 +147,7 @@ public:
 		if (p)
 			n->g += p->g;
 		n->f = n->g + this->dom.h(s) * w;
-		unsigned int nw = n->g + this->dom.h(s);
+//		unsigned int nw = n->g + this->dom.h(s);
 //		printf("h, wh = %u, %u\n", this->dom.h(s), static_cast<unsigned int>(this->dom.h(s) * w));
 //		printf("h = %d\n", this->dom.weight_h(s));
 		n->pop = pop;

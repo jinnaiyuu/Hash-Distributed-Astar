@@ -5,6 +5,7 @@
 
 #include <vector>
 #include <utility>
+#include <fstream>
 
 /**
  * pattern database to store abstract state and its
@@ -15,23 +16,172 @@ public:
 	PDB() {
 	}
 
-	void addPattern(std::vector<unsigned int> pattern, int h) {
-		std::pair<std::vector<unsigned int>, int > n(pattern, h);
-		database.push_back(n);
+	void addPattern(unsigned int pattern, int h) {
+//		std::pair<std::vector<unsigned int>, int> n(pattern, h);
+		if (database.size() < pattern + 1) {
+			database.resize(pattern + 1);
+		}
+		database[pattern] = h;
+	}
+
+//	void addPattern(std::vector<unsigned int> pattern, int h) {
+//		std::pair<std::vector<unsigned int>, int> n(pattern, h);
+//		database.push_back(n);
+//	}
+
+	void setGroups(std::vector<std::vector<unsigned int>> groups) {
+		this->groups = groups;
 	}
 
 	int heuristic(const std::vector<unsigned int>& state) const {
 		// 1. find abstract state representation
 		// 2. look up database.
-		// TODO: can be optimized to trie structure.
-		for (int i = 0; i < database.size(); ++i) {
-			if (isContainedSortedVectors(database[i].first, state)) {
-				return database[i].second;
+		// TODO: can be optimized to trie structure or some kind of perfect hash.
+		// TODO: add implementation of true or else.
+		//       this can be implement just by not putting anything after.
+
+		// Here, we need a perfect hash for this pattern database.
+		// Empirically, uint64 is way too enough to make it perfect hash.
+		unsigned int arg_pat = 0;
+//		std::cout << "ps = ";
+//		for (int gs = 0; gs < groups.size(); ++gs) {
+		for (int gs = groups.size() - 1; gs >= 0; --gs) {
+			for (int ps = 0; ps < groups[gs].size(); ++ps) {
+				if (isContainedSortedVectors(groups[gs][ps], state)) {
+//					std::cout << groups[gs][ps] << " ";
+					arg_pat += ps;
+					if (gs != 0) {
+						arg_pat *= groups[gs].size();
+					}
+					break;
+				}
+				if (groups[gs][ps] == -2) {
+//					std::cout << gs << "," << ps << ": -2" << std::endl;
+					arg_pat += ps;
+					if (gs != 0) {
+						arg_pat *= groups[gs].size();
+					}
+					break;
+				}
 			}
 		}
-		return 0;
+		return database[arg_pat];
+
+//		return database[arg_pat].second;
+
+//		std::cout << ": " << arg_pat << " = " << database[arg_pat].second
+//				<< std::endl;
+
+//		std::cout << "bf = ";
+//		for (int i = 0; i < database.size(); ++i) {
+//			if (isContainedSortedVectors(database[i].first, state)) {
+//				for (int j = 0; j < database[i].first.size(); ++j) {
+//					std::cout << database[i].first[j] << " ";
+//				}
+//				std::cout << ": " << i << " = " << database[i].second
+//						<< std::endl;
+//				return database[i].second;
+//			}
+//		}
 	}
 
+	// TODO: for experiment, let's reuse pattern database for same problem.
+	// TODO: read from file.
+	void dump_all(std::string name) {
+		std::ofstream file;
+		std::string fname = "../pdb/" + name;
+		file.open(fname.c_str());
+
+		for (int gs = 0; gs < groups.size(); ++gs) {
+			for (int ps = 0; ps < groups[gs].size(); ++ps) {
+				file << groups[gs][ps] << " ";
+			}
+			file << std::endl;
+		}
+		file << "-1" << std::endl;
+
+		for (int i = 0; i < database.size(); ++i) {
+			file << database[i] << " ";
+
+			//			for (int p = 0; p < database[i].first.size(); ++p) {
+//				file << database[i].first[p] << " ";
+//			}
+//			file << "-1 " << database[i].second << std::endl;
+		}
+		file.close();
+	}
+
+	// structure of the input:
+	//
+	// p0 p1 p2 -1 h
+	// p0 p1 p2 -1 h
+
+	// TODO: way too slow.
+	//       fastest reading method is fscan(). let's refactor to it.
+	bool read_database(std::string name) {
+		std::string fname = "../pdb/" + name;
+		std::ifstream infile(fname);
+		if (!infile.good()) {
+			std::cout << "no database available." << std::endl;
+			return false;
+
+		}
+
+		std::cout << "reading database..." << std::endl;
+
+		// 1. get groups
+		std::string line;
+
+		while (std::getline(infile, line)) {
+			std::stringstream iss(line);
+			std::vector<unsigned int> g;
+			int input;
+			iss >> input;
+			if (input == -1) {
+				break;
+			}
+
+			while (!iss.eof()) {
+				g.push_back(input);
+				iss >> input;
+			}
+			groups.push_back(g);
+		}
+
+		// g0 g1 g2 ... gn -1 heuristic
+
+		// 2. get
+//		infile >>
+		while(!infile.eof()) {
+			unsigned int h;
+			infile >> h;
+			database.push_back(h);
+		}
+//		while (std::getline(infile, line)) {
+//			std::stringstream iss(line);
+//			std::vector<unsigned int> pat;
+//			int h;
+//			int input;
+//			bool isPat = true;
+//			while (!iss.eof()) {
+//				iss >> input;
+//				if (isPat) {
+//					if (input == -1) {
+//						isPat = false;
+//					} else {
+//						pat.push_back(input);
+//					}
+//				} else {
+//					h = input;
+//				}
+//			}
+//			std::pair<std::vector<unsigned int>, int> p(pat, h);
+//			database.push_back(p);
+//		}
+		std::cout << database.size() << " patterns read." << std::endl;
+		return true;
+
+	}
 
 private:
 	// TODO: trie structure?
@@ -41,7 +191,9 @@ private:
 
 	// Database:
 	// pair: abstract state <-> heuristic
-	std::vector<std::pair<std::vector<unsigned int>, int> > database;
+	std::vector<unsigned int> database;
+//	std::vector<std::pair<std::vector<unsigned int>, int> > database;
+	std::vector<std::vector<unsigned int>> groups;
 };
 
 #endif

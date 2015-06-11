@@ -50,6 +50,8 @@ std::string findRange(std::string& s, const std::string& from,
 	return s.substr(f, t-f);
 }
 
+// if v2 has all numbers in v1 then return true.
+// true if v2 >= v1.
 static
 bool isContainedSortedVectors(const std::vector<unsigned int>& v1, const std::vector<unsigned int>& v2) {
 	unsigned int v1it = 0;
@@ -68,6 +70,48 @@ bool isContainedSortedVectors(const std::vector<unsigned int>& v1, const std::ve
 	}
 	return true;
 }
+
+static
+bool isContainedSortedVectors(unsigned int v1, const std::vector<unsigned int>& v2) {
+	unsigned int v2it = 0;
+
+	while(v2it < v2.size()) {
+		if(v1 == v2[v2it]) {
+			return true;
+		} else if (v1 < v2[v2it]) {
+			return false;
+		} else {
+			++v2it;
+		}
+	}
+	return false;
+}
+
+// if any of v1 not contained in v2, return true. false otherwise.
+static
+bool isAnyNotContainedSortedVectors(const std::vector<unsigned int>& v1, const std::vector<unsigned int>& v2) {
+	unsigned int v1it = 0;
+	unsigned int v2it = 0;
+
+	unsigned int contained = 0;
+
+	while(v1it < v1.size() && v2it < v2.size()) {
+		if(v1[v1it] == v2[v2it]) {
+			++v1it;
+			++v2it;
+		} else if (v1[v1it] < v2[v2it]) {
+			return true;
+		} else {
+			++v2it;
+		}
+	}
+	if (v1it == v1.size()) {
+		return false;
+	} else {
+		return true;
+	}
+}
+
 
 static
 unsigned int howManyContainedSortedVectors(const std::vector<unsigned int>& v1, const std::vector<unsigned int>& v2) {
@@ -130,6 +174,13 @@ std::vector<unsigned int> uniquelyMergeSortedVectors(const std::vector<unsigned 
 			++v2it;
 		}
 	}
+
+	if (v1it == v1.size()) {
+		uniqueMerge.insert(uniqueMerge.end(), v2.begin() + v2it, v2.end());
+	} else {
+		uniqueMerge.insert(uniqueMerge.end(), v1.begin() + v1it, v1.end());
+	}
+
 	return uniqueMerge;
 }
 
@@ -195,6 +246,7 @@ bool getBracket(std::istream &file, const std::string &from, unsigned int number
 	}
 
 	if (!hasEnded) {
+		ret = total_text;
 		return false;
 	}
 	ret = total_text;
@@ -253,6 +305,7 @@ bool getText(std::istream &file, std::string from, std::string to,
 	std::transform(total_text.begin(), total_text.end(), total_text.begin(), ::tolower);
 
 	if (total_text.empty()) {
+		ret = total_text;
 		return false;
 	}
 	ret = total_text;

@@ -4,10 +4,10 @@
 #include "strips.hpp"
 #include "action.hpp"
 #include "utils.hpp"
+#include "dijkstra.hpp"
 #include "../astar.hpp"
 #include "../astar_heap.hpp"
 #include "../search.hpp"
-
 
 #include <string>
 #include <iostream>
@@ -95,79 +95,271 @@ int Strips::pdb(const State& s) const {
 	return pd->heuristic(s.propositions);
 }
 
+// TODO: implement true or false group. binary condition.
 void Strips::buildPDB() {
+	const unsigned int TRUE_PREDICATE = -2;
 	pd = new PDB();
+
+	std::string name = domain_ + "_" + instance_ + ".pat";
+
+	if (!built_pdb && pd->read_database(name)) {
+//		pd->dump_all(name + "copy");
+		return;
+	}
+
+	////////////////////////////////////////
+	/// Construction of PDB
+	////////////////////////////////////////
+	std::cout << "generating PDB..." << std::endl;
+
 	// instantiate PredicateArgs group for all objects.
 
 	// unsigned ints arekeys for GroundedPredicates.
-	std::vector<std::vector<unsigned int>> groups;
+	std::vector<std::vector<unsigned int>> pdb_groups;
 
-	for (int g = 0; g < n_groups; ++g) {
-		std::vector<unsigned int> preds;
+	unsigned int size = 1;
+	bool full = false;
 
-		// list predicates in group.
-		for (int p = 0; p < predargs.size(); ++p) {
-			if (predargs[p].group_key == g) {
-				preds.push_back(p);
+	for (int g = 0; g < xor_groups.size(); ++g) {
+		bool has_goal = false;
+		for (int c = 0; c < goal_condition.size(); ++c) {
+			if (find(xor_groups[g].begin(), xor_groups[g].end(),
+					goal_condition[c]) != xor_groups[g].end()) {
+				has_goal = true;
+				break;
+			}
+		}
+		if (!has_goal) {
+			continue;
+		}
+
+		unsigned int rest = 1 << (goal_condition.size() - pdb_groups.size() - 1);
+
+		if (size * xor_groups[g].size() * rest > 500000) {
+			full = true;
+			continue;
+		}
+		pdb_groups.push_back(xor_groups[g]);
+		size *= xor_groups[g].size();
+		std::cout << "size = " << size << std::endl;
+	}
+
+// TODO: for all goal_conditions which is out of groups,
+//       add TRUE OR FALSE group to the patterns.
+	for (int c = 0; c < goal_condition.size(); ++c) {
+//		if (size * 2 > 500000) {
+//			break;
+//		}
+
+		bool is_grouped = false;
+		for (int gs = 0; gs < pdb_groups.size(); ++gs) {
+			if (find(pdb_groups[gs].begin(), pdb_groups[gs].end(), goal_condition[c])
+					!= pdb_groups[gs].end()) {
+				is_grouped = true;
+				break;
 			}
 		}
 
-//		std::cout << "lifted group: ";
-//		for (int g = 0; g < preds.size(); ++g) {
-//			std::cout << "(" << predargs[preds[g]].pred.symbol << "-"
-//					<< predargs[preds[g]].instantiated_arg << ") ";
-//		}
-//		std::cout << std::endl;
+		if (!is_grouped) {
+			std::vector<unsigned int> g;
+			g.push_back(goal_condition[c]);
+			unsigned int t = TRUE_PREDICATE;
+			g.push_back(t);
+			pdb_groups.push_back(g);
+			size *= 2;
+		}
 
-		// instantiate predicates for all objects.
-		// HERE, in this iteration, we build one abstraction.
-		for (int obj = 0; obj < objects.size(); ++obj) {
-			std::vector<unsigned int> g_preds;
-//			std::cout << objects[obj].symbol << " grounded group: ";
-			for (int p = 0; p < preds.size(); ++p) {
-				// find GroundedPredicate that matches
-				// predicates symbol & arguments.
-				for (int g = 0; g < g_predicates->size(); ++g) {
-					if (predargs[preds[p]].matches(g_predicates->at(g), obj)
-//							&& find(g_feasible_predicates.begin(),
-//									g_feasible_predicates.end(), g)
-//									!= g_feasible_predicates.end()
-							) {
-						g_preds.push_back(g);
-					}
-				}
+	}
+	std::cout << size << " patterns to build" << std::endl;
+
+	std::cout << "goal conditions = ";
+	for (int c = 0; c < goal_condition.size(); ++c) {
+		std::cout << "(" << g_predicates->at(goal_condition[c]).symbol << ") ";
+	}
+	std::cout << std::endl;
+
+// TODO: groups should based on whether it contains the goal conditions.
+//       therefore the max number of groups would be bounded by the #goal conditions.
+//       for now, just trash groups without goal conditions.
+	std::vector<std::vector<unsigned int> >::iterator it = pdb_groups.begin();
+	while (it != pdb_groups.end()) {
+		bool has_goal = false;
+		for (int c = 0; c < goal_condition.size(); ++c) {
+			if (find(it->begin(), it->end(), goal_condition[c]) != it->end()) {
+				has_goal = true;
+				break;
 			}
-
-			groups.push_back(g_preds);
+		}
+		if (!has_goal) {
+//			std::cout << (it - groups.begin()) << " has no goal!" << std::endl;
+			pdb_groups.erase(pdb_groups.begin() + (it - pdb_groups.begin()));
+		} else {
+			++it;
 		}
 	}
 
-	// g_preds will be a list of grounded predicates to be balanced.
-	for (int g = 0; g < groups.size(); ++g) {
+//	std::vector<unsigned int> ungroupeds;
+// here, args_in_preds are the pattern we want. we need to add predicates which is out of groups.
+	for (int p = 0; p < g_feasible_predicates.size(); ++p) {
+		bool grouped = false;
+		for (int gs = 0; gs < pdb_groups.size(); ++gs) {
+			for (int m = 0; m < pdb_groups[gs].size(); ++m) {
+				if (pdb_groups[gs][m] == g_feasible_predicates[p]) {
+					grouped = true;
+					break;
+				}
+			}
+			if (grouped) {
+				break;
+			}
+		}
+		if (!grouped) {
+			ungroupeds.push_back(g_feasible_predicates[p]);
+		}
+	}
+
+	std::sort(ungroupeds.begin(), ungroupeds.end());
+
+	std::cout << "ungroupeds = ";
+	for (int p = 0; p < ungroupeds.size(); ++p) {
+		std::cout << "(" << g_predicates->at(ungroupeds[p]).symbol << ") ";
+	}
+	std::cout << std::endl;
+
+// g_preds will be a list of grounded predicates to be balanced.
+	for (int g = 0; g < pdb_groups.size(); ++g) {
 		std::cout << g << " group: ";
-		for (int p = 0; p < groups[g].size(); ++p) {
-			std::cout << "(" << g_predicates->at(groups[g][p]).symbol << ") ";
+		for (int p = 0; p < pdb_groups[g].size(); ++p) {
+			if (pdb_groups[g][p] == TRUE_PREDICATE) {
+				std::cout << "(true) ";
+			} else {
+				std::cout << "(" << g_predicates->at(pdb_groups[g][p]).symbol
+						<< ") ";
+			}
 		}
 		std::cout << std::endl;
 	}
 
-
-	unsigned int size = 1;
-	for (int g = 0; g < groups.size(); ++g) {
-		size *= groups[g].size();
+	std::cout << "XORing groups for Strucuterd Zobrist" << std::endl;
+	for (int g = 0; g < xor_groups.size(); ++g) {
+		std::cout << g << " group: ";
+		for (int p = 0; p < xor_groups[g].size(); ++p) {
+			std::cout << "(" << g_predicates->at(xor_groups[g][p]).symbol
+					<< ") ";
+		}
+		std::cout << std::endl;
 	}
-	std::cout << size << " patterns to build" << std::endl;
 
-	// TODO: pattern database can be expanded by adding more elements from
+//	unsigned int size = 1;
+//	for (int g = 0; g < groups.size(); ++g) {
+//		size *= groups[g].size();
+//		if (size > 500000) {
+//			break;
+//		}
+//	}
+// TODO: pattern database can be expanded by adding more elements from
 
-	// 1. for all abstract states
-	// 2.     run A* search for each abstract state. (backward search?)
-	// 3.     put
+// 1. for all abstract states
+// 2.     run A* search for each abstract state. (backward search?)
+// 3.     put
 
-	// pattern: abstract
+//	if (size > 10000000) {
+//		// TODO
+//		std::cout << "too much patterns. need to reduce." << std::endl;
+//	}
+
+//	std::vector<unsigned int> args;
+
+// iterate over size.
+// for each pattern
+
+	std::vector<std::vector<unsigned int>> all_patterns_preds;
+
+	for (int pat = 0; pat < size; ++pat) {
+		std::vector<unsigned int> args_in_groups;
+		std::vector<unsigned int> args_in_preds;
+		args_in_groups.resize(pdb_groups.size());
+		int arg_pat = pat;
+		for (int a = 0; a < args_in_groups.size(); ++a) {
+			args_in_groups[a] = arg_pat % pdb_groups[a].size();
+			arg_pat /= pdb_groups[a].size();
+		}
+
+//		std::cout << "pat = ";
+		for (int a = 0; a < args_in_groups.size(); ++a) {
+//			std::cout << "(" << g_predicates->at(groups[a][args_in_groups[a]]).symbol << ") ";
+			args_in_preds.push_back(pdb_groups[a][args_in_groups[a]]);
+		}
+		std::sort(args_in_preds.begin(), args_in_preds.end());
+
+		all_patterns_preds.push_back(args_in_preds);
+	}
+
+// TODO: here, we got init state as args_in_preds.
+//       we need to run search from this init state to the goal state, or the other way around.
+//       efficient way is to trace back from the goal state. how do i do that?
+// pattern: abstract
+
+	dijkstra(all_patterns_preds, pdb_groups);
+// input: patterns, ungroupeds, simplified actions,
 
 //	pd.addPattern()
 
+	pd->setGroups(pdb_groups);
+
+	pd->dump_all(name);
+
+}
+
+void Strips::dijkstra(std::vector<std::vector<unsigned int> > patterns,
+		std::vector<std::vector<unsigned int> > groups) {
+// 1. list transition actions which traverse patterns.
+// 2. breadth first search to list all patterns.
+//	std::cout << "Dijkstra init" << std::endl;
+	std::cout << "Dijkstra" << std::endl;
+
+	Dijkstra *search = new Dijkstra(*this, patterns, groups, ungroupeds);
+
+	Strips::State init;
+	init.propositions = goal_condition;
+	init.h = 0;
+
+	buildRegressionTree();
+
+	search->search(init, 60.0 * 1);
+//	print_plan(path);
+
+	std::vector<unsigned int> costs = search->get_costs();
+
+	for (int p = 0; p < costs.size(); ++p) {
+		std::cout << p << " " << costs[p] << std::endl;
+		if (costs[p] != -1) {
+			pd->addPattern(p, costs[p]);
+		}
+	}
+	std::cout << search->expd << " nodes expanded" << std::endl;
+
+	delete search;
+}
+
+void Strips::buildRegressionTree() {
+// TODO: duplicated computation. wouldn't be so heavy i guess.
+	std::vector<unsigned int> feasible_actions;
+	listFeasibleActions(g_feasible_predicates, feasible_actions);
+
+	for (int i = 0; i < feasible_actions.size(); ++i) {
+		Action action = actionTable.getAction(feasible_actions[i]);
+		// TODO: check if the action changes pattern. if not then discard.
+		//       if any of add effect contains any of groups, then put that in the tree.
+
+		// TODO: this is not working for now.
+		if (isAnyNotContainedSortedVectors(action.adds, ungroupeds)) {
+			rActionTrie.addRegressionAction(action);
+		}
+	}
+
+	std::cout << "size of regression trie = " << rActionTrie.getSize()
+			<< std::endl;
 }
 
 ////////////////////////////////////////////
@@ -193,39 +385,45 @@ Strips::Strips(std::istream & domain, std::istream & instance) {
 //	std::vector<unsigned int> g_feasible_predicates;
 
 //	std::vector < Action >
+
+	readDomainName(domain);
+	readInstanceName(instance);
+
 	readRequirements(domain);
 
-	// TODO: if (:requirements :typing) then
-	// TODO: learning types needed.
+// TODO: if (:requirements :typing) then
+// TODO: learning types needed.
 	readTypes(domain, predicates);
 
-	// 1. learn predicates from domain.pddl
+// 1. learn predicates from domain.pddl
 	std::cout << "parsing predicates..." << std::endl;
 	readPredicates(domain, predicates);
 	std::cout << "generated " << predicates.size() << " lifted predicates."
 			<< std::endl;
 
-	// 2. learn objects instance.pddl.
+// 2. learn objects instance.pddl.
 	std::cout << "parsing objects..." << std::endl;
 	readObjects(instance);
 	std::cout << "generated " << objects.size() << " objects." << std::endl;
 
-	// 3. instantiate all predicates.
+// 3. instantiate all predicates.
 	std::cout << "grounding all predicates..." << std::endl;
 	g_predicates = new std::vector<GroundedPredicate>();
 	groundPredicates(predicates, objects, *g_predicates);
 	std::cout << "generated " << g_predicates->size() << " grounded predicates."
 			<< std::endl;
 
-	// 4. read initial state from instance.pddl.
+// 4. read initial state from instance.pddl.
 	std::cout << "parsing initial state..." << std::endl;
 	readInit(instance, *g_predicates);
+	std::cout << init_state.size() << " predicates." << std::endl;
 
-	// 5. read goal condition from instance.pddl.
+// 5. read goal condition from instance.pddl.
 	std::cout << "parsing goal condition..." << std::endl;
 	readGoal(instance, *g_predicates);
+	std::cout << goal_condition.size() << " predicates." << std::endl;
 
-	// 6. read actions from domain.pddl.
+// 6. read actions from domain.pddl.
 	std::cout << "parsing actions..." << std::endl;
 	readAction(domain, objects, predicates, *g_predicates);
 
@@ -233,17 +431,17 @@ Strips::Strips(std::istream & domain, std::istream & instance) {
 			<< std::endl;
 //	actionTable.printAllActions();
 
-	// 7. list all feasible predicates to be true.
-	// init state, actions,
-	// TODO: this can be a bit more pruned by forward delete-reduction search.
-	//       if the predicate doesn't appear in delete-reduction brute force search, then
-	//       the predicate is not feasible.
+// 7. list all feasible predicates to be true.
+// init state, actions,
+// TODO: this can be a bit more pruned by forward delete-reduction search.
+//       if the predicate doesn't appear in delete-reduction brute force search, then
+//       the predicate is not feasible.
 	std::cout << "calculating feasible predicates..." << std::endl;
 	listFeasiblePredicates(g_feasible_predicates);
 	std::cout << g_feasible_predicates.size() << " predicates feasible."
 			<< std::endl;
 
-	// 8. list all feasible actions.
+// 8. list all feasible actions.
 	std::cout << "calculating feasible actions..." << std::endl;
 	std::vector<unsigned int> feasible_actions;
 	listFeasibleActions(g_feasible_predicates, feasible_actions);
@@ -252,6 +450,11 @@ Strips::Strips(std::istream & domain, std::istream & instance) {
 	std::cout << "building action trie..." << std::endl;
 	buildActionTrie(feasible_actions);
 	std::cout << "done!" << std::endl;
+
+// 9. list all feasible predicates again with feasible_actions.
+	listFeasiblePredicatesWithActions(g_feasible_predicates, feasible_actions);
+	std::cout << g_feasible_predicates.size() << " predicates feasible."
+			<< std::endl;
 
 //	actionTrie.printTree();
 
@@ -268,10 +471,14 @@ Strips::Strips(std::istream & domain, std::istream & instance) {
 //		actionTable.getAction(init_actions[i]).print();
 //	}
 
+//	std::cout << "building regression tree for PDB..." << std::endl;
+//	buildRegressionTree(feasible_actions);
+
+// this is only for HDA* or PDB, but we can just analyze them everytime.
 	std::cout << "analyzing balances of predicates..." << std::endl;
+	analyzeAllBalances(predicates);
 
-
-//	analyzeAllBalances(predicates);
+	analyzeXORGroups();
 
 	/**
 	 * input PDDL structure
@@ -295,20 +502,20 @@ Strips::Strips(std::istream & domain, std::istream & instance) {
 	 *     1. goal conditions
 	 */
 
-	// overall output goal:
-	// 1. build proposition library (prefix tree)
-	// 2. build action library (action table)
-	// 3. set initial&goal state.
-	// all possible predicates
-	//
-	// 0. :requirements :strips (typing is not supported yet)
-	// 1. :predicates learn predicates from domain
-	// 2. instantiate all predicates from instance.pddl.
-	// 3. learn add&delete effects for each actions.
-	// 4. from initial state & add effect, list all possible predicates.
-	// 5. instantiate all actions.
-	// 6. from the list of all possible predicates, list all possible actions.
-	// 7. make prefix tree of preconditions&actions. (TODO: search how to make prefix tree)
+// overall output goal:
+// 1. build proposition library (prefix tree)
+// 2. build action library (action table)
+// 3. set initial&goal state.
+// all possible predicates
+//
+// 0. :requirements :strips (typing is not supported yet)
+// 1. :predicates learn predicates from domain
+// 2. instantiate all predicates from instance.pddl.
+// 3. learn add&delete effects for each actions.
+// 4. from initial state & add effect, list all possible predicates.
+// 5. instantiate all actions.
+// 6. from the list of all possible predicates, list all possible actions.
+// 7. make prefix tree of preconditions&actions. (TODO: search how to make prefix tree)
 }
 
 //BOOST_FUSION_ADAPT_STRUCT( Strips::Predicate,
@@ -327,6 +534,36 @@ Strips::Strips(std::istream & domain, std::istream & instance) {
 //	qi::rule<Iterator, unsigned(), ascii::space_type> args;
 //	qi::rule<Iterator, Strips::Predicate(), ascii::space_type> start;
 //};
+
+void Strips::readDomainName(std::istream &domain) {
+	domain.seekg(0, std::ios_base::beg);
+	std::string text;
+	getBracket(domain, "domain", 0, text);
+	std::vector<std::string> forward_delimeds = split(text, ' ');
+	std::vector<std::string> backward_delimeds = split(forward_delimeds[2],
+			')');
+	domain_ = backward_delimeds[0];
+	std::cout << "domain name = " << domain_ << std::endl;
+}
+
+void Strips::readInstanceName(std::istream &instance) {
+	instance.seekg(0, std::ios_base::beg);
+	std::string text;
+	getBracket(instance, "problem", 0, text);
+	std::vector<std::string> forward_delimeds = split(text, ' ');
+	if (forward_delimeds.size() < 3) {
+		std::cout << "instance name broken" << std::endl;
+		std::cout << "text = " << text;
+
+		instance_ = "";
+		return;
+	}
+	std::vector<std::string> backward_delimeds = split(forward_delimeds[2],
+			')');
+	instance_ = backward_delimeds[0];
+	std::cout << "instance name = " << instance_ << std::endl;
+}
+
 void Strips::readRequirements(std::istream &domain) {
 	domain.seekg(0, std::ios_base::beg);
 	std::string text;
@@ -391,8 +628,8 @@ void Strips::readTypes(std::istream &domain,
 	std::string text;
 	getBracket(domain, ":types", 0, text);
 	std::cout << "types = " << text << std::endl;
-	// structure
-	// type type type - type
+// structure
+// type type type - type
 
 }
 
@@ -476,7 +713,7 @@ void Strips::readInit(std::istream &instance,
 	size_t pos;
 	std::vector<std::string> strings;
 
-	// put total_text the text for inital state.
+// put total_text the text for inital state.
 	while (instance.good()) {
 		getline(instance, line); // get line from file
 		std::transform(line.begin(), line.end(), line.begin(), ::tolower);
@@ -499,12 +736,12 @@ void Strips::readInit(std::istream &instance,
 		}
 	}
 
-	// parse the total_text.
+// parse the total_text.
 //	std::cout << "inital state: " << total_text << std::endl;
 
 	std::vector<std::string> symbols; // parse into here.
 
-	// now we need to parse total text into vector of strings(symbols).
+// now we need to parse total text into vector of strings(symbols).
 	std::vector<std::string> forward_delimeds = split(total_text, '(');
 	for (int i = 2; i < forward_delimeds.size(); ++i) {
 		std::vector<std::string> token = split(forward_delimeds[i], ')');
@@ -538,14 +775,14 @@ void Strips::readGoal(std::istream &instance,
 	getText(instance, ":goal", ")))", 0, text);
 	instance.clear();
 
-	// parse the total_text.
+// parse the total_text.
 //	std::cout << "goal state: " << text << std::endl;
 
 	std::vector<std::string> symbols; // parse into here.
 
-	// now we need to parse total text into vector of strings(symbols).
+// now we need to parse total text into vector of strings(symbols).
 	std::vector<std::string> forward_delimeds = split(text, '(');
-	for (int i = 3; i < forward_delimeds.size(); ++i) {
+	for (int i = 1; i < forward_delimeds.size(); ++i) {
 		std::vector<std::string> token = split(forward_delimeds[i], ')');
 
 		symbols.push_back(token[0]);
@@ -578,11 +815,11 @@ void Strips::readGoal(std::istream &instance,
  */
 void Strips::readAction(std::istream &domain, std::vector<Object> obs,
 		std::vector<Predicate> ps, std::vector<GroundedPredicate> gs) {
-	// 1. read parameters.
-	// 2. read precondition (lifted).
-	// 3. read add&delete effect (lifted).
-	// 4. assign objects for parameters and ground preconditions & effects.
-	// 5. build Action.
+// 1. read parameters.
+// 2. read precondition (lifted).
+// 3. read add&delete effect (lifted).
+// 4. assign objects for parameters and ground preconditions & effects.
+// 5. build Action.
 	std::vector<std::string> parameters;
 
 	std::string text;
@@ -830,11 +1067,17 @@ void Strips::listFeasiblePredicates(std::vector<unsigned int>& gs) {
 	gs.erase(unique(gs.begin(), gs.end()), gs.end());
 }
 
+// When the action is feasible?
+//  1. preconditions need to be feasible predicates.
+//  2. add and delete effects have no predicates in common.
+//  3.
 void Strips::listFeasibleActions(std::vector<unsigned int> gs,
 		std::vector<unsigned int>& actions) {
 	for (int a = 0; a < actionTable.getSize(); ++a) {
 		Action action = actionTable.getAction(a);
 		bool isFeasible = true;
+
+		//  1. preconditions need to be feasible predicates.
 		for (int prec = 0; prec < action.preconditions.size(); ++prec) {
 			if (std::find(gs.begin(), gs.end(), action.preconditions[prec])
 					== gs.end()) {
@@ -842,10 +1085,42 @@ void Strips::listFeasibleActions(std::vector<unsigned int> gs,
 				break;
 			}
 		}
-		if (isFeasible) {
+		if (!isFeasible) {
+			continue;
+		}
+
+		//  2. add and delete effects have no predicates in common.
+		unsigned int intersection = howManyContainedSortedVectors(action.adds,
+				action.deletes);
+		if (intersection == 0) {
 			actions.push_back(a);
+			continue;
+		} else {
+			std::cout << "contradictory action: " << "(" << action.name << ")"
+					<< std::endl;
+		}
+
+	}
+}
+
+void Strips::listFeasiblePredicatesWithActions(std::vector<unsigned int>& gs,
+		std::vector<unsigned int>& actions) {
+// 1. add all predicates in initial state.
+// 2. for all actions in action trie, add all predicates listed in all add effects.
+	gs.clear();
+	for (int i = 0; i < init_state.size(); ++i) {
+		gs.push_back(init_state[i]);
+	}
+
+	for (int a = 0; a < actions.size(); ++a) {
+		Action act = actionTable.getAction(actions[a]);
+		for (int p = 0; p < act.adds.size(); ++p) {
+			gs.push_back(act.adds[p]);
 		}
 	}
+
+	std::sort(gs.begin(), gs.end());
+	gs.erase(unique(gs.begin(), gs.end()), gs.end());
 }
 
 void Strips::buildActionTrie(std::vector<unsigned> keys) {
@@ -868,12 +1143,12 @@ std::vector<unsigned int> Strips::analyzeBalance(unsigned int p,
 	std::string prefix((predicates.size() - 1) * 4, ' ');
 
 	if (predicates.size() == predargs.size()) {
-		std::cout << prefix << "failed" << std::endl;
+//		std::cout << prefix << "failed" << std::endl;
 		return std::vector<unsigned int>();
 	}
 
-	// list all actions which adds p.
-	// TODO: would this be predicates not p? let's try it.
+// list all actions which adds p.
+// TODO: would this be predicates not p? let's try it.
 	std::vector<LiftedActionArg> actions_add_p;
 	for (int a = 0; a < laas.size(); ++a) {
 		std::vector<unsigned int> adds = laas[a].lf.addsInst;
@@ -885,12 +1160,12 @@ std::vector<unsigned int> Strips::analyzeBalance(unsigned int p,
 		}
 	}
 
-	std::cout << prefix << actions_add_p.size() << " actions: ";
-	for (int a = 0; a < actions_add_p.size(); ++a) {
-		std::cout << "(" << actions_add_p[a].lf.symbol << "-"
-				<< actions_add_p[a].instantiated_arg << ") ";
-	}
-	std::cout << std::endl;
+//	std::cout << prefix << actions_add_p.size() << " actions: ";
+//	for (int a = 0; a < actions_add_p.size(); ++a) {
+//		std::cout << "(" << actions_add_p[a].lf.symbol << "-"
+//				<< actions_add_p[a].instantiated_arg << ") ";
+//	}
+//	std::cout << std::endl;
 
 // Check if ALL actions should hold the balance.
 	bool allActionsValid = true;
@@ -903,13 +1178,13 @@ std::vector<unsigned int> Strips::analyzeBalance(unsigned int p,
 		}
 	}
 
-	// if all actions valid, then the set "predicates" are balanced.
+// if all actions valid, then the set "predicates" are balanced.
 	if (allActionsValid) {
 		// Here, we got the return we really want to.
-		std::cout << prefix << "  group found!: ";
+//		std::cout << prefix << "  group found!: ";
 		for (int g = 0; g < predicates.size(); ++g) {
 			if (predargs[predicates[g]].group_key != -1) {
-				std::cout << prefix << "  reserved" << std::endl;
+//				std::cout << prefix << "  reserved" << std::endl;
 				return predicates;
 			}
 		}
@@ -918,12 +1193,12 @@ std::vector<unsigned int> Strips::analyzeBalance(unsigned int p,
 			predargs[predicates[g]].group_key = n_groups;
 		}
 		++n_groups;
-		for (int g = 0; g < predicates.size(); ++g) {
-			std::cout << "(" << predargs[predicates[g]].pred.symbol << "-"
-					<< predargs[predicates[g]].instantiated_arg << ") ";
-		}
-
-		std::cout << std::endl;
+//		for (int g = 0; g < predicates.size(); ++g) {
+//			std::cout << "(" << predargs[predicates[g]].pred.symbol << "-"
+//					<< predargs[predicates[g]].instantiated_arg << ") ";
+//		}
+//
+//		std::cout << std::endl;
 		return predicates;
 	}
 
@@ -957,12 +1232,12 @@ std::vector<unsigned int> Strips::analyzeBalance(unsigned int p,
 				args.push_back(difs[df]);
 				std::sort(args.begin(), args.end());
 
-				std::cout << prefix << "  ";
-				for (int g = 0; g < args.size(); ++g) {
-					std::cout << "(" << predargs[args[g]].pred.symbol << "-"
-							<< predargs[args[g]].instantiated_arg << ") ";
-				}
-				std::cout << std::endl;
+//				std::cout << prefix << "  ";
+//				for (int g = 0; g < args.size(); ++g) {
+//					std::cout << "(" << predargs[args[g]].pred.symbol << "-"
+//							<< predargs[args[g]].instantiated_arg << ") ";
+//				}
+//				std::cout << std::endl;
 
 				std::vector<unsigned int> c = analyzeBalance(difs[df], args,
 						laas);
@@ -994,18 +1269,18 @@ std::vector<unsigned int> Strips::analyzeBalance(unsigned int p,
 }
 
 void Strips::analyzeAllBalances(std::vector<Predicate> ps) {
-	for (int i = 0; i < lActions.size(); ++i) {
-		std::cout << lActions[i].symbol << std::endl;
-		for (int a = 0; a < lActions[i].adds.size(); ++a) {
+//	for (int i = 0; i < lActions.size(); ++i) {
+//		std::cout << lActions[i].symbol << std::endl;
+//		for (int a = 0; a < lActions[i].adds.size(); ++a) {
 //			std::cout << lActions[i].adds[a].first << " ";
-			std::cout << "(" << ps[lActions[i].adds[a].first].symbol;
-			for (int arg = 0; arg < lActions[i].adds[a].second.size(); ++arg) {
-				std::cout << " " << lActions[i].adds[a].second[arg];
-			}
-			std::cout << ")";
-			std::cout << std::endl;
-		}
-	}
+//			std::cout << "(" << ps[lActions[i].adds[a].first].symbol;
+//			for (int arg = 0; arg < lActions[i].adds[a].second.size(); ++arg) {
+//				std::cout << " " << lActions[i].adds[a].second[arg];
+//			}
+//			std::cout << ")";
+//			std::cout << std::endl;
+//		}
+//	}
 
 //	return;
 //	std::vector<PredicateArg> predargs;
@@ -1077,190 +1352,161 @@ void Strips::analyzeAllBalances(std::vector<Predicate> ps) {
 		}
 	}
 
-	std::cout << "LiftedActionArgs & adds" << std::endl;
-	for (int i = 0; i < laas.size(); ++i) {
-		std::cout << laas[i].lf.symbol << "-" << laas[i].instantiated_arg
-				<< std::endl;
-		std::cout << "adds: ";
-		for (int a = 0; a < laas[i].lf.addsInst.size(); ++a) {
-			std::cout << "(" << predargs[laas[i].lf.addsInst[a]].pred.symbol
-					<< "-" << predargs[laas[i].lf.addsInst[a]].instantiated_arg
-					<< ") ";
-		}
-
-		std::cout << std::endl << "dels: ";
-		for (int a = 0; a < laas[i].lf.delsInst.size(); ++a) {
-			std::cout << "(" << predargs[laas[i].lf.delsInst[a]].pred.symbol
-					<< "-" << predargs[laas[i].lf.delsInst[a]].instantiated_arg
-					<< ") ";
-		}
-		std::cout << std::endl;
-	}
+//	std::cout << "LiftedActionArgs & adds" << std::endl;
+//	for (int i = 0; i < laas.size(); ++i) {
+//		std::cout << laas[i].lf.symbol << "-" << laas[i].instantiated_arg
+//				<< std::endl;
+//		std::cout << "adds: ";
+//		for (int a = 0; a < laas[i].lf.addsInst.size(); ++a) {
+//			std::cout << "(" << predargs[laas[i].lf.addsInst[a]].pred.symbol
+//					<< "-" << predargs[laas[i].lf.addsInst[a]].instantiated_arg
+//					<< ") ";
+//		}
+//
+//		std::cout << std::endl << "dels: ";
+//		for (int a = 0; a < laas[i].lf.delsInst.size(); ++a) {
+//			std::cout << "(" << predargs[laas[i].lf.delsInst[a]].pred.symbol
+//					<< "-" << predargs[laas[i].lf.delsInst[a]].instantiated_arg
+//					<< ") ";
+//		}
+//		std::cout << std::endl;
+//	}
 
 	std::vector<std::vector<unsigned int>> groups;
-	std::cout << "PredicateArgs" << std::endl;
+//	std::cout << "PredicateArgs" << std::endl;
 	for (int i = 0; i < predargs.size(); ++i) {
 		if (predargs[i].group_key == -1) {
 			std::vector<unsigned int> pss;
 			pss.push_back(predargs[i].key);
-			std::cout << predargs[i].pred.symbol << "/"
-					<< predargs[i].instantiated_arg << std::endl;
+//			std::cout << predargs[i].pred.symbol << "/"
+//					<< predargs[i].instantiated_arg << std::endl;
 			groups.push_back(analyzeBalance(predargs[i].key, pss, laas));
 		}
 	}
 
-	for (int i = 0; i < predargs.size(); ++i) {
-		std::cout << "(" << predargs[i].pred.symbol << "-"
-				<< predargs[i].instantiated_arg << "):" << predargs[i].group_key
-				<< " ";
-		std::cout << std::endl;
-	}
+//	for (int i = 0; i < predargs.size(); ++i) {
+//		std::cout << "(" << predargs[i].pred.symbol << "-"
+//				<< predargs[i].instantiated_arg << "):" << predargs[i].group_key
+//				<< " ";
+//		std::cout << std::endl;
+//	}
 
-	buildPDB();
+//	buildPDB();
 
 }
 
-//std::vector<unsigned int> Strips::analyzeBalance(unsigned int tail,
-//		const std::vector<unsigned int>& predicates) {
-//
-//	std::string prefix((predicates.size() - 1) * 4, ' ');
-//
-//	std::vector<Action> actions = actionTable.getActionsWhichAdds(tail);
-//
-//	std::cout << prefix << "actions: "; // << "testing preds: ";
-//	for (int i = 0; i < actions.size(); ++i) {
-//		std::cout << "(" << actions[i].name << ")" << " ";
-//	}
-//	std::cout << std::endl;
-//	std::cout << prefix; // << "testing preds: ";
-//	for (int i = 0; i < predicates.size(); ++i) {
-//		GroundedPredicate g = g_predicates->at(predicates[i]);
-//		std::cout << "(" << g.symbol << ")" << " ";
-//	}
-//
-////	std::cout << std::endl;
-//
-//
-//	if (actions.size() == 0) {
-//		// is there any case for it?
-//		return predicates;
-//	}
-//
-//	std::vector<std::vector<unsigned int>> rets;
-//	rets.resize(actions.size());
-//
-//	bool isEdge = true;
-//
-//	// For All Actions, there need to be the exact same balancing predicates.
-//	for (int a = 0; a < actions.size(); ++a) {
-//		std::vector<unsigned int> ret_a;
-//		std::vector<unsigned int> dels = actions[a].deletes;
-//		bool hasFound = false;
-//
-//		// If one of the delete effect is in predicates, then the action is balancing.
-//		// TODO: what if there are two delete effects for predicates? it will break the balance.
-//		for (int d = 0; d < dels.size(); ++d) {
-//			if (std::find(predicates.begin(), predicates.end(), dels[d])
-//					!= predicates.end()) {
-//				ret_a = predicates;
-//				hasFound = true;
-//				break;
-//			}
-//		}
-//		if (hasFound) {
-////			std::cout << "- o" << std::endl;
-//			rets[a] = ret_a;
-//			continue;
-//		}
-//
-//		if (isEdge) {
-//			isEdge = false;
-//			std::cout << std::endl;
-//		}
-////		std::cout << std::endl;
-//
-//
-//		std::cout << prefix << "  " << "a: " << actions[a].name
-//				<< std::endl;
-//		// If none of the delete effect is in predicates, then need to find
-//		// any of them can be balanced if you add new predicate in predicates.
-//		for (int d = 0; d < dels.size(); ++d) {
-//			std::vector<unsigned int> newpreds(predicates);
-//			newpreds.push_back(dels[d]);
-//			std::vector<unsigned int> r = analyzeBalance(dels[d], newpreds);
-//			// TODO: not sure it works or not.
-//			if (r.size() > 0) {
-//				rets[a] = r;
-//				hasFound = true;
-//				break;
-//			}
-//		}
-//		if (hasFound) {
-//			rets[a] = ret_a;
-//			continue;
-//		}
-//
-//		rets[a] = predicates;
-//	}
-//
-//	if (isEdge == true) {
-//		std::cout << "- o" << std::endl;
-//	}
-//	std::vector<unsigned int> ret = rets[0];
-//
-//	// 1. if any of the action is not valid, then we failed to make correct group of predicates.
-//	// 2. if all of the action is valid, then we got a correct group.
-//	//    we further need to add all predicates that children contain.
-//	for (int a = 0; a < actions.size(); ++a) {
-//		if (rets[a].size() == 0) {
-//			// This means we failed to make correct group of predicates.
-//			std::cout << prefix << "didn't work" << std::endl;
-//			return rets[a];
-//		}
-//		uniquelyMergeSortedVectors(ret, rets[a]);
-//	}
-////	std::cout << prefix << "grouped: ";
-////
-////	for (int i = 0; i < ret.size(); ++i) {
-////		GroundedPredicate g = g_predicates->at(ret[i]);
-////		std::cout << "(" << g.symbol << ")" << " ";
-////	}
-////	std::cout << std::endl;
-//	return ret;
-//}
+void Strips::analyzeXORGroups() {
+	for (int g = 0; g < n_groups; ++g) {
+		std::vector<unsigned int> preds;
+		// list predicates in group.
+		for (int p = 0; p < predargs.size(); ++p) {
+			if (predargs[p].group_key == g) {
+				preds.push_back(p);
+			}
+		}
+		// instantiate predicates for all objects.
+		// HERE, in this iteration, we build one abstraction.
+		for (int obj = 0; obj < objects.size(); ++obj) {
+			std::vector<unsigned int> g_preds;
+			for (int p = 0; p < preds.size(); ++p) {
+				for (int g = 0; g < g_predicates->size(); ++g) {
+					if (predargs[preds[p]].matches(g_predicates->at(g), obj)) {
+						if (find(g_feasible_predicates.begin(),
+								g_feasible_predicates.end(), g)
+								!= g_feasible_predicates.end()) {
+							g_preds.push_back(g);
+						}
+					}
+				}
+			}
+			if (g_preds.size() > 1) {
+				xor_groups.push_back(g_preds);
+			}
+		}
+	}
+	std::cout << "XORing groups for Strucuterd Zobrist" << std::endl;
+	for (int g = 0; g < xor_groups.size(); ++g) {
+		std::cout << g << " group: ";
+		for (int p = 0; p < xor_groups[g].size(); ++p) {
+			std::cout << "(" << g_predicates->at(xor_groups[g][p]).symbol
+					<< ") ";
+		}
+		std::cout << std::endl;
+	}
 
-//void Strips::analyzeAllBalances() {
-//	// TODO: is goal conditions enough?
-//	std::vector<std::vector<unsigned int> > groups;
-//	groups.resize(goal_condition.size());
-//	for (int i = 0; i < goal_condition.size(); ++i) {
-//		std::vector<unsigned int> gs(1, goal_condition[i]);
-//		groups[i] = analyzeBalance(goal_condition[i], gs);
-//	}
-//
-//
-//	for (int g = 0; g < groups.size(); ++g) {
-//		std::cout << "group" << g << ": ";
-//		for (int p = 0; p < groups[g].size(); ++p) {
-//			GroundedPredicate gp = g_predicates->at(groups[g][p]);
-//			std::cout << "(" << gp.symbol << ")" << " ";
-//		}
-//		std::cout << std::endl;
-//	}
-//
-//
-//	// for all goal condition,
-//	//    initialize a list of predicates P.
-//	//    find all actions that add the predicate.
-//	//    for all actions found,
-//	//       list delete effects.
-//	//       for all delete effects (del)
-//	//          if it is in P, then continue.
-//	//          if it is not in P,
-//	//             analyze balance of P + del.
-//	//             if P + del balances, then return P + del.
-//	//             if not, then return false.
-//}
+
+
+	/////////////////////////////////////
+	/// Transition analysis
+	/////////////////////////////////////
+	std::vector<std::vector<std::vector<unsigned int> > > xor_groups_transitions;
+	xor_groups_transitions.resize(xor_groups.size());
+	for (int g = 0; g < xor_groups.size(); ++g) {
+		xor_groups_transitions[g].resize(xor_groups[g].size());
+	}
+	// find all actions to delete the predicate.
+	// for all that actions, find the replacing group predicate.
+	// list up transitions.
+
+	for (int g = 0; g < xor_groups.size(); ++g) {
+		for (int p = 0; p < xor_groups[g].size(); ++p) {
+			std::vector<Action> actions = actionTable.getActionsWhichDeletes(xor_groups[g][p]);
+			std::vector<unsigned int> transitions;
+			for (int a = 0; a < actions.size(); ++a) {
+				std::vector<unsigned int> adds = actions[a].adds;
+				// a bit of duplicate.
+				std::vector<unsigned int> t = intersectingSortedVectors(xor_groups[g], adds);
+				std::vector<unsigned int> buf = uniquelyMergeSortedVectors(transitions, t);
+				transitions = buf;
+			}
+			xor_groups_transitions[g][p] = transitions;
+		}
+	}
+
+	std::cout << "Transition groups for Strucuterd Zobrist" << std::endl;
+	for (int g = 0; g < xor_groups_transitions.size(); ++g) {
+		std::cout << g << " group: ";
+		for (int p = 0; p < xor_groups_transitions[g].size(); ++p) {
+			std::cout << xor_groups[g][p] << " -> ";
+			for (int t = 0; t < xor_groups_transitions[g][p].size(); ++t) {
+				std::cout << xor_groups_transitions[g][p][t] << " ";
+			}
+			std::cout << std::endl;
+		}
+	}
+
+	/////////////////////////////////////
+	// list of ungroupeds.
+	/////////////////////////////////////
+
+	for (int p = 0; p < g_feasible_predicates.size(); ++p) {
+		bool grouped = false;
+		for (int gs = 0; gs < xor_groups.size(); ++gs) {
+			for (int m = 0; m < xor_groups[gs].size(); ++m) {
+				if (xor_groups[gs][m] == g_feasible_predicates[p]) {
+					grouped = true;
+					break;
+				}
+			}
+			if (grouped) {
+				break;
+			}
+		}
+		if (!grouped) {
+			xor_ungroupeds.push_back(g_feasible_predicates[p]);
+		}
+	}
+
+	std::sort(ungroupeds.begin(), ungroupeds.end());
+
+	std::cout << "xor_ungroupeds = ";
+	for (int p = 0; p < xor_ungroupeds.size(); ++p) {
+		std::cout << "(" << g_predicates->at(xor_ungroupeds[p]).symbol << ") ";
+	}
+	std::cout << std::endl;
+
+
+}
 
 int Strips::pow(int base, int p) {
 	int ret = 1;
@@ -1287,7 +1533,7 @@ void Strips::print_plan(std::vector<State>& path) const {
 		std::cout << "failed to find a plan." << std::endl;
 		return;
 	}
-	print_state(path[path.size() - 1].propositions);
+//	print_state(path[path.size() - 1].propositions);
 	for (int i = path.size() - 2; i >= 0; --i) {
 		print_state(path[i + 1].propositions);
 	}

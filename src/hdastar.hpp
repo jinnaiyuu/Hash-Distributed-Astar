@@ -455,9 +455,13 @@ public:
 
 //			buffer<Node>* buffers;
 
-			for (int i = 0; i < this->dom.nops(state); i++) {
+			// TODO: this is only applicable for STRIPS planning.
+			std::vector<unsigned int> ops = this->dom.ops(state);
+			for (int i = 0; i < ops.size(); i++) {
+//				for (int i = 0; i < this->dom.nops(state); i++) {
 				// op is the next blank position.
-				int op = this->dom.nthop(state, i);
+				int op = ops[i];
+//				int op = this->dom.nthop(state, i);
 				if (op == n->pop) {
 					//					printf("erase %d \n", i);
 					continue;
@@ -483,17 +487,17 @@ public:
 				/// Compare states
 				/// 1. operation working fine
 				///////////////////////////
-//				if (n->f > next->f) {
-//					// heuristic was calculating too big.
-//					printf("!!!ERROR: f decreases: %u %u\n", n->f, next->f);
-//					unsigned int nh = n->f - n->g;
-//					unsigned int nxh = next->f - next->g;
-//					printf("h = %u %u\n", nh, nxh);
-//					printf("cost = %d\n", e.cost);
-//				}
-//				if (static_cast<unsigned int>(n->g + e.cost) != static_cast<unsigned int>(next->g)) {
-//					printf("!!!ERROR: g is wrong: %u + %d != %u\n", n->g, e.cost, next->g);
-//				}
+				if (n->f > next->f) {
+					// heuristic was calculating too big.
+					printf("!!!ERROR: f decreases: %u %u\n", n->f, next->f);
+					unsigned int nh = n->f - n->g;
+					unsigned int nxh = next->f - next->g;
+					printf("h = %u %u\n", nh, nxh);
+					printf("cost = %d\n", e.cost);
+				}
+				if (static_cast<unsigned int>(n->g + e.cost) != static_cast<unsigned int>(next->g)) {
+					printf("!!!ERROR: g is wrong: %u + %d != %u\n", n->g, e.cost, next->g);
+				}
 
 
 //				if (next->f > incumbent.load()) {

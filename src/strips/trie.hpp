@@ -21,7 +21,7 @@
 class Trie {
 	class Node {
 	public:
-		Node() {
+		Node(){
 			mMarker = false;
 		}
 		~Node() {
@@ -85,13 +85,21 @@ public:
 	Trie(const Trie& other);
 	~Trie(); // this gonna take some time.
 	void addAction(const Action& a);
+	void addRegressionAction(const Action& a);
 	std::vector<unsigned int> searchPossibleActions(
 			const std::vector<unsigned int>& p) const;
+	std::vector<unsigned int> searchPossibleActionsBackward(
+			const std::vector<unsigned int>& p) const;
+
 	void printTree() const;
+	unsigned int getSize() const {
+		return nActions;
+	}
 private:
 	void searchNodes(Node* current, const std::vector<unsigned int>& p,
 			std::vector<unsigned int>& actions) const;
 	Node* root;
+	unsigned int nActions;
 };
 
 #endif

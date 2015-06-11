@@ -6,4 +6,4 @@ make
 
 #scp  ./tiles supermicro@supermicro:/home/supermicro/workspace/15puzzle/
 scp  ./tiles aflab@supermicro16:/home/aflab/workspace/15puzzle/
-scp  ./tiles aflab@supermicro16:/home/aflab/workspace/strips/
+scp  ./strips.out aflab@supermicro16:/home/aflab/workspace/strips/

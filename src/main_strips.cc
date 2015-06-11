@@ -78,7 +78,20 @@ int main(int argc, const char *argv[]) {
 				break;
 			}
 		}
+
+		// if PDB heuristic
+		if (h == 3) {
+			unsigned int pdb = 0;
+			for (unsigned int i = 0; i < argc; ++i) {
+				if (sscanf(argv[i], "pdb-%u", &pdb) == 1) {
+					break;
+				}
+			}
+			strips.set_pdb(pdb);
+		}
+
 		strips.set_heuristic(h);
+
 
 		SearchAlg<Strips> *search = NULL;
 		unsigned int n_threads = 1;
@@ -98,14 +111,13 @@ int main(int argc, const char *argv[]) {
 			}
 
 			search = new HDAstar<Strips, StripsZobrist<Strips> >(strips,
-					n_threads,
-					1000000,  // income threshould
+					n_threads, 1000000, // income threshould
 					10000000, // outgo threshould
-					abst,     // abstraction
-					0,        // overrun
-					110503,   // closed list size
-					100,      // open list size
-					10000000  // max cost
+					abst, // abstraction
+					0, // overrun
+					110503, // closed list size
+					100, // open list size
+					10000000 // max cost
 					);
 
 		} else {
