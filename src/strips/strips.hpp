@@ -204,7 +204,6 @@ struct Strips {
 		std::string lifted_symbol;
 		std::vector<unsigned int> arguments;
 
-
 		bool isEqual(unsigned int lifted_key, std::vector<unsigned int> arguments) {
 			return (this->lifted_key == lifted_key) && (this->arguments == arguments);
 		}
@@ -286,6 +285,8 @@ private:
 	std::vector<unsigned int> init_state;
 	std::vector<unsigned int> goal_condition;
 	std::vector<GroundedPredicate>* g_predicates;
+	std::vector<unsigned int> g_predicates_index; // index for head lifted predicate key in g_predicates.
+//	GroundedPredicateTable g_predicatess;
 
 	bool is_delete_relaxed = false;
 

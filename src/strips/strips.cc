@@ -675,6 +675,7 @@ void Strips::groundPredicates(std::vector<Predicate>& ps,
 		std::vector<Object>& obs, std::vector<GroundedPredicate>& gs) {
 	int gnum = 0; // TODO: should collapse with gs.size()
 	for (int pnum = 0; pnum < ps.size(); ++pnum) {
+	    g_predicates_index.push_back(gnum);
 		unsigned int argc = ps[pnum].number_of_arguments;
 		std::vector<unsigned int> argv;
 		if (argc == 0) { // grounded
@@ -965,9 +966,8 @@ void Strips::readAction(std::istream &domain, std::vector<Object> obs,
 //		}
 
 		lActions.push_back(lf);
+		std::cout << "instantiating " << lf.symbol << "..." << std::endl;
 
-		// TODO: Instantiate lifted action to a grounded actions.
-		//       It is easier if lifted action with arguments is dictionaried.
 		int param_max = pow(obs.size(), parameters.size());
 		for (unsigned int pnum = 0; pnum < param_max; ++pnum) {
 			std::vector<unsigned int> args;
@@ -983,41 +983,52 @@ void Strips::readAction(std::istream &domain, std::vector<Object> obs,
 			std::vector<unsigned int> addnums;
 			std::vector<unsigned int> delnums;
 
+			// TODO: These implementations can be optimized more.
+			//       seems its closed to be able to parse freecell, but still slow.
+			// TODO: build predicate table which return predicate key with lifted key and arguments.
 			for (int i = 0; i < lf.precs.size(); ++i) {
 				std::pair<unsigned int, std::vector<unsigned int>> prec =
 						lf.precs[i];
 				std::vector<unsigned int> prec_arg = getArguements(args,
 						prec.second);
-				for (int j = 0; j < g_predicates->size(); ++j) {
-					if (g_predicates->at(j).isEqual(prec.first, prec_arg)) {
-						precnums.push_back(g_predicates->at(j).key);
-						break;
-					}
+				unsigned key = 0;
+				for(int k = 0; k < prec_arg.size(); ++k) {
+					key = key * obs.size() + prec_arg[k];
 				}
+				key += g_predicates_index[prec.first];
+				precnums.push_back(key);
+
+//				for (int j = 0; j < g_predicates->size(); ++j) {
+//					if (g_predicates->at(j).isEqual(prec.first, prec_arg)) {
+//						precnums.push_back(g_predicates->at(j).key);
+//						std::cout << "key = " << key << ":" << g_predicates->at(j).key << std::endl;
+//						break;
+//					}
+//				}
 			}
 			for (int i = 0; i < lf.adds.size(); ++i) {
 				std::pair<unsigned int, std::vector<unsigned int>> add =
 						lf.adds[i];
 				std::vector<unsigned int> add_arg = getArguements(args,
 						add.second);
-				for (int j = 0; j < g_predicates->size(); ++j) {
-					if (g_predicates->at(j).isEqual(add.first, add_arg)) {
-						addnums.push_back(g_predicates->at(j).key);
-						break;
-					}
+				unsigned key = 0;
+				for(int k = 0; k < add_arg.size(); ++k) {
+					key = key * obs.size() + add_arg[k];
 				}
+				key += g_predicates_index[add.first];
+				addnums.push_back(key);
 			}
 			for (int i = 0; i < lf.dels.size(); ++i) {
 				std::pair<unsigned int, std::vector<unsigned int>> del =
 						lf.dels[i];
 				std::vector<unsigned int> del_arg = getArguements(args,
 						del.second);
-				for (int j = 0; j < g_predicates->size(); ++j) {
-					if (g_predicates->at(j).isEqual(del.first, del_arg)) {
-						delnums.push_back(g_predicates->at(j).key);
-						break;
-					}
+				unsigned key = 0;
+				for(int k = 0; k < del_arg.size(); ++k) {
+					key = key * obs.size() + del_arg[k];
 				}
+				key += g_predicates_index[del.first];
+				delnums.push_back(key);
 			}
 			std::string groundedName = actionname;
 
@@ -1049,140 +1060,6 @@ void Strips::readAction(std::istream &domain, std::vector<Object> obs,
 		// TODO: efficient way is to instantiate lifted actions.
 		//       how can we do that?
 
-		// instantiate grounded actions.
-		// TODO: enable typing
-//		int newactnum = pow(obs.size(), parameters.size());
-//		for (unsigned int newnum = 0; newnum < newactnum; ++newnum) {
-//			std::vector<std::string> args;
-//			args.resize(parameters.size());
-//			// build arguments list.
-//			for (unsigned int arg = 0; arg < parameters.size(); ++arg) {
-//				args[arg] = obs[(newnum
-//						/ pow(obs.size(), parameters.size() - 1 - arg))
-//						% obs.size()].symbol;
-//			}
-//
-////			std::cout << "instantiate with ";
-////			for (unsigned int arg = 0; arg < parameters.size(); ++arg) {
-////				std::cout << args[arg] << " ";
-////			}
-////			std::cout << std::endl;
-//
-//			// TODO: this is the problematic part. inefficient implementation.
-//			// replace arguments with objects.
-//			std::string groundedText = text;
-//			for (unsigned int arg = 0; arg < parameters.size(); ++arg) {
-//				std::string buf = replace(groundedText, parameters[arg],
-//						args[arg]);
-//				groundedText = buf;
-////				std::cout << groundedText << std::endl;
-//
-//			}
-////			std::cout << "grounded text = " << groundedText << std::endl;
-//
-//			// read preconditions and translate into GroundedPredicate keys.
-//			std::string preconditionText = findRange(groundedText,
-//					":precondition", ":effect");
-////			std::cout << "prec = " << preconditionText << std::endl;
-//
-//			std::vector<std::string> preconditions;
-//			std::vector<unsigned int> precnums;
-//
-//			forward_delimeds = split(preconditionText, '(');
-//			for (int i = 1; i < forward_delimeds.size(); ++i) {
-//				//			std::cout << "fd = " << forward_delimeds[i] << std::endl;
-//				std::vector<std::string> token = split(forward_delimeds[i],
-//						')');
-//				if (token[0].compare("and") != 0) {
-//					preconditions.push_back(token[0]);
-//				}
-//			}
-//
-////			std::cout << "preconditions = ";
-////			for (int p = 0; p < preconditions.size(); ++p) {
-////				std::cout << "(" << preconditions[p] << ") ";
-////			}
-////			std::cout << std::endl;
-//			for (int p = 0; p < preconditions.size(); ++p) {
-//				for (int g = 0; g < gs.size(); ++g) {
-//					if (preconditions[p].compare(gs[g].symbol) == 0) {
-//						precnums.push_back(g);
-//					}
-//				}
-//			}
-//			std::sort(precnums.begin(), precnums.end());
-////			for (int p = 0; p < precnums.size(); ++p) {
-////				std::cout << "num = " << precnums[p] << std::endl;
-////			}
-//
-//			std::string effectText = findRange(groundedText, ":effect", ")))");
-//
-//			std::vector<std::string> effects;
-//			std::vector<unsigned int> addnums;
-//			std::vector<unsigned int> delnums;
-//
-//			forward_delimeds = split(effectText, '(');
-//			for (int i = 1; i < forward_delimeds.size(); ++i) {
-//				//			std::cout << "fd = " << forward_delimeds[i] << std::endl;
-//				std::vector<std::string> token = split(forward_delimeds[i],
-//						')');
-//				if (token[0].compare("and ") != 0) {
-//					effects.push_back(token[0]);
-//				}
-//			}
-//
-////			std::cout << "effects = ";
-////			for (int p = 0; p < effects.size(); ++p) {
-////				std::cout << "(" << effects[p] << ") ";
-////			}
-////			std::cout << std::endl;
-//			bool isDel = false;
-//			for (int p = 0; p < effects.size(); ++p) {
-//				if (effects[p].compare("not ") == 0) {
-//					isDel = true;
-//					continue;
-//				}
-//				for (int g = 0; g < gs.size(); ++g) {
-//					if (effects[p].compare(gs[g].symbol) == 0) {
-//						if (isDel) {
-//							delnums.push_back(g);
-//						} else {
-//							addnums.push_back(g);
-//						}
-//						isDel = false;
-//						break;
-//					}
-//				}
-//			}
-//			std::sort(addnums.begin(), addnums.end());
-//			std::sort(delnums.begin(), delnums.end());
-//
-//			// Prune trivial predicates.
-//			std::vector<unsigned int> dif;
-//			std::set_difference(addnums.begin(), addnums.end(), delnums.begin(),
-//					delnums.end(), std::inserter(dif, dif.end()));
-//			if (dif.size() == 0) {
-////				std::cout << "trivial predicate. should discard." << std::endl;
-//				continue;
-//			}
-//
-////			for (int p = 0; p < addnums.size(); ++p) {
-////				std::cout << "add num = " << addnums[p] << std::endl;
-////			}
-////			for (int p = 0; p < delnums.size(); ++p) {
-////				std::cout << "del num = " << delnums[p] << std::endl;
-////			}
-//
-//			std::string groundedName = actionname;
-//			for (int i = 0; i < args.size(); ++i) {
-//				groundedName.append(" " + args[i]);
-//			}
-////			std::cout << "gname = " << groundedName << std::endl;
-//
-//			Action a(groundedName, gActionNumber, precnums, addnums, delnums);
-//			actionTable.addAction(a);
-//			++gActionNumber;
-//		}
 
 		++actionNumber;
 	}
@@ -1758,8 +1635,8 @@ void Strips::print_plan(std::vector<State>& path) const {
 		return;
 	}
 //	print_state(path[path.size() - 1].propositions);
-	for (int i = path.size() - 2; i >= 0; --i) {
-		print_state(path[i + 1].propositions);
+	for (int i = path.size() - 1; i >= 0; --i) {
+		print_state(path[i].propositions);
 	}
 }
 
