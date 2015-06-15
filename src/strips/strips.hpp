@@ -203,6 +203,11 @@ struct Strips {
 		unsigned int lifted_key;
 		std::string lifted_symbol;
 		std::vector<unsigned int> arguments;
+
+
+		bool isEqual(unsigned int lifted_key, std::vector<unsigned int> arguments) {
+			return (this->lifted_key == lifted_key) && (this->arguments == arguments);
+		}
 	};
 
 	// this copies only a pointer.
@@ -424,8 +429,9 @@ public:
 		unsigned int key;
 		std::string symbol;
 		unsigned int n_arguments;
-		std::vector<std::pair<unsigned int, std::vector<unsigned int>>>adds;
+		std::vector<std::pair<unsigned int, std::vector<unsigned int>>> adds;
 		std::vector<std::pair<unsigned int, std::vector<unsigned int>>> dels;
+		std::vector<std::pair<unsigned int, std::vector<unsigned int>>> precs;
 
 		std::vector<unsigned int> addsInst; // PredicateArg keys.
 		std::vector<unsigned int> delsInst;
@@ -435,6 +441,10 @@ public:
 		unsigned int key;
 		LiftedAction lf;
 		unsigned int instantiated_arg; // which argument is instantiated
+	};
+
+	std::vector<std::vector<unsigned int>> get_structures() {
+		return structures;
 	};
 
 	void print_plan(std::vector<State>& path) const;
@@ -449,7 +459,7 @@ private:
 	std::vector<unsigned int> g_feasible_predicates;
 	std::vector<std::vector<unsigned int>> xor_groups;
 	std::vector<unsigned int> xor_ungroupeds;
-
+	std::vector<std::vector<unsigned int>> structures; // structures are made of xor_groups.
 
 	PDB* pd;// need deallocate
 	int n_groups = 0;

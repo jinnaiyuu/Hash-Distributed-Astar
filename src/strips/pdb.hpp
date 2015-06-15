@@ -135,7 +135,7 @@ public:
 		}
 
 		std::cout << "reading database..." << std::endl;
-		std::cout << "is it working? " << std::endl;
+//		std::cout << "is it working? " << std::endl;
 
 		// 1. get groups
 		std::string line = "";
@@ -144,7 +144,7 @@ public:
 		while (!infile.eof()) {
 //			std::cout << "line: " << line;
 			std::getline(infile, line);
-			std::cout << "line: " << line << " ";
+//			std::cout << "line: " << line << " ";
 			std::stringstream iss(line);
 			std::vector<unsigned int> g;
 			int input;
@@ -163,7 +163,7 @@ public:
 			}
 			groups.push_back(g);
 			size *= g.size();
-			std::cout << size << " patterns to read..." << std::endl;
+//			std::cout << size << " patterns to read..." << std::endl;
 		}
 		std::cout << size << " patterns to read...";
 

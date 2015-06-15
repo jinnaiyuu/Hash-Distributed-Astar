@@ -133,7 +133,8 @@ void Strips::buildPDB() {
 			continue;
 		}
 
-		unsigned int rest = 1 << (goal_condition.size() - pdb_groups.size() - 1);
+		unsigned int rest = 1
+				<< (goal_condition.size() - pdb_groups.size() - 1);
 
 		if (size * xor_groups[g].size() * rest > 100000) {
 			full = true;
@@ -153,8 +154,8 @@ void Strips::buildPDB() {
 
 		bool is_grouped = false;
 		for (int gs = 0; gs < pdb_groups.size(); ++gs) {
-			if (find(pdb_groups[gs].begin(), pdb_groups[gs].end(), goal_condition[c])
-					!= pdb_groups[gs].end()) {
+			if (find(pdb_groups[gs].begin(), pdb_groups[gs].end(),
+					goal_condition[c]) != pdb_groups[gs].end()) {
 				is_grouped = true;
 				break;
 			}
@@ -815,6 +816,8 @@ void Strips::readGoal(std::istream &instance,
  */
 void Strips::readAction(std::istream &domain, std::vector<Object> obs,
 		std::vector<Predicate> ps, std::vector<GroundedPredicate> gs) {
+	// TODO: this method is way too slow for action with more than 4 arguments.
+	//       is there any way to speedup?
 // 1. read parameters.
 // 2. read precondition (lifted).
 // 3. read add&delete effect (lifted).
@@ -910,141 +913,276 @@ void Strips::readAction(std::istream &domain, std::vector<Object> obs,
 		lf.adds = addnums;
 		lf.dels = delnums;
 
+		// TODO: need to parse preconditions.
+		// Preconditions
+		effects.clear();
+		std::stringstream t(text);
+//		std::string precText;
+//		getBracket(t, ":precondition", 0, precText);
+//		getText(t, ":precondition", ":effect", 0, precText);
+		std::string precText = findRange(text, ":precondition", ":effect");
+		std::vector<std::pair<unsigned int, std::vector<unsigned int>>>precnums;
+		forward_delimeds = split(precText, '(');
+		for (int i = 1; i < forward_delimeds.size(); ++i) {
+			//			std::cout << "fd = " << forward_delimeds[i] << std::endl;
+			std::vector<std::string> token = split(forward_delimeds[i], ')');
+			if (token[0].compare("and ") != 0) {
+				effects.push_back(token[0]);
+			}
+		}
+//		for (int p = 0; p < effects.size(); ++p) {
+//			std::cout << "LIFTED prec string = " << effects[p] << std::endl;
+//		}
+
+
+		for (int p = 0; p < effects.size(); ++p) {
+			std::vector<std::string> lits = split(effects[p], ' ');
+			for (int o = 0; o < ps.size(); ++o) {
+				if (lits[0].compare(ps[o].symbol) == 0) {
+					std::pair<unsigned int, std::vector<unsigned int>> predicate;
+					predicate.first = o;
+					for (int i = 1; i < lits.size(); ++i) {
+						for (int parms = 0; parms < parameters.size();
+								++parms) {
+							if (lits[i].compare(parameters[parms]) == 0) {
+								predicate.second.push_back(parms);
+								break;
+							}
+						}
+					}
+					precnums.push_back(predicate);
+					break;
+				}
+			}
+		}
+		lf.precs = precnums;
+
+//		for (int p = 0; p < precnums.size(); ++p) {
+//			std::cout << "LIFTED prec num = " << precnums[p].first << std::endl;
+//		}
+//		for (int p = 0; p < addnums.size(); ++p) {
+//			std::cout << "LIFTED add num = " << addnums[p].first << std::endl;
+//		}
+
 		lActions.push_back(lf);
 
-		// instantiate grounded actions.
-		// TODO: enable typing
-		int newactnum = pow(obs.size(), parameters.size());
-		for (unsigned int newnum = 0; newnum < newactnum; ++newnum) {
-			std::vector<std::string> args;
+		// TODO: Instantiate lifted action to a grounded actions.
+		//       It is easier if lifted action with arguments is dictionaried.
+		int param_max = pow(obs.size(), parameters.size());
+		for (unsigned int pnum = 0; pnum < param_max; ++pnum) {
+			std::vector<unsigned int> args;
 			args.resize(parameters.size());
 			// build arguments list.
 			for (unsigned int arg = 0; arg < parameters.size(); ++arg) {
-				args[arg] = obs[(newnum
+				args[arg] = obs[(pnum
 						/ pow(obs.size(), parameters.size() - 1 - arg))
-						% obs.size()].symbol;
+						% obs.size()].key;
 			}
 
-//			std::cout << "instantiate with ";
-//			for (unsigned int arg = 0; arg < parameters.size(); ++arg) {
-//				std::cout << args[arg] << " ";
-//			}
-//			std::cout << std::endl;
-
-			// replace arguments with objects.
-			std::string groundedText = text;
-			for (unsigned int arg = 0; arg < parameters.size(); ++arg) {
-				std::string buf = replace(groundedText, parameters[arg],
-						args[arg]);
-				groundedText = buf;
-//				std::cout << groundedText << std::endl;
-
-			}
-//			std::cout << "grounded text = " << groundedText << std::endl;
-
-			// read preconditions and translate into GroundedPredicate keys.
-			std::string preconditionText = findRange(groundedText,
-					":precondition", ":effect");
-//			std::cout << "prec = " << preconditionText << std::endl;
-
-			std::vector<std::string> preconditions;
 			std::vector<unsigned int> precnums;
-
-			forward_delimeds = split(preconditionText, '(');
-			for (int i = 1; i < forward_delimeds.size(); ++i) {
-				//			std::cout << "fd = " << forward_delimeds[i] << std::endl;
-				std::vector<std::string> token = split(forward_delimeds[i],
-						')');
-				if (token[0].compare("and") != 0) {
-					preconditions.push_back(token[0]);
-				}
-			}
-
-//			std::cout << "preconditions = ";
-//			for (int p = 0; p < preconditions.size(); ++p) {
-//				std::cout << "(" << preconditions[p] << ") ";
-//			}
-//			std::cout << std::endl;
-			for (int p = 0; p < preconditions.size(); ++p) {
-				for (int g = 0; g < gs.size(); ++g) {
-					if (preconditions[p].compare(gs[g].symbol) == 0) {
-						precnums.push_back(g);
-					}
-				}
-			}
-			std::sort(precnums.begin(), precnums.end());
-//			for (int p = 0; p < precnums.size(); ++p) {
-//				std::cout << "num = " << precnums[p] << std::endl;
-//			}
-
-			std::string effectText = findRange(groundedText, ":effect", ")))");
-
-			std::vector<std::string> effects;
 			std::vector<unsigned int> addnums;
 			std::vector<unsigned int> delnums;
 
-			forward_delimeds = split(effectText, '(');
-			for (int i = 1; i < forward_delimeds.size(); ++i) {
-				//			std::cout << "fd = " << forward_delimeds[i] << std::endl;
-				std::vector<std::string> token = split(forward_delimeds[i],
-						')');
-				if (token[0].compare("and ") != 0) {
-					effects.push_back(token[0]);
-				}
-			}
-
-//			std::cout << "effects = ";
-//			for (int p = 0; p < effects.size(); ++p) {
-//				std::cout << "(" << effects[p] << ") ";
-//			}
-//			std::cout << std::endl;
-			bool isDel = false;
-			for (int p = 0; p < effects.size(); ++p) {
-				if (effects[p].compare("not ") == 0) {
-					isDel = true;
-					continue;
-				}
-				for (int g = 0; g < gs.size(); ++g) {
-					if (effects[p].compare(gs[g].symbol) == 0) {
-						if (isDel) {
-							delnums.push_back(g);
-						} else {
-							addnums.push_back(g);
-						}
-						isDel = false;
+			for (int i = 0; i < lf.precs.size(); ++i) {
+				std::pair<unsigned int, std::vector<unsigned int>> prec =
+						lf.precs[i];
+				std::vector<unsigned int> prec_arg = getArguements(args,
+						prec.second);
+				for (int j = 0; j < g_predicates->size(); ++j) {
+					if (g_predicates->at(j).isEqual(prec.first, prec_arg)) {
+						precnums.push_back(g_predicates->at(j).key);
 						break;
 					}
 				}
 			}
+			for (int i = 0; i < lf.adds.size(); ++i) {
+				std::pair<unsigned int, std::vector<unsigned int>> add =
+						lf.adds[i];
+				std::vector<unsigned int> add_arg = getArguements(args,
+						add.second);
+				for (int j = 0; j < g_predicates->size(); ++j) {
+					if (g_predicates->at(j).isEqual(add.first, add_arg)) {
+						addnums.push_back(g_predicates->at(j).key);
+						break;
+					}
+				}
+			}
+			for (int i = 0; i < lf.dels.size(); ++i) {
+				std::pair<unsigned int, std::vector<unsigned int>> del =
+						lf.dels[i];
+				std::vector<unsigned int> del_arg = getArguements(args,
+						del.second);
+				for (int j = 0; j < g_predicates->size(); ++j) {
+					if (g_predicates->at(j).isEqual(del.first, del_arg)) {
+						delnums.push_back(g_predicates->at(j).key);
+						break;
+					}
+				}
+			}
+			std::string groundedName = actionname;
+
+			for (int i = 0; i < args.size(); ++i) {
+				groundedName.append(" " + obs[args[i]].symbol);
+			}
+
+			std::sort(precnums.begin(), precnums.end());
 			std::sort(addnums.begin(), addnums.end());
 			std::sort(delnums.begin(), delnums.end());
 
-			// Prune trivial predicates.
-			std::vector<unsigned int> dif;
-			std::set_difference(addnums.begin(), addnums.end(), delnums.begin(),
-					delnums.end(), std::inserter(dif, dif.end()));
-			if (dif.size() == 0) {
-//				std::cout << "trivial predicate. should discard." << std::endl;
-				continue;
-			}
+			Action a(groundedName, gActionNumber, precnums, addnums, delnums);
+			actionTable.addAction(a);
+			++gActionNumber;
 
+//			for (int p = 0; p < precnums.size(); ++p) {
+//				std::cout << "prec num = " << precnums[p] << std::endl;
+//			}
 //			for (int p = 0; p < addnums.size(); ++p) {
 //				std::cout << "add num = " << addnums[p] << std::endl;
 //			}
 //			for (int p = 0; p < delnums.size(); ++p) {
 //				std::cout << "del num = " << delnums[p] << std::endl;
 //			}
+//			std::cout << "grounded name = " << groundedName << std::endl;
 
-			std::string groundedName = actionname;
-			for (int i = 0; i < args.size(); ++i) {
-				groundedName.append(" " + args[i]);
-			}
-//			std::cout << "gname = " << groundedName << std::endl;
-
-			Action a(groundedName, gActionNumber, precnums, addnums, delnums);
-			actionTable.addAction(a);
-			++gActionNumber;
 		}
+
+		// TODO: efficient way is to instantiate lifted actions.
+		//       how can we do that?
+
+		// instantiate grounded actions.
+		// TODO: enable typing
+//		int newactnum = pow(obs.size(), parameters.size());
+//		for (unsigned int newnum = 0; newnum < newactnum; ++newnum) {
+//			std::vector<std::string> args;
+//			args.resize(parameters.size());
+//			// build arguments list.
+//			for (unsigned int arg = 0; arg < parameters.size(); ++arg) {
+//				args[arg] = obs[(newnum
+//						/ pow(obs.size(), parameters.size() - 1 - arg))
+//						% obs.size()].symbol;
+//			}
+//
+////			std::cout << "instantiate with ";
+////			for (unsigned int arg = 0; arg < parameters.size(); ++arg) {
+////				std::cout << args[arg] << " ";
+////			}
+////			std::cout << std::endl;
+//
+//			// TODO: this is the problematic part. inefficient implementation.
+//			// replace arguments with objects.
+//			std::string groundedText = text;
+//			for (unsigned int arg = 0; arg < parameters.size(); ++arg) {
+//				std::string buf = replace(groundedText, parameters[arg],
+//						args[arg]);
+//				groundedText = buf;
+////				std::cout << groundedText << std::endl;
+//
+//			}
+////			std::cout << "grounded text = " << groundedText << std::endl;
+//
+//			// read preconditions and translate into GroundedPredicate keys.
+//			std::string preconditionText = findRange(groundedText,
+//					":precondition", ":effect");
+////			std::cout << "prec = " << preconditionText << std::endl;
+//
+//			std::vector<std::string> preconditions;
+//			std::vector<unsigned int> precnums;
+//
+//			forward_delimeds = split(preconditionText, '(');
+//			for (int i = 1; i < forward_delimeds.size(); ++i) {
+//				//			std::cout << "fd = " << forward_delimeds[i] << std::endl;
+//				std::vector<std::string> token = split(forward_delimeds[i],
+//						')');
+//				if (token[0].compare("and") != 0) {
+//					preconditions.push_back(token[0]);
+//				}
+//			}
+//
+////			std::cout << "preconditions = ";
+////			for (int p = 0; p < preconditions.size(); ++p) {
+////				std::cout << "(" << preconditions[p] << ") ";
+////			}
+////			std::cout << std::endl;
+//			for (int p = 0; p < preconditions.size(); ++p) {
+//				for (int g = 0; g < gs.size(); ++g) {
+//					if (preconditions[p].compare(gs[g].symbol) == 0) {
+//						precnums.push_back(g);
+//					}
+//				}
+//			}
+//			std::sort(precnums.begin(), precnums.end());
+////			for (int p = 0; p < precnums.size(); ++p) {
+////				std::cout << "num = " << precnums[p] << std::endl;
+////			}
+//
+//			std::string effectText = findRange(groundedText, ":effect", ")))");
+//
+//			std::vector<std::string> effects;
+//			std::vector<unsigned int> addnums;
+//			std::vector<unsigned int> delnums;
+//
+//			forward_delimeds = split(effectText, '(');
+//			for (int i = 1; i < forward_delimeds.size(); ++i) {
+//				//			std::cout << "fd = " << forward_delimeds[i] << std::endl;
+//				std::vector<std::string> token = split(forward_delimeds[i],
+//						')');
+//				if (token[0].compare("and ") != 0) {
+//					effects.push_back(token[0]);
+//				}
+//			}
+//
+////			std::cout << "effects = ";
+////			for (int p = 0; p < effects.size(); ++p) {
+////				std::cout << "(" << effects[p] << ") ";
+////			}
+////			std::cout << std::endl;
+//			bool isDel = false;
+//			for (int p = 0; p < effects.size(); ++p) {
+//				if (effects[p].compare("not ") == 0) {
+//					isDel = true;
+//					continue;
+//				}
+//				for (int g = 0; g < gs.size(); ++g) {
+//					if (effects[p].compare(gs[g].symbol) == 0) {
+//						if (isDel) {
+//							delnums.push_back(g);
+//						} else {
+//							addnums.push_back(g);
+//						}
+//						isDel = false;
+//						break;
+//					}
+//				}
+//			}
+//			std::sort(addnums.begin(), addnums.end());
+//			std::sort(delnums.begin(), delnums.end());
+//
+//			// Prune trivial predicates.
+//			std::vector<unsigned int> dif;
+//			std::set_difference(addnums.begin(), addnums.end(), delnums.begin(),
+//					delnums.end(), std::inserter(dif, dif.end()));
+//			if (dif.size() == 0) {
+////				std::cout << "trivial predicate. should discard." << std::endl;
+//				continue;
+//			}
+//
+////			for (int p = 0; p < addnums.size(); ++p) {
+////				std::cout << "add num = " << addnums[p] << std::endl;
+////			}
+////			for (int p = 0; p < delnums.size(); ++p) {
+////				std::cout << "del num = " << delnums[p] << std::endl;
+////			}
+//
+//			std::string groundedName = actionname;
+//			for (int i = 0; i < args.size(); ++i) {
+//				groundedName.append(" " + args[i]);
+//			}
+////			std::cout << "gname = " << groundedName << std::endl;
+//
+//			Action a(groundedName, gActionNumber, precnums, addnums, delnums);
+//			actionTable.addAction(a);
+//			++gActionNumber;
+//		}
 
 		++actionNumber;
 	}
@@ -1434,8 +1572,6 @@ void Strips::analyzeXORGroups() {
 		std::cout << std::endl;
 	}
 
-
-
 	/////////////////////////////////////
 	/// Transition analysis
 	/////////////////////////////////////
@@ -1450,13 +1586,16 @@ void Strips::analyzeXORGroups() {
 
 	for (int g = 0; g < xor_groups.size(); ++g) {
 		for (int p = 0; p < xor_groups[g].size(); ++p) {
-			std::vector<Action> actions = actionTable.getActionsWhichDeletes(xor_groups[g][p]);
+			std::vector<Action> actions = actionTable.getActionsWhichDeletes(
+					xor_groups[g][p]);
 			std::vector<unsigned int> transitions;
 			for (int a = 0; a < actions.size(); ++a) {
 				std::vector<unsigned int> adds = actions[a].adds;
 				// a bit of duplicate.
-				std::vector<unsigned int> t = intersectingSortedVectors(xor_groups[g], adds);
-				std::vector<unsigned int> buf = uniquelyMergeSortedVectors(transitions, t);
+				std::vector<unsigned int> t = intersectingSortedVectors(
+						xor_groups[g], adds);
+				std::vector<unsigned int> buf = uniquelyMergeSortedVectors(
+						transitions, t);
 				transitions = buf;
 			}
 			xor_groups_transitions[g][p] = transitions;
@@ -1473,6 +1612,92 @@ void Strips::analyzeXORGroups() {
 			}
 			std::cout << std::endl;
 		}
+	}
+
+	// TODO: this algorithm can be optimized in many ways.
+	//       for now this is just a prototype, going to be improved.
+	// TODO: make multiple way of making
+	/////////////////////////////////////
+	/// Build Structures for SZ
+	/////////////////////////////////////
+	// 1. find the node with least edges and add that to group 0.
+	// 2. add a node which is mostly connected to group 0.
+	// 3. do it until the size of group 0 reaches n/2.
+	std::cout << "building structure..." << std::endl;
+	for (int gs = 0; gs < xor_groups_transitions.size(); ++gs) {
+		// 1. find the most isolated node.
+		std::vector<unsigned int> structure;
+		std::vector<unsigned int> structure_index;
+		std::vector<unsigned int> transitions;
+		for (int p = 0; p < xor_groups_transitions[gs].size(); ++p) {
+			transitions.insert(transitions.end(),
+					xor_groups_transitions[gs][p].begin(),
+					xor_groups_transitions[gs][p].end());
+		}
+//		std::cout << "transition" << std::endl;
+		unsigned int least_connected = 100000;
+		unsigned int least_connected_node = 0; // in index
+		for (int p = 0; p < xor_groups[gs].size(); ++p) {
+			int c = std::count(transitions.begin(), transitions.end(),
+					xor_groups[gs][p]);
+			c += xor_groups_transitions[gs][p].size();
+//			std::cout << xor_groups[gs][p] << ": " << c << "edges" << std::endl;
+			if (c < least_connected) {
+				least_connected = c;
+				least_connected_node = p;
+			}
+		}
+		structure.push_back(xor_groups[gs][least_connected_node]);
+		structure_index.push_back(least_connected_node);
+
+		while (structure.size() < xor_groups[gs].size() / 2) {
+			transitions.clear();
+			// 2. add a node which is mostly connected to strucuture
+			for (int p = 0; p < structure_index.size(); ++p) {
+				transitions.insert(transitions.end(),
+						xor_groups_transitions[gs][p].begin(),
+						xor_groups_transitions[gs][p].end());
+			}
+			// count the most connected nodes
+			unsigned int most_connected = 0;
+			unsigned int most_connected_node = 0; // in index
+			for (int p = 0; p < xor_groups[gs].size(); ++p) {
+				// if p is already in the group, then skip that.
+				if (find(structure_index.begin(), structure_index.end(), p)
+						!= structure_index.end()) {
+					continue;
+				}
+				int c = std::count(transitions.begin(), transitions.end(),
+						xor_groups[gs][p]);
+				c += xor_groups_transitions[gs][p].size();
+				if (c > most_connected) {
+					most_connected = c;
+					most_connected_node = p;
+				}
+			}
+			structure.push_back(xor_groups[gs][most_connected_node]);
+			structure_index.push_back(most_connected_node);
+		}
+		std::sort(structure.begin(), structure.end());
+		structures.push_back(structure);
+
+		// the rest of the predicates will be the second structure.
+		// TODO: not sure this assumption is right or not.
+		//       maybe not right.
+		std::vector<unsigned int> structure2; // = xor_groups[gs] - structure;
+		std::set_difference(xor_groups[gs].begin(), xor_groups[gs].end(),
+				structure.begin(), structure.end(),
+				std::inserter(structure2, structure2.begin()));
+		std::sort(structure2.begin(), structure2.end());
+		structures.push_back(structure2);
+	}
+
+	std::cout << "structures" << std::endl;
+	for (int s = 0; s < structures.size(); ++s) {
+		for (int ps = 0; ps < structures[s].size(); ++ps) {
+			std::cout << structures[s][ps] << " ";
+		}
+		std::cout << std::endl;
 	}
 
 	/////////////////////////////////////
@@ -1504,7 +1729,6 @@ void Strips::analyzeXORGroups() {
 		std::cout << "(" << g_predicates->at(xor_ungroupeds[p]).symbol << ") ";
 	}
 	std::cout << std::endl;
-
 
 }
 

@@ -184,6 +184,15 @@ std::vector<unsigned int> uniquelyMergeSortedVectors(const std::vector<unsigned 
 	return uniqueMerge;
 }
 
+static
+std::vector<unsigned int> getArguements(const std::vector<unsigned int>& argument, const std::vector<unsigned int>& which) {
+	std::vector<unsigned int> args;
+	for (int i = 0; i < which.size(); ++i) {
+		args.push_back(argument[which[i]]);
+	}
+	return args;
+}
+
 /**
  * @param from: first literal inside bracket.
  * @param number: if there are multiple brackets starting from "from", it selects which one to read.

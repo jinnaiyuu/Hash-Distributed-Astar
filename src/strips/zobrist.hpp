@@ -23,8 +23,8 @@ public:
 
 	// TODO: Should delete compatibility for performance.
 	StripsZobrist(D &d, ABST abst = SINGLE) :
-			d(d), structure(abst) {
-		initZobrist(structure);
+			d(d) {
+		initZobrist(abst);
 	}
 
 	/**
@@ -53,43 +53,64 @@ public:
 private:
 	void initZobrist(unsigned int abst) {
 		map.resize(d.getActionSize());
-//		for (unsigned int i = 0; i < map.size(); ++i) {
-//			map[i].resize(d.sequences[i].size());
-//		}
+		std::fill(map.begin(), map.end(), 0);
 		gen = std::mt19937(rd());
-//		unsigned int max = std::numeric_limits<hashlength>::max();
-//		unsigned int max = UINT_MAX;
 		dis = std::uniform_int_distribution<>(INT_MIN, INT_MAX);
-// Not sure I should initialize it by time as it randomize the results for each run.
 #ifdef RANDOM_ZOBRIST_INITIALIZATION
 		srand(time(NULL));
 #endif
 
-		abstraction(abst);
+		if (abst == 2) {
+			strucutured_zobrist(abst);
+		} else if (abst == 1){
+			strucutured_zobrist(abst);
+			zobrist();
+		} else {
+			zobrist();
+		}
 
 	}
 
-	// TODO: read automatic abstraction.
-	void abstraction(unsigned int abst) {
-		printf("abst = %u\n", abst);
-		if (abst == 0) {
-			++abst;
-		}
-		for (unsigned int i = 0; i < map.size(); ++i) {
-			if (i % abst == 0) {
-				map[i] = random();
-			} else {
-				map[i] = 0;
+	// Structured Zobrist
+	void strucutured_zobrist(unsigned int abst) {
+		std::vector<std::vector<unsigned int>> structures = d.get_structures();
+		for (unsigned int i = 0; i < structures.size(); ++i) {
+			int r = random();
+			for (unsigned int j = 0; j < structures[i].size(); ++j) {
+				map[structures[i][j]] = r;
 			}
 		}
 	}
+
+	void zobrist() {
+		for (unsigned int i = 0; i < map.size(); ++i) {
+			if (map[i] == 0) {
+				map[i] = random();
+			}
+		}
+	}
+
+	// TODO: read automatic abstraction.
+//	void abstraction(unsigned int abst) {
+//		printf("abst = %u\n", abst);
+//		if (abst == 0) {
+//			++abst;
+//		}
+//		for (unsigned int i = 0; i < map.size(); ++i) {
+//			if (i % abst == 0) {
+//				map[i] = random();
+//			} else {
+//				map[i] = 0;
+//			}
+//		}
+//	}
 
 	unsigned int random() {
 		return dis(gen) + INT_MAX;
 	}
 
 	D& d;
-	unsigned int structure;
+//	unsigned int structure;
 
 	// TODO: ebable some kind of abstraction.
 	std::vector<unsigned int> map;
