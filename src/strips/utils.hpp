@@ -4,6 +4,9 @@
 #include <string>
 #include <sstream>
 #include <vector>
+#include <algorithm>
+#include <functional>
+#include <assert.h>
 
 static
 std::vector<std::string> &split(const std::string &s, char delim,
@@ -184,6 +187,29 @@ std::vector<unsigned int> uniquelyMergeSortedVectors(const std::vector<unsigned 
 	return uniqueMerge;
 }
 
+// Take difference of sets, v1 - v2.
+static
+std::vector<unsigned int> differenceSortedVectors(const std::vector<unsigned int>& v1, const std::vector<unsigned int>& v2) {
+	std::vector<unsigned int> difference;
+	unsigned int v1it = 0;
+	unsigned int v2it = 0;
+	while(v1it < v1.size() && v2it < v2.size()) {
+		if(v1[v1it] == v2[v2it]) {
+			++v1it;
+			++v2it;
+		} else if (v1[v1it] < v2[v2it]) {
+			difference.push_back(v1[v1it]);
+			++v1it;
+		} else {
+			++v2it;
+		}
+	}
+	if (v2it == v2.size()) {
+		difference.insert(difference.end(), v1.begin() + v1it, v1.end());
+	}
+	return difference;
+}
+
 static
 std::vector<unsigned int> getArguements(const std::vector<unsigned int>& argument, const std::vector<unsigned int>& which) {
 	std::vector<unsigned int> args;
@@ -191,6 +217,16 @@ std::vector<unsigned int> getArguements(const std::vector<unsigned int>& argumen
 		args.push_back(argument[which[i]]);
 	}
 	return args;
+}
+
+
+inline unsigned int hash(const std::vector<unsigned int> v) {
+	std::hash<unsigned int> hasher;
+	unsigned int seed = 0;
+	for (int i = 0; i < v.size(); i++) {
+		seed ^= hasher(v[i]) + 0x9e3779b9 + (seed<<6) + (seed>>2);
+	}
+	return seed;
 }
 
 /**

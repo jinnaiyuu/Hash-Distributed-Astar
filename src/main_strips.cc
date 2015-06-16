@@ -100,7 +100,7 @@ int main(int argc, const char *argv[]) {
 			unsigned int open = 100;
 			double weight = 1.0;
 			unsigned int incumbent = 100000;
-			unsigned int closed = 7919;
+			unsigned int closed = 4477457;
 			search = new Astar<Strips>(strips, open, weight, incumbent, closed);
 		} else if (sscanf(argv[1], "hdastar-%u", &n_threads) == 1) {
 			unsigned int abst = 0;
@@ -115,7 +115,7 @@ int main(int argc, const char *argv[]) {
 					10000000, // outgo threshould
 					abst, // abstraction
 					0, // overrun
-					110503, // closed list size
+					4477457, // closed list size
 					100, // open list size
 					10000000 // max cost
 					);

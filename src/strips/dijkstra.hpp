@@ -10,10 +10,9 @@
 
 // This algorithm is only for STRIPS planning.
 // TODOs: FROM A* TO DIJKSTRA(or BFS)
-// TODO: f = 0 as it is BFS.
 // TODO: narrow down the action. if it does not affect pattern then discard.
-// TODO: if the pattern is new, then add that to PDB.
 // TODO: this implementation is far from optimal. it's more like a prototype.
+// XXX:  seems this implementation is buggy as it does not obtain all patterns available.
 class Dijkstra {
 
 	const unsigned int SEPARATOR = -1;

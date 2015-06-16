@@ -4,7 +4,7 @@ PROFFLAGS=-pg -static -pthread -std=c++11
 MASSFLAGS=-g -pthread -std=c++11
 
 # -g -Wall
-all: strips.out
+all: strips.out parser
 prof: pstrips.out
 
 tiles: *.cc *.hpp msa/*.cc msa/*.hpp
@@ -18,8 +18,11 @@ tiles: *.cc *.hpp msa/*.cc msa/*.hpp
 
 strips.out: *.cc *.hpp strips/*.cc strips/*.hpp
 	$(CXX) $(CXXFLAGS) *.cc strips/*.cc -o strips.out
+	
+parser: strips/utils.hpp strips/parser/*.cc
+	$(CXX) $(CXXFLAGS) strips/parser/*.cc -o parser 
 
-pstrips.out: *.cc *.hpp strips/*.cc strips/*.hpp
+pstrips.out: strips/*.cc strips/*.hpp
 	$(CXX) $(PROFFLAGS) *.cc strips/*.cc -o pstrips.out
 
 

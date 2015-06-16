@@ -83,14 +83,7 @@ struct Strips {
 		// TODO: should be optimized. 2 sequences are sorted.
 		//	std::cout << "isgoal" << std::endl;
 		std::vector<unsigned int> p = s.propositions;
-		for (int i = 0; i < goal_condition.size(); ++i) {
-			if (std::find(p.begin(), p.end(), goal_condition[i]) != p.end()) {
-				continue;
-			} else {
-				return false;
-			}
-		}
-		return true;
+		return !isAnyNotContainedSortedVectors(goal_condition, s.propositions);
 	}
 
 	int nops(const State &s) const {
@@ -154,10 +147,12 @@ struct Strips {
 	void pack(PackedState &dst, State &s) const {
 		//		std::cout << "pack" << std::endl;
 		// TODO: should optimize binary length.
-		dst.word = 0;
-		for (int i = 0; i < s.propositions.size(); i++) {
-			dst.word = (dst.word << 4) | s.propositions[i];
-		}
+		//       how can we build an appropriate hash?
+		dst.word = hash(s.propositions);
+//		for (int i = 0; i < s.propositions.size(); i++) {
+////			dst.word = (dst.word << 4) | s.propositions[i];
+//			hash_combine(dst.word, s.propositions[i]);
+//		}
 		dst.propositions = s.propositions; // copy
 		dst.h = s.h;
 	}
@@ -294,23 +289,27 @@ private:
 	std::vector<unsigned int> ungroupeds;
 	bool built_pdb = false;
 
+	// TODO: add new utility method to speed-up this.
 	void apply_action(State& s, int action_key) const {
+		std::vector<unsigned int> p;
 		Action action = actionTable.getAction(action_key);
-		for (int i = 0; i < action.adds.size(); ++i) {
-			s.propositions.push_back(action.adds[i]);
-		}
+//		for (int i = 0; i < action.adds.size(); ++i) {
+//			s.propositions.push_back(action.adds[i]);
+//		}
+		p = uniquelyMergeSortedVectors(s.propositions, action.adds);
+
+
+		// TODO: is this correct?
 		if (!is_delete_relaxed) {
-			for (int i = 0; i < action.deletes.size(); ++i) {
-				s.propositions.erase(
-						std::remove(s.propositions.begin(),
-								s.propositions.end(), action.deletes[i]),
-						s.propositions.end());
-			}
+//			std::vector<unsigned int> d;
+			p = differenceSortedVectors(p, action.deletes);
+//			p = d;
 		}
-		std::sort(s.propositions.begin(), s.propositions.end());
-		s.propositions.erase(
-				unique(s.propositions.begin(), s.propositions.end()),
-				s.propositions.end());
+//		std::sort(s.propositions.begin(), s.propositions.end());
+//		s.propositions.erase(
+//				unique(s.propositions.begin(), s.propositions.end()),
+//				s.propositions.end());
+		s.propositions = p;
 	}
 
 	// TODO: can we optimize this?

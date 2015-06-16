@@ -327,7 +327,7 @@ void Strips::dijkstra(std::vector<std::vector<unsigned int> > patterns,
 
 	buildRegressionTree();
 
-	search->search(init, 60.0 * 1);
+	search->search(init, 20.0 * 1);
 //	print_plan(path);
 
 	std::vector<unsigned int> costs = search->get_costs();
