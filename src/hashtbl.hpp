@@ -7,6 +7,7 @@
 #include <vector>
 #include <stdio.h>
 #include <pthread.h>
+#include <iostream>
 //#include "pool.hpp"
 
 template<class Node> struct HashEntry {
@@ -29,13 +30,38 @@ public:
 
 	// find looks up the given key in the hash table and returns
 	// the data value if it is found or else it returns 0.
+	// TODO: strange error occuring here.
+	//       possibly null input?
 	Node *find(Key &key) {
 		unsigned long h = key.hash();
 		unsigned int ind = h % buckets.size();
 
 		Node *p;
-		for (p = buckets[ind]; p && !p->key().eq(key); p = p->hashentry().next)
-			;
+		try {
+			for (p = buckets[ind]; p != NULL;
+					p = p->hashentry().next) {
+				// p is not NULL
+				Key k = p->key();
+//				unsigned int = p->key().hash();
+//				if (p->hashentry().hash == h) {
+//					break;
+//				}
+				if(k.eq(key)) {
+					 break;
+				 }
+//			if (p->key().eq(key)) {
+//				std::cout << "eq" << std::endl;
+//			} else {
+//				std::cout << "uneq" << std::endl;
+//			}
+				;
+			}
+		} catch (...) {
+			std::cout << "p->key() = " << p->key().hash() << std::endl;
+			std::cout << "key = " << key.hash() << std::endl;
+
+		}
+
 		return p;
 	}
 
@@ -47,7 +73,7 @@ public:
 		n->hashentry().hash = hash;
 		n->hashentry().next = buckets[ind];
 		buckets[ind] = n;
-	//	pthread_mutex_unlock(&m);
+		//	pthread_mutex_unlock(&m);
 	}
 };
 

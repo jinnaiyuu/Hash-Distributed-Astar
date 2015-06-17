@@ -36,11 +36,11 @@
 #define ANALYZE_SEMISYNC
 #endif
 
-#include "strips/strips.hpp"
+#include "../strips/strips.hpp"
 
-#include "astar.hpp"
-#include "hdastar.hpp"
-#include "strips/zobrist.hpp"
+#include "../astar.hpp"
+#include "../hdastar.hpp"
+#include "../strips/zobrist.hpp"
 
 //
 //#include "astar_heap.hpp"

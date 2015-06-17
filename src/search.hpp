@@ -42,6 +42,10 @@ template<class D> struct SearchAlg {
 	// expanded and generated respectively.
 	unsigned long expd, gend;
 
+	unsigned long push; // This is for HDA*.
+	unsigned long dup; // This is for HDA*.
+
+
 	unsigned int incm;
 
 	double wtime, ctime;

@@ -1,14 +1,14 @@
 CXX=clang++-3.5
-CXXFLAGS=-g -Wall -Wno-unused-value -Wno-char-subscripts -static -pthread -std=c++11 -O3
+CXXFLAGS=-g -Wall -Wno-unused-value -Wno-char-subscripts -static -pthread -std=c++11
 PROFFLAGS=-pg -static -pthread -std=c++11
 MASSFLAGS=-g -pthread -std=c++11
 
 # -g -Wall
-all: strips.out parser
+all: strips.out tiles
 prof: pstrips.out
 
-tiles: *.cc *.hpp msa/*.cc msa/*.hpp
-	$(CXX) $(CXXFLAGS) *.cc msa/*.cc -o tiles 
+tiles: main_comb/*.cc *.cc *.hpp msa/*.cc msa/*.hpp
+	$(CXX) $(CXXFLAGS) main_comb/*.cc *.cc msa/*.cc -o tiles 
 
 #prof: *.cc *.hpp msa/*.cc msa/*.hpp strips/*.cc strips/*.hpp
 #	$(CXX) $(PROFFLAGS) *.cc msa/*.cc strips/*.cc -o ptiles
