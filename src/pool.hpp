@@ -48,6 +48,13 @@ public:
 		put(o);
 	}
 
+//	void destruct_all() {
+//		for (int i = 0; i < blks.size(); ++i) {
+//			Ent* e = blks[i];
+//			destruct_ent(e);
+//		}
+//	}
+
 private:
 
 	void newblk(void) {
@@ -60,6 +67,13 @@ private:
 		char bytes[sizeof(Obj)];
 		Ent *nxt;
 	};
+
+//	void destruct_ent(Ent* e) {
+//		destruct_ent(e->nxt);
+//		Obj* obj = (Obj *) e->bytes;
+//		delete obj;
+//	}
+
 
 	unsigned int blksz, nxt;
 	Ent *freed;

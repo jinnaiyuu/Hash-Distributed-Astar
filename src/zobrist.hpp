@@ -28,7 +28,7 @@ public:
 		LINE_24 = 2401,
 		BLOCK_24 = 2402,
 		ODD_24 = 2403,
-		FOURABSTRACTION = 1234
+		FOURABSTRACTION_24 = 1234
 	};
 
 // Should delete compatibility for performance.
@@ -116,7 +116,7 @@ private:
 		case ODD_24:
 			odd24();
 			break;
-		case FOURABSTRACTION:
+		case FOURABSTRACTION_24:
 			fourabstraction();
 			break;
 		default:

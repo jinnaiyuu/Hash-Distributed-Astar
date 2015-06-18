@@ -71,7 +71,7 @@ template<class D, class hash> class HDAstarComb: public SearchAlg<D> {
 	hash z; // Members for Zobrist hashing.
 
 	std::atomic<int> incumbent; // The best solution so far.
-	bool* terminate;
+	std::vector<bool> terminate;
 
 	int income_threshold;
 	int outgo_threshold;
@@ -97,7 +97,7 @@ template<class D, class hash> class HDAstarComb: public SearchAlg<D> {
 		}
 		;
 	};
-	std::vector<Logfvalue>* logfvalue;
+	std::vector<std::vector<Logfvalue>> logfvalue;
 
 	struct LogIncumbent {
 		double walltime;
@@ -107,7 +107,7 @@ template<class D, class hash> class HDAstarComb: public SearchAlg<D> {
 		}
 		;
 	};
-	std::vector<LogIncumbent>* logincumbent;
+	std::vector<std::vector<LogIncumbent>> logincumbent;
 
 	struct LogNodeOrder {
 		int globalOrder;
@@ -138,11 +138,12 @@ template<class D, class hash> class HDAstarComb: public SearchAlg<D> {
 			return tiles;
 		}
 	};
-	std::vector<LogNodeOrder>* lognodeorder;
+	std::vector<std::vector<LogNodeOrder>> lognodeorder;
 
 	double wall0 = 0; // ANALYZE_FTRACE
 
-	int* open_sizes;
+	std::vector<int> fvalues; // OUTSOURCING
+	std::vector<int> open_sizes;
 
 #ifdef ANALYZE_INCOME
 	int max_income = 0;
@@ -157,8 +158,7 @@ template<class D, class hash> class HDAstarComb: public SearchAlg<D> {
 	int globalf = 10000000; // Ad hoc number.
 #endif
 
-	int* fvalues; // OUTSOURCING
-	int* opensizes; // OUTSOURCING
+//	int* opensizes; // OUTSOURCING
 #ifdef OUTSOURCING
 #ifdef ANALYZE_OUTSOURCING
 	int outsource_pushed = 0; // ANALYZE_OUTSOURCING
@@ -178,7 +178,7 @@ public:
 
 	HDAstarComb(D &d, int tnum_, int income_threshold_ = 1000000,
 			int outgo_threshold_ = 10000000, int abst_ = 0, int overrun_ = 0,
-			unsigned int closedlistsize = 110503,
+			unsigned int closedlistsize = 1105036,
 			unsigned int openlistsize = 100,
 			unsigned int maxcost = 1000000) :
 			SearchAlg<D>(d), tnum(tnum_), thread_id(0), z(d,
@@ -187,7 +187,7 @@ public:
 					0), overrun(overrun_), closedlistsize(closedlistsize),
 					openlistsize(openlistsize), initmaxcost(maxcost) {
 		income_buffer.resize(tnum);
-		terminate = new bool[tnum];
+		terminate.resize(tnum);
 		for (int i = 0; i < tnum; ++i) {
 			terminate[i] = 0;
 		}
@@ -199,13 +199,18 @@ public:
 //		duplicates = new int[tnum];
 
 		// Fields for Out sourcing
-		fvalues = new int[tnum];
+		fvalues.resize(tnum);
 
-		logfvalue = new std::vector<Logfvalue>[tnum];
-		logincumbent = new std::vector<LogIncumbent>[tnum];
-		lognodeorder = new std::vector<LogNodeOrder>[tnum];
+		logfvalue.resize(tnum);
+		logincumbent.resize(tnum);
+		lognodeorder.resize(tnum);
 
-		open_sizes = new int[tnum];
+
+//		logfvalue = new std::vector<Logfvalue>[tnum];
+//		logincumbent = new std::vector<LogIncumbent>[tnum];
+//		lognodeorder = new std::vector<LogNodeOrder>[tnum];
+
+		open_sizes.resize(tnum);
 	}
 
 	void set_closedlistsize(unsigned int closedlistsize) {
@@ -287,6 +292,7 @@ public:
 				double t = walltime() - init_time;
 //				printf("t = %f\n", t);
 				if (t > timer) {
+//					nodes.destruct_all();
 					break;
 				}
 			}
