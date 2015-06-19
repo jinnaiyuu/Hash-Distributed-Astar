@@ -14,6 +14,8 @@ public:
 		newblk();
 	}
 
+	// TODO: If other thread is using nodes stored in here,
+	//       then wouldn't this case a segmentation fault?
 	~Pool(void) {
 		for (unsigned int i = 0; i < blks.size(); i++)
 			delete[] blks[i];

@@ -40,7 +40,8 @@ vector<string> getTypes(istream& domain) {
  * WRITE: domain:predicates, instance:object, instance:init
  * TODO: implement polymorphic types with tree structure.
  */
-void getConstants(istream& domain, vector<pair<string, string>>& type_object, string header) {
+void getConstants(istream& domain, vector<pair<string, string>>& type_object,
+		string header) {
 	vector<pair<string, string>> constants;
 	string text;
 	getBracket(domain, header, 0, text);
@@ -140,31 +141,36 @@ vector<string> getAction(istream& domain) {
 
 	unsigned int action = 0;
 
-	while (domain.good()) {
+	while (true) {
 		string output;
 		string text;
-		getBracket(domain, ":action", action++, text);
+		if (!getBracket(domain, ":action", action++, text)) {
+			break;
+		}
 		istringstream tstream(text);
+
+		string param_text;
+//		getText(tstream, ":parameters", ":precondition", 0, param_text);
+//
+		getText2(tstream, ":parameters", ":precondition", 0, param_text);
+
+		istringstream param_stream(param_text);
+		cout << "param_text: " << param_text;
 		vector<pair<string, string>> types;
-		getConstants(tstream, types, "(?");
+		getConstants(param_stream, types, "?");
 
-
-
-		vector<string> tokens { istream_iterator<string> { tstream },
-				istream_iterator<string> { } };
-
-		bool is_parameter = false;
-		bool is_precondition = false;
-
-		vector<string> parameters;
-
-
-		// (?a - airplane) ->
-		for (int t = 0; t < tokens.size(); ++t) {
-			if (tokens[t].compare(":parameters") == 0) {
-			}
+		std::cout << "action parameters" << std::endl;
+		for (int i = 0; i < types.size(); ++i) {
+			cout << "(type_" << types[i].second << " " << types[i].first << ")"
+					<< endl;
 		}
 
+		string precond_text;
+		getText2(tstream, ":precondition", ":effect", 0, precond_text);
+		istringstream precond_stream(precond_text);
+		string prec_and;
+		getBracket(precond_stream, "", 0, prec_and);
+		cout << "prec_and: " << prec_and << endl;
 
 	}
 	return actions;
@@ -188,14 +194,31 @@ int main(int argc, const char *argv[]) {
 
 	vector<pair<string, string>> constants;
 	getConstants(domain, constants, ":constants");
+
+	// Constants will be included in init states.
+	std::cout << std::endl;
+	std::cout << "################" << std::endl;
+	std::cout << "Constants:" << std::endl;
 	for (int i = 0; i < constants.size(); ++i) {
-		cout << constants[i].first << " - " << constants[i].second << endl;
+		cout << "(type_" << constants[i].second << " " << constants[i].first
+				<< ")" << endl;
 	}
 
+	// Predicates
+	std::cout << std::endl;
+	std::cout << "################" << std::endl;
+	std::cout << "Predicates:" << std::endl;
 	vector<string> predicates = getPredicate(domain);
 	for (int i = 0; i < predicates.size(); ++i) {
 		cout << predicates[i];
 	}
 	cout << endl;
+
+	// Actions
+	std::cout << std::endl;
+	std::cout << "################" << std::endl;
+	std::cout << "Actions:" << std::endl;
+	vector<string> actions = getAction(domain);
+
 }
 

@@ -171,8 +171,8 @@ template<class D, class hash> class HDAstarComb: public SearchAlg<D> {
 	unsigned int openlistsize;
 	unsigned int initmaxcost;
 
-	bool isTimed = false;
-	double timer = 0.0;
+//	bool isTimed = false;
+//	double timer = 0.0;
 
 public:
 
@@ -288,11 +288,11 @@ public:
 			Node *n;
 
 
-			if (isTimed) {
+			if (this->isTimed) {
 				double t = walltime() - init_time;
 //				printf("t = %f\n", t);
-				if (t > timer) {
-//					nodes.destruct_all();
+				if (t > this->timer) {
+//					closed.destruct_all(nodes);
 					break;
 				}
 			}
@@ -702,16 +702,17 @@ public:
 			pthread_join(t[i], NULL);
 		}
 
-		if (isTimed) {
-			return path;
-		}
-
 		for (int i = 0; i < tnum; ++i) {
 			this->expd += expd_distribution[i];
 			this->gend += gend_distribution[i];
 			this->push += self_pushes[i];
 			this->dup += duplicates[i];
 		}
+
+		if (this->isTimed) {
+			return path;
+		}
+
 
 #ifdef ANALYZE_INCOME
 		printf("average of max_income_buffer_size = %d\n", max_income / tnum);
@@ -889,13 +890,13 @@ public:
 	}
 
 
-	void setTimer(double timer) {
-		isTimed = true;
-		this->timer = timer;
-	}
+//	void setTimer(double timer) {
+//		isTimed = true;
+//		this->timer = timer;
+//	}
 
 	void unsetTimer() {
-		isTimed = false;
+		this->isTimed = false;
 
 	}
 

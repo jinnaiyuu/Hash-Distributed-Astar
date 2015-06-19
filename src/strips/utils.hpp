@@ -299,6 +299,52 @@ bool getBracket(std::istream &file, const std::string &from, unsigned int number
 }
 
 static
+bool getText2(std::istream &file, std::string from, std::string to,
+		unsigned int number, std::string& ret) {
+	if (!file.good()) {
+//		std::cout << "error on file" << std::endl;
+		file.clear();
+	}
+	file.seekg(0, std::ios_base::beg);
+
+	std::string str;
+	size_t pos;
+	std::vector<std::string> strings;
+	bool good = false;
+
+	unsigned int counter = 0;
+	// put total_text the text for inital state.
+
+	// find init
+	while (file.good()) {
+		file >> str;
+		pos = str.find(from);
+		if (pos != std::string::npos) {
+			strings.push_back(str);
+			break;
+		}
+	}
+
+	while (file.good()) {
+		file >> str;
+		pos = str.find(to);
+		if (pos != std::string::npos) {
+			good = true;
+			break;
+		}
+		strings.push_back(str);
+	}
+
+	for (int i = 0; i < strings.size(); ++i) {
+		ret.append(strings[i]);
+		ret.append(" ");
+	}
+
+	return good;
+}
+
+
+static
 bool getText(std::istream &file, std::string from, std::string to,
 		unsigned int number, std::string& ret) {
 	if (!file.good()) {

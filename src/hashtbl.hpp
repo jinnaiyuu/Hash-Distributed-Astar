@@ -34,10 +34,18 @@ public:
 //		pthread_mutex_init(&m, NULL);
 	}
 
-//	void destruct(Node* n) {
-//		Node* next = n->hashentry().next;
-//		destruct(next);
-//	}
+	void destruct_all(Pool<Node>& nodes) {
+		for (int i = 0; i < buckets.size(); ++i) {
+			Node* n = buckets[i];
+			destruct(n, nodes);
+		}
+	}
+
+	void destruct(Node* n, Pool<Node>& nodes) {
+		Node* next = n->hashentry().next;
+		destruct(next, nodes);
+		nodes.destruct(n);
+	}
 
 	// find looks up the given key in the hash table and returns
 	// the data value if it is found or else it returns 0.

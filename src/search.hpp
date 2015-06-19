@@ -32,6 +32,10 @@ template<class D> struct SearchAlg {
 	// The return value is the path to the goal which can
 	// be empty if the goal was no found.
 	virtual std::vector<typename D::State> search(typename D::State&) = 0;
+	void setTimer(double t) {
+		timer = t;
+		isTimed = true;
+	}
 
 	// dom is the domain over which this search is defined.
 	D &dom;
@@ -45,7 +49,8 @@ template<class D> struct SearchAlg {
 	unsigned long push; // This is for HDA*.
 	unsigned long dup; // This is for HDA*.
 
-
+	double timer = 0.0;
+	bool isTimed = false;
 	unsigned int incm;
 
 	double wtime, ctime;
