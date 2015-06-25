@@ -12,9 +12,9 @@ public:
 
 	Action(std::string name, unsigned int action_key,
 			std::vector<unsigned int> precs, std::vector<unsigned int> adds,
-			std::vector<unsigned int> deletes) :
+			std::vector<unsigned int> deletes, unsigned int action_cost = 1) :
 			name(name), action_key(action_key), preconditions(precs), adds(
-					adds), deletes(deletes) {
+					adds), deletes(deletes), action_cost(action_cost) {
 	}
 
 	void print() {
@@ -45,6 +45,7 @@ public:
 	std::vector<unsigned int> adds; // propositions to add.
 	std::vector<unsigned int> deletes; // propositions to delete.
 
+	unsigned int action_cost;
 };
 
 #endif

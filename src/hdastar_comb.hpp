@@ -72,6 +72,7 @@ template<class D, class hash> class HDAstarComb: public SearchAlg<D> {
 
 	std::atomic<int> incumbent; // The best solution so far.
 	std::vector<bool> terminate;
+	bool tot_terminate;
 
 	int income_threshold;
 	int outgo_threshold;
@@ -84,7 +85,6 @@ template<class D, class hash> class HDAstarComb: public SearchAlg<D> {
 	std::vector<unsigned int> duplicates;
 
 	std::vector<unsigned int> self_pushes;
-
 
 	std::atomic<int> globalOrder;
 
@@ -165,7 +165,6 @@ template<class D, class hash> class HDAstarComb: public SearchAlg<D> {
 #endif
 #endif
 
-
 	int overrun;
 	unsigned int closedlistsize;
 	unsigned int openlistsize;
@@ -178,19 +177,22 @@ public:
 
 	HDAstarComb(D &d, int tnum_, int income_threshold_ = 1000000,
 			int outgo_threshold_ = 10000000, int abst_ = 0, int overrun_ = 0,
-			unsigned int closedlistsize = 1105036,
-			unsigned int openlistsize = 100,
-			unsigned int maxcost = 1000000) :
+			unsigned int closedlistsize = 1105036, unsigned int openlistsize =
+					100, unsigned int maxcost = 1000000) :
 			SearchAlg<D>(d), tnum(tnum_), thread_id(0), z(d,
-					static_cast<typename hash::ABST>(abst_)), incumbent(maxcost), income_threshold(
-					income_threshold_), outgo_threshold(outgo_threshold_), globalOrder(
-					0), overrun(overrun_), closedlistsize(closedlistsize),
-					openlistsize(openlistsize), initmaxcost(maxcost) {
+					static_cast<typename hash::ABST>(abst_)), incumbent(
+					maxcost), income_threshold(income_threshold_), outgo_threshold(
+					outgo_threshold_), globalOrder(0), overrun(overrun_), closedlistsize(
+					closedlistsize), openlistsize(openlistsize), initmaxcost(
+					maxcost) {
 		income_buffer.resize(tnum);
 		terminate.resize(tnum);
+//		tot_terminate.resize(tnum);
 		for (int i = 0; i < tnum; ++i) {
 			terminate[i] = 0;
 		}
+		tot_terminate = false;
+
 		expd_distribution.resize(tnum);
 		gend_distribution.resize(tnum);
 		duplicates.resize(tnum);
@@ -204,7 +206,6 @@ public:
 		logfvalue.resize(tnum);
 		logincumbent.resize(tnum);
 		lognodeorder.resize(tnum);
-
 
 //		logfvalue = new std::vector<Logfvalue>[tnum];
 //		logincumbent = new std::vector<LogIncumbent>[tnum];
@@ -284,15 +285,15 @@ public:
 //		while (thread_id < tnum) {
 //			;
 //		}
-		while (true) {
+		while (!tot_terminate) {
 			Node *n;
-
 
 			if (this->isTimed) {
 				double t = walltime() - init_time;
 //				printf("t = %f\n", t);
 				if (t > this->timer) {
 //					closed.destruct_all(nodes);
+					terminate[id] = true;
 					break;
 				}
 			}
@@ -315,7 +316,7 @@ public:
 					dbgprintf("size = %d\n", size);
 #endif // ANALYZE_INCOME
 					for (int i = 0; i < size; ++i) {
-						dbgprintf("pushing %d, ", i);
+						dbgprintf ("pushing %d, ", i);
 						open.push(tmp[i]); // Not sure optimal or not. Vector to Heap.
 					}
 					tmp.clear();
@@ -332,7 +333,7 @@ public:
 					dbgprintf("size = %d\n", size);
 #endif // ANALYZE_INCOME
 					for (int i = 0; i < size; ++i) {
-						dbgprintf("pushing %d, ", i);
+						dbgprintf ("pushing %d, ", i);
 						open.push(tmp[i]); // Not sure optimal or not.
 					}
 					tmp.clear();
@@ -345,8 +346,10 @@ public:
 #ifdef OUTSOURCING
 			open_sizes[id] = open.getsize();
 #endif
+
+			// TODO: not sure this gonna cause problem.
 			if (open.isemptyunder(incumbent.load())) {
-				dbgprintf("open is empty.\n");
+				dbgprintf ("open is empty.\n");
 				terminate[id] = true;
 				if (hasterminated() && incumbent != initmaxcost) {
 					printf("terminated\n");
@@ -407,7 +410,7 @@ public:
 			Node *duplicate = closed.find(n->packed);
 			if (duplicate) {
 				if (duplicate->f <= n->f) {
-					dbgprintf("Discarded\n");
+					dbgprintf ("Discarded\n");
 					nodes.destruct(n);
 					continue;
 #ifdef ANALYZE_DUPLICATE
@@ -542,7 +545,6 @@ public:
 //					printf("!!!ERROR: g is wrong: %u + %d != %u\n", n->g, e.cost, next->g);
 //				}
 
-
 //				if (next->f > incumbent.load()) {
 ////					printf("needless\n");
 //					++over_incumbent_count;
@@ -570,21 +572,20 @@ public:
 					open.push(next);
 //				}
 #ifdef SEMISYNC
-				// Synchronous communication to avoid search overhead
-				else if (outgo_buffer[zbr].size() > outgo_threshold) {
-					income_buffer[zbr].lock();
-					income_buffer[zbr].push_with_lock(next);
-					income_buffer[zbr].push_all_with_lock(outgo_buffer[zbr]);
+					// Synchronous communication to avoid search overhead
+					else if (outgo_buffer[zbr].size() > outgo_threshold) {
+						income_buffer[zbr].lock();
+						income_buffer[zbr].push_with_lock(next);
+						income_buffer[zbr].push_all_with_lock(outgo_buffer[zbr]);
 //					printf("%d", __LINE__);
-					income_buffer[zbr].release_lock();
-					outgo_buffer[zbr].clear();
+						income_buffer[zbr].release_lock();
+						outgo_buffer[zbr].clear();
 #ifdef ANALYZE_SEMISYNC
-					++force_outgo;
+						++force_outgo;
 //					printf("semisync = %d to %d\n", id, zbr);
 #endif // ANALYZE_SEMISYNC
-				}
+					}
 #endif // SEMISYNC
-
 //				else if (income_buffer[zbr].try_lock()) {
 //					// if able to acquire the lock, then push all nodes in local buffer.
 //					income_buffer[zbr].push_with_lock(next);
@@ -624,13 +625,24 @@ public:
 					}
 				}
 
-
 				this->dom.undo(state, e);
 			}
 #ifdef ANALYZE_LAPSE
 			endlapse(lapse, "expand");
 #endif
 		}
+
+//		if (this->isTimed) {
+
+		for (int i = 0; i < tnum; ++i) {
+			terminate[i] = true;
+		}
+		tot_terminate = true;
+//		while (!tot_terminate) {
+//			;
+//		}
+		printf("terminated %d\n", id);
+//		}
 
 		// Solved (maybe)
 
@@ -645,7 +657,7 @@ public:
 		// From here, you can dump every comments as it would not be included in walltime & cputime.
 
 		//		path =
-		dbgprintf("pathsize = %lu\n", path.size());
+		dbgprintf ("pathsize = %lu\n", path.size());
 
 		this->expd_distribution[id] = expd_here;
 		this->gend_distribution[id] = gend_here;
@@ -662,7 +674,7 @@ public:
 
 		this->self_pushes[id] = self_push;
 
-		dbgprintf("END\n");
+		dbgprintf ("END\n");
 		return 0;
 	}
 
@@ -697,7 +709,7 @@ public:
 //			printf("%d\n", i);
 			pthread_create(&(t[i]), NULL,
 					(void*(*)(void*))&HDAstarComb::thread_helper, this);
-		}
+				}
 		for (int i = 0; i < tnum; ++i) {
 			pthread_join(t[i], NULL);
 		}
@@ -712,7 +724,6 @@ public:
 		if (this->isTimed) {
 			return path;
 		}
-
 
 #ifdef ANALYZE_INCOME
 		printf("average of max_income_buffer_size = %d\n", max_income / tnum);
@@ -849,8 +860,6 @@ public:
 //				newBoard);
 //	}
 
-
-
 	void print_state(typename D::State state) {
 		for (int i = 0; i < D::Ntiles; ++i) {
 			printf("%d ", state.tiles[i]);
@@ -889,7 +898,6 @@ public:
 		return stddev;
 	}
 
-
 //	void setTimer(double timer) {
 //		isTimed = true;
 //		this->timer = timer;
@@ -899,7 +907,6 @@ public:
 		this->isTimed = false;
 
 	}
-
 
 // CAUTIONS!
 // These lapsing methods uses cputime methods.
@@ -957,14 +964,14 @@ public:
 			}
 		}
 		if (minid == -1) {
-			dbgprintf("failed %d\n", id);
+			dbgprintf ("failed %d\n", id);
 			return false;
 		}
 //		p->thrown += 1; // it indicates that the node has outsourced.
 
 		// Should this be try_push?
 		income_buffer[minid].push(p);
-		dbgprintf("send %d to %d\n", id, minid);
+		dbgprintf ("send %d to %d\n", id, minid);
 		return true;
 	}
 

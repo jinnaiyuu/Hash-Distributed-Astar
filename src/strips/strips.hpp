@@ -392,6 +392,7 @@ public:
 		unsigned int key;
 		std::string symbol;
 		unsigned int number_of_arguments;
+		std::vector<unsigned int> types_of_arguments;
 		int group_key;
 		Predicate() {
 		}
@@ -423,6 +424,7 @@ public:
 	struct Object {
 		unsigned int key;
 		std::string symbol;
+		unsigned int type;
 	};
 
 	struct LiftedAction {
@@ -435,6 +437,7 @@ public:
 
 		std::vector<unsigned int> addsInst; // PredicateArg keys.
 		std::vector<unsigned int> delsInst;
+		unsigned int action_cost;
 	};
 
 	struct LiftedActionArg {
@@ -461,6 +464,9 @@ private:
 	std::vector<unsigned int> xor_ungroupeds;
 	std::vector<std::vector<unsigned int>> structures; // structures are made of xor_groups.
 
+	std::vector<std::pair<std::string, int>> types;
+	std::vector<std::pair<std::string, std::string>> constants;
+
 	PDB* pd;// need deallocate
 	int n_groups = 0;
 
@@ -472,8 +478,7 @@ private:
 	void readRequirements(std::istream &domain);
 	void readPredicates(std::istream &domain,
 			std::vector<Predicate>& predicates);
-	void readTypes(std::istream &domain,
-			std::vector<Predicate>& predicates);
+	std::vector<std::pair<std::string, int>> readTypes(std::istream& domain);
 	void readObjects(std::istream &instance);
 	void ground(Predicate& p, std::vector<unsigned int> argv, unsigned int key,
 			GroundedPredicate& g, std::vector<Object>& obs);
@@ -495,7 +500,14 @@ private:
 			const std::vector<LiftedActionArg>& laas);
 	void analyzeAllBalances(std::vector<Predicate> ps);
 	void analyzeXORGroups();
+	void getConstants(std::istream& domain, std::vector<std::pair<std::string, std::string>>& type_object,
+			std::string header);
 	int pow(int base, int p);
+
+
+public:
+	// this is for structured zobrist hash.
+	void analyzeTransitions();
 
 };
 #endif

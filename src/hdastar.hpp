@@ -79,8 +79,10 @@ template<class D, class hash> class HDAstar: public SearchAlg<D> {
 	int force_income = 0;
 	int force_outgo = 0;
 
-	int* expd_distribution;
-	int* gend_distribution;
+	std::vector<unsigned int> expd_distribution;
+	std::vector<unsigned int> gend_distribution;
+	std::vector<unsigned int> duplicates;
+	std::vector<unsigned int> self_pushes;
 
 	std::atomic<int> globalOrder;
 
@@ -147,7 +149,7 @@ template<class D, class hash> class HDAstar: public SearchAlg<D> {
 	int max_outgo = 0;
 #endif
 #ifdef ANALYZE_DUPLICATE
-	int* duplicates = 0;
+//	int* duplicates = 0;
 #endif
 #ifdef ANALYZE_GLOBALF
 	int globalf = 10000000; // Ad hoc number.
@@ -161,7 +163,7 @@ template<class D, class hash> class HDAstar: public SearchAlg<D> {
 #endif
 #endif
 
-	unsigned int self_pushes = 0;
+//	unsigned int self_pushes = 0;
 
 	int overrun;
 	unsigned int closedlistsize;
@@ -185,10 +187,13 @@ public:
 		for (int i = 0; i < tnum; ++i) {
 			terminate[i] = 0;
 		}
-		expd_distribution = new int[tnum];
-		gend_distribution = new int[tnum];
-
-		duplicates = new int[tnum];
+//		expd_distribution = new int[tnum];
+//		gend_distribution = new int[tnum];
+//		duplicates = new int[tnum];
+		expd_distribution.resize(tnum);
+		gend_distribution.resize(tnum);
+		duplicates.resize(tnum);
+		self_pushes.resize(tnum);
 
 		// Fields for Out sourcing
 		fvalues = new int[tnum];
@@ -616,7 +621,7 @@ public:
 		this->duplicates[id] = duplicate_here;
 #endif
 
-		self_pushes += self_push;
+		self_pushes[id] = self_push;
 
 		dbgprintf("END\n");
 		return 0;
@@ -741,7 +746,7 @@ public:
 		}
 		printf("\n");
 
-		printf("self_pushes: %u\n", self_pushes);
+//		printf("self_pushes: %u\n", self_pushes);
 
 		return path;
 	}
@@ -801,7 +806,7 @@ public:
 	}
 
 // MAX / AVERAGE
-	double load_balance(int* distribution) {
+	double load_balance(std::vector<unsigned int> distribution) {
 		double avrg = 0, max = 0;
 		for (int i = 0; i < tnum; ++i) {
 			avrg += distribution[i];
@@ -813,7 +818,7 @@ public:
 		return max / avrg;
 	}
 
-	double analyze_distribution(int* distribution) {
+	double analyze_distribution(std::vector<unsigned int> distribution) {
 		double avrg = 0;
 		for (int i = 0; i < tnum; ++i) {
 			avrg += distribution[i];
@@ -897,6 +902,21 @@ public:
 		dbgprintf("send %d to %d\n", id, minid);
 		return true;
 	}
+
+	// TODO: implement
+	std::vector<unsigned int> getExpansions() {
+		return expd_distribution;
+	}
+	std::vector<unsigned int> getGenerations() {
+		return gend_distribution;
+	}
+	std::vector<unsigned int> getSelfPushes() {
+		return self_pushes;
+	}
+	std::vector<unsigned int> getDuplicates() {
+		return duplicates;
+	}
+
 };
 
 #endif /* HDASTAR_HPP_ */

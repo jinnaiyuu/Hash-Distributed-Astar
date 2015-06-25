@@ -7,9 +7,9 @@
 #include <algorithm>
 #include <functional>
 #include <assert.h>
+#include <utility>
 
-static
-std::vector<std::string> &split(const std::string &s, char delim,
+static std::vector<std::string> &split(const std::string &s, char delim,
 		std::vector<std::string> &elems) {
 	std::stringstream ss(s);
 	std::string item;
@@ -19,15 +19,13 @@ std::vector<std::string> &split(const std::string &s, char delim,
 	return elems;
 }
 
-static
-std::vector<std::string> split(const std::string &s, char delim) {
+static std::vector<std::string> split(const std::string &s, char delim) {
 	std::vector<std::string> elems;
 	split(s, delim, elems);
 	return elems;
 }
 
-static
-std::string& replace(std::string& s, const std::string& from,
+static std::string& replace(std::string& s, const std::string& from,
 		const std::string& to) {
 	for (size_t pos = 0; (pos = s.find(from, pos)) != std::string::npos; pos +=
 			to.size())
@@ -35,33 +33,41 @@ std::string& replace(std::string& s, const std::string& from,
 	return s;
 }
 
-static
-std::string trim(std::string& str) {
+static std::string trim(std::string& str) {
 	size_t first = str.find_first_not_of(' ');
 	size_t last = str.find_last_not_of(' ');
 	return str.substr(first, (last - first + 1));
 }
 
-static
-std::string findRange(std::string& s, const std::string& from,
+static std::string findRange(std::string& s, const std::string& from,
 		const std::string& to) {
 	size_t f = 0;
 	size_t t = 0;
 	f = s.find(from, f);
 	t = s.find(to, f);
+	if (t == std::string::npos) {
+		return s.substr(f);
+	} else {
+		return s.substr(f, t - f);
 
-	return s.substr(f, t-f);
+	}
+
+//	if (f < 0 || t-f < 0 || t-f >= s.size()) {
+//		std::cout << "out-of-range: " << f << " to " << t << ": " << s <<std::endl;
+//	}
+
 }
 
 // if v2 has all numbers in v1 then return true.
 // true if v2 >= v1.
 static
-bool isContainedSortedVectors(const std::vector<unsigned int>& v1, const std::vector<unsigned int>& v2) {
+bool isContainedSortedVectors(const std::vector<unsigned int>& v1,
+		const std::vector<unsigned int>& v2) {
 	unsigned int v1it = 0;
 	unsigned int v2it = 0;
 
-	while(v1it < v1.size() && v2it < v2.size()) {
-		if(v1[v1it] == v2[v2it]) {
+	while (v1it < v1.size() && v2it < v2.size()) {
+		if (v1[v1it] == v2[v2it]) {
 			++v1it;
 			++v2it;
 		} else if (v1[v1it] < v2[v2it]) {
@@ -75,11 +81,12 @@ bool isContainedSortedVectors(const std::vector<unsigned int>& v1, const std::ve
 }
 
 static
-bool isContainedSortedVectors(unsigned int v1, const std::vector<unsigned int>& v2) {
+bool isContainedSortedVectors(unsigned int v1,
+		const std::vector<unsigned int>& v2) {
 	unsigned int v2it = 0;
 
-	while(v2it < v2.size()) {
-		if(v1 == v2[v2it]) {
+	while (v2it < v2.size()) {
+		if (v1 == v2[v2it]) {
 			return true;
 		} else if (v1 < v2[v2it]) {
 			return false;
@@ -92,14 +99,15 @@ bool isContainedSortedVectors(unsigned int v1, const std::vector<unsigned int>& 
 
 // if any of v1 not contained in v2, return true. false otherwise.
 static
-bool isAnyNotContainedSortedVectors(const std::vector<unsigned int>& v1, const std::vector<unsigned int>& v2) {
+bool isAnyNotContainedSortedVectors(const std::vector<unsigned int>& v1,
+		const std::vector<unsigned int>& v2) {
 	unsigned int v1it = 0;
 	unsigned int v2it = 0;
 
 	unsigned int contained = 0;
 
-	while(v1it < v1.size() && v2it < v2.size()) {
-		if(v1[v1it] == v2[v2it]) {
+	while (v1it < v1.size() && v2it < v2.size()) {
+		if (v1[v1it] == v2[v2it]) {
 			++v1it;
 			++v2it;
 		} else if (v1[v1it] < v2[v2it]) {
@@ -115,16 +123,16 @@ bool isAnyNotContainedSortedVectors(const std::vector<unsigned int>& v1, const s
 	}
 }
 
-
 static
-unsigned int howManyContainedSortedVectors(const std::vector<unsigned int>& v1, const std::vector<unsigned int>& v2) {
+unsigned int howManyContainedSortedVectors(const std::vector<unsigned int>& v1,
+		const std::vector<unsigned int>& v2) {
 	unsigned int v1it = 0;
 	unsigned int v2it = 0;
 
 	unsigned int contained = 0;
 
-	while(v1it < v1.size() && v2it < v2.size()) {
-		if(v1[v1it] == v2[v2it]) {
+	while (v1it < v1.size() && v2it < v2.size()) {
+		if (v1[v1it] == v2[v2it]) {
 			++contained;
 			++v1it;
 			++v2it;
@@ -137,16 +145,15 @@ unsigned int howManyContainedSortedVectors(const std::vector<unsigned int>& v1, 
 	return contained;
 }
 
-
-
-static
-std::vector<unsigned int> intersectingSortedVectors(const std::vector<unsigned int>& v1, const std::vector<unsigned int>& v2) {
+static std::vector<unsigned int> intersectingSortedVectors(
+		const std::vector<unsigned int>& v1,
+		const std::vector<unsigned int>& v2) {
 	std::vector<unsigned int> intersecting;
 	unsigned int v1it = 0;
 	unsigned int v2it = 0;
 
-	while(v1it < v1.size() && v2it < v2.size()) {
-		if(v1[v1it] == v2[v2it]) {
+	while (v1it < v1.size() && v2it < v2.size()) {
+		if (v1[v1it] == v2[v2it]) {
 			intersecting.push_back(v1[v1it]);
 			++v1it;
 			++v2it;
@@ -159,13 +166,14 @@ std::vector<unsigned int> intersectingSortedVectors(const std::vector<unsigned i
 	return intersecting;
 }
 
-static
-std::vector<unsigned int> uniquelyMergeSortedVectors(const std::vector<unsigned int>& v1, const std::vector<unsigned int>& v2) {
+static std::vector<unsigned int> uniquelyMergeSortedVectors(
+		const std::vector<unsigned int>& v1,
+		const std::vector<unsigned int>& v2) {
 	std::vector<unsigned int> uniqueMerge;
 	unsigned int v1it = 0;
 	unsigned int v2it = 0;
-	while(v1it < v1.size() && v2it < v2.size()) {
-		if(v1[v1it] == v2[v2it]) {
+	while (v1it < v1.size() && v2it < v2.size()) {
+		if (v1[v1it] == v2[v2it]) {
 			uniqueMerge.push_back(v1[v1it]);
 			++v1it;
 			++v2it;
@@ -188,13 +196,14 @@ std::vector<unsigned int> uniquelyMergeSortedVectors(const std::vector<unsigned 
 }
 
 // Take difference of sets, v1 - v2.
-static
-std::vector<unsigned int> differenceSortedVectors(const std::vector<unsigned int>& v1, const std::vector<unsigned int>& v2) {
+static std::vector<unsigned int> differenceSortedVectors(
+		const std::vector<unsigned int>& v1,
+		const std::vector<unsigned int>& v2) {
 	std::vector<unsigned int> difference;
 	unsigned int v1it = 0;
 	unsigned int v2it = 0;
-	while(v1it < v1.size() && v2it < v2.size()) {
-		if(v1[v1it] == v2[v2it]) {
+	while (v1it < v1.size() && v2it < v2.size()) {
+		if (v1[v1it] == v2[v2it]) {
 			++v1it;
 			++v2it;
 		} else if (v1[v1it] < v2[v2it]) {
@@ -210,24 +219,50 @@ std::vector<unsigned int> differenceSortedVectors(const std::vector<unsigned int
 	return difference;
 }
 
-static
-std::vector<unsigned int> getArguements(const std::vector<unsigned int>& argument, const std::vector<unsigned int>& which) {
+static std::vector<unsigned int> getArguements(
+		const std::vector<unsigned int>& argument,
+		const std::vector<unsigned int>& which) {
 	std::vector<unsigned int> args;
 	for (int i = 0; i < which.size(); ++i) {
-		args.push_back(argument[which[i]]);
+		if (which[i] >= argument.size()) {
+			args.push_back(which[i] - argument.size());
+		} else {
+			args.push_back(argument[which[i]]);
+		}
 	}
 	return args;
 }
-
 
 inline unsigned int hash(const std::vector<unsigned int> v) {
 	std::hash<unsigned int> hasher;
 	unsigned int seed = 0;
 	for (int i = 0; i < v.size(); i++) {
-		seed ^= hasher(v[i]) + 0x9e3779b9 + (seed<<6) + (seed>>2);
+		seed ^= hasher(v[i]) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
 	}
 	return seed;
 }
+
+static
+int matchStringIndex(const std::vector<std::pair<std::string, int>>& dic, const std::string& string) {
+	for (int i = 0; i < dic.size(); ++i) {
+		if (dic[i].first.compare(string) == 0) {
+			return i;
+		}
+	}
+	return -1;
+}
+
+
+static
+int matchStringInt(const std::vector<std::pair<std::string, int>>& dic, const std::string& string) {
+	for (int i = 0; i < dic.size(); ++i) {
+		if (dic[i].first.compare(string) == 0) {
+			return dic[i].second;
+		}
+	}
+	return -1;
+}
+
 
 /**
  * @param from: first literal inside bracket.
@@ -237,7 +272,8 @@ inline unsigned int hash(const std::vector<unsigned int> v) {
  *
  */
 static
-bool getBracket(std::istream &file, const std::string &from, unsigned int number, std::string& ret) {
+bool getBracket(std::istream &file, const std::string &from,
+		unsigned int number, std::string& ret) {
 	if (!file.good()) {
 //		std::cout << "error on file" << std::endl;
 		file.clear();
@@ -248,7 +284,6 @@ bool getBracket(std::istream &file, const std::string &from, unsigned int number
 	std::string line;
 	size_t pos;
 	std::vector<std::string> strings;
-
 
 	unsigned int counter = 0;
 	// put total_text the text for inital state.
@@ -280,13 +315,16 @@ bool getBracket(std::istream &file, const std::string &from, unsigned int number
 		size_t open = std::count(total_text.begin(), total_text.end(), '(');
 		size_t close = std::count(total_text.begin(), total_text.end(), ')');
 
+		if (line.length() > 0) {
+			total_text.append(" ");
+		}
 		total_text.append(line);
 		if (open == close) {
 			hasEnded = true;
 			break;
-		} else if(open < close) {
+		} else if (open < close) {
 			// error: more closure than open
-			assert(false);
+//			assert(false);
 		}
 	}
 
@@ -297,6 +335,66 @@ bool getBracket(std::istream &file, const std::string &from, unsigned int number
 	ret = total_text;
 	return true;
 }
+
+static
+bool getBracket2(std::istream &file, const std::string &from,
+		unsigned int number, std::string& ret) {
+	if (!file.good()) {
+//		std::cout << "error on file" << std::endl;
+		file.clear();
+	}
+	file.seekg(0, std::ios_base::beg);
+
+	char c;
+	int braket_pos;
+	while (file.good()) {
+		file.get(c);
+		if (c == '(') {
+			braket_pos = file.tellg();
+			braket_pos -= 1;
+		}
+		if (c == from[0]) {
+			file.seekg(-1, file.cur);
+			unsigned int from_length = from.size();
+			char* buf = new char[from_length];
+			file.read(buf, from_length);
+			if (from.compare(buf) == 0) {
+				std::cout << "matched!" << std::endl;
+				file.seekg(braket_pos, file.beg);
+				break;
+			} else {
+				int p = - from_length + 1;
+				file.seekg(p, file.cur);
+			}
+			delete buf;
+		}
+	}
+
+	int end_pos;
+	int braket_count = 0;
+	while (file.good()) {
+		file.get(c);
+		if (c == '(') {
+			++braket_count;
+		} else if (c == ')') {
+			--braket_count;
+		}
+
+		if (braket_count == 0) {
+			end_pos = file.tellg();
+			end_pos += 1;
+		}
+	}
+	file.seekg(braket_pos, file.beg);
+	char* buf = new char[end_pos - braket_pos];
+	file.read(buf, end_pos - braket_pos);
+	std::string s(buf,  end_pos - braket_pos);
+	ret = s;
+	delete buf;
+	return true;
+}
+
+
 
 static
 bool getText2(std::istream &file, std::string from, std::string to,
@@ -320,8 +418,12 @@ bool getText2(std::istream &file, std::string from, std::string to,
 		file >> str;
 		pos = str.find(from);
 		if (pos != std::string::npos) {
-			strings.push_back(str);
-			break;
+			if (number == counter) {
+				strings.push_back(str);
+				break;
+			} else {
+				++counter;
+			}
 		}
 	}
 
@@ -332,17 +434,21 @@ bool getText2(std::istream &file, std::string from, std::string to,
 			good = true;
 			break;
 		}
-		strings.push_back(str);
+		if (file.good()) {
+			strings.push_back(str);
+		}
 	}
 
+	ret = "";
 	for (int i = 0; i < strings.size(); ++i) {
 		ret.append(strings[i]);
 		ret.append(" ");
 	}
+	std::transform(ret.begin(), ret.end(), ret.begin(), ::tolower);
 
-	return good;
+//	std::cout << "getText: [" << ret << "]" << std::endl;
+	return good && file.good();
 }
-
 
 static
 bool getText(std::istream &file, std::string from, std::string to,
@@ -393,7 +499,8 @@ bool getText(std::istream &file, std::string from, std::string to,
 		}
 	}
 
-	std::transform(total_text.begin(), total_text.end(), total_text.begin(), ::tolower);
+	std::transform(total_text.begin(), total_text.end(), total_text.begin(),
+			::tolower);
 
 	if (total_text.empty()) {
 		ret = total_text;

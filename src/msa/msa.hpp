@@ -16,6 +16,8 @@ struct MSA {
 
 	// TODO: 9 short unsigned int? maybe vector is too heavy.
 	struct State {
+		char tiles[4]; // not optimal
+		unsigned int blank;
 		std::vector<uint16_t> sequence;
 		int h;
 	};

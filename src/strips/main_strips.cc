@@ -92,9 +92,10 @@ int main(int argc, const char *argv[]) {
 
 		strips.set_heuristic(h);
 
+		unsigned int n_threads = 1;
+
 
 		SearchAlg<Strips> *search = NULL;
-		unsigned int n_threads = 1;
 
 		if (strcmp(argv[1], "astar") == 0) {
 			unsigned int open = 100;
@@ -103,6 +104,9 @@ int main(int argc, const char *argv[]) {
 			unsigned int closed = 4477457;
 			search = new Astar<Strips>(strips, open, weight, incumbent, closed);
 		} else if (sscanf(argv[1], "hdastar-%u", &n_threads) == 1) {
+			// transitions are needed to build Structured Zobrist or Abstraction.
+			strips.analyzeTransitions();
+			int tnum = std::stoi(argv[3]);
 			unsigned int abst = 0;
 			for (unsigned int i = 0; i < argc; ++i) {
 				if (sscanf(argv[i], "abst-%u", &abst) == 1) {
@@ -110,8 +114,59 @@ int main(int argc, const char *argv[]) {
 				}
 			}
 
+			// Auto-Selection
+			bool est = false;
+			for (unsigned int i = 0; i < argc; ++i) {
+				if (strcmp(argv[1], "est") == 0) {
+					est = true;
+					break;
+				}
+			}
+
+			double estm_send_ratio, estm_dup_ratio;
+			double timer = 0.0;
+			if (est) {
+				////////////////////////////////
+				/// Auto-Selection
+				////////////////////////////////
+				HDAstar<Strips, StripsZobrist<Strips> > *subsearch =
+						new HDAstar<Strips, StripsZobrist<Strips> >(strips, tnum, 1000000, // income threshould
+						10000000, // outgo threshould
+						abst, // abstraction
+						0, // overrun
+						4477457, // closed list size
+						100, // open list size
+						10000000 // max cost
+						);
+
+				Strips::State g = strips.initial();
+				subsearch->setTimer(timer);
+				subsearch->search(g);
+				// TODO: those gets are not so optimal.
+				//       these operations are included in system execution time.
+				std::vector<unsigned int> gends = subsearch->getGenerations();
+				std::vector<unsigned int> pushes = subsearch->getSelfPushes();
+				std::vector<unsigned int> expds = subsearch->getExpansions();
+				std::vector<unsigned int> dups = subsearch->getDuplicates();
+
+				unsigned int gend = 0;
+				unsigned int push = 0;
+				unsigned int expd = 0;
+				unsigned int dup = 0;
+				for (int i = 0; i < tnum; ++i) {
+					gend += gends[i];
+					push += pushes[i];
+					expd += expds[i];
+					dup += dups[i];
+				}
+				estm_send_ratio = 1.0 - (double) push / (double) gend;
+				estm_dup_ratio = (double) dup / (double) expd;
+				delete subsearch;
+			}
+
+
 			search = new HDAstar<Strips, StripsZobrist<Strips> >(strips,
-					n_threads, 1000000, // income threshould
+					tnum, 1000000, // income threshould
 					10000000, // outgo threshould
 					abst, // abstraction
 					0, // overrun

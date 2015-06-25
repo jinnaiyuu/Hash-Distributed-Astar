@@ -81,8 +81,14 @@ template<class D, class hash> class HDAstarHeap: public SearchAlg<D> {
 	int force_income = 0;
 	int force_outgo = 0;
 
-	int* expd_distribution;
-	int* gend_distribution;
+//	int* expd_distribution;
+//	int* gend_distribution;
+	std::vector<unsigned int> expd_distribution;
+	std::vector<unsigned int> gend_distribution;
+	std::vector<unsigned int> duplicates;
+
+	std::vector<unsigned int> self_pushes;
+
 
 	std::atomic<int> globalOrder;
 
@@ -131,7 +137,7 @@ template<class D, class hash> class HDAstarHeap: public SearchAlg<D> {
 	int max_outgo = 0;
 #endif
 #ifdef ANALYZE_DUPLICATE
-	int* duplicates = 0;
+//	int* duplicates = 0;
 #endif
 #ifdef ANALYZE_GLOBALF
 	int globalf = 10000000; // Ad hoc number.
@@ -145,7 +151,7 @@ template<class D, class hash> class HDAstarHeap: public SearchAlg<D> {
 #endif
 #endif
 
-	unsigned int self_pushes = 0;
+//	unsigned int self_pushes = 0;
 
 	int overrun;
 	unsigned int closedlistsize;
@@ -169,10 +175,15 @@ public:
 		for (int i = 0; i < tnum; ++i) {
 			terminate[i] = 0;
 		}
-		expd_distribution = new int[tnum];
-		gend_distribution = new int[tnum];
+//		expd_distribution = new int[tnum];
+//		gend_distribution = new int[tnum];
+//		duplicates = new int[tnum];
 
-		duplicates = new int[tnum];
+		expd_distribution.resize(tnum);
+		gend_distribution.resize(tnum);
+		duplicates.resize(tnum);
+		self_pushes.resize(tnum);
+
 
 		// Fields for Out sourcing
 		fvalues = new int[tnum];
@@ -250,8 +261,21 @@ public:
 		unsigned int over_incumbent_count = 0;
 		unsigned int no_work_iteration = 0;
 
+		double init_time = walltime();
+
 		while (true) {
 			Node *n;
+
+			if (this->isTimed) {
+				double t = walltime() - init_time;
+//				printf("t = %f\n", t);
+				if (t > this->timer) {
+//					closed.destruct_all(nodes);
+					terminate[id] = true;
+					break;
+				}
+			}
+
 
 #ifdef ANALYZE_LAP
 			startlapse(lapse); // income buffer
@@ -624,7 +648,11 @@ public:
 #endif
 		}
 
+		for (int i = 0; i < tnum; ++i) {
+			terminate[i] = true;
+		}
 		// Solved (maybe)
+		printf("terminated %d\n", id);
 
 		this->wtime = walltime();
 		this->ctime = cputime();
@@ -652,10 +680,11 @@ public:
 		this->max_income += max_income_buffer_size;
 #endif
 #ifdef ANALYZE_DUPLICATE
-		this->duplicates[id] = duplicate_here;
 #endif
+		this->duplicates[id] = duplicate_here;
 
-		self_pushes += self_push;
+		this->self_pushes[id] = self_push;
+//		self_pushes += self_push;
 
 		dbgprintf("END\n");
 
@@ -712,6 +741,12 @@ public:
 		for (int i = 0; i < tnum; ++i) {
 			this->expd += expd_distribution[i];
 			this->gend += gend_distribution[i];
+			this->push += self_pushes[i];
+			this->dup += duplicates[i];
+		}
+
+		if (this->isTimed) {
+			return path;
 		}
 
 #ifdef ANALYZE_INCOME
@@ -797,7 +832,12 @@ public:
 		}
 		printf("\n");
 
-		printf("self_pushes: %u\n", self_pushes);
+		printf("self_pushes =");
+		for (int id = 0; id < tnum; ++id) {
+			int sum = self_pushes[id];
+			printf(" %d", sum);
+		}
+		printf("\n");
 
 		return path;
 	}
@@ -856,7 +896,7 @@ public:
 	}
 
 // MAX / AVERAGE
-	double load_balance(int* distribution) {
+	double load_balance(std::vector<unsigned int> distribution) {
 		double avrg = 0, max = 0;
 		for (int i = 0; i < tnum; ++i) {
 			avrg += distribution[i];
@@ -868,7 +908,7 @@ public:
 		return max / avrg;
 	}
 
-	double analyze_distribution(int* distribution) {
+	double analyze_distribution(std::vector<unsigned int> distribution) {
 		double avrg = 0;
 		for (int i = 0; i < tnum; ++i) {
 			avrg += distribution[i];
@@ -951,6 +991,21 @@ public:
 		dbgprintf("send %d to %d\n", id, minid);
 		return true;
 	}
+
+
+	std::vector<unsigned int> getExpansions() {
+		return expd_distribution;
+	}
+	std::vector<unsigned int> getGenerations() {
+		return gend_distribution;
+	}
+	std::vector<unsigned int> getSelfPushes() {
+		return self_pushes;
+	}
+	std::vector<unsigned int> getDuplicates() {
+		return duplicates;
+	}
+
 };
 
 #endif /* HDASTAR_HPP_ */

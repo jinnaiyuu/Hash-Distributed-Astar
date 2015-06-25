@@ -73,14 +73,16 @@ public:
 					incumbent) {
 	}
 
-	Astar(D &d, unsigned int opensize, double weight, unsigned int incumbent, unsigned int closed) :
+	Astar(D &d, unsigned int opensize, double weight, unsigned int incumbent,
+			unsigned int closed) :
 			SearchAlg<D>(d), closed(closed), open(opensize), w(weight), incumbent(
 					incumbent) {
 	}
 
-
 	std::vector<typename D::State> search(typename D::State &init) {
 		open.push(wrap(init, 0, 0, -1));
+
+		unsigned int fval = 0;
 
 		while (!open.isempty() && path.size() == 0) {
 //			printf("while loop\n");
@@ -111,7 +113,12 @@ public:
 			closed.add(n);
 
 			this->expd++;
-//			printf("expd: \n");
+
+			if (n->f != fval) {
+				fval = n->f;
+				printf("f = %u, expd = %u\n", fval, this->expd);
+			}
+
 			int nops = this->dom.nops(state);
 
 			for (int i = 0; i < nops; i++) {
@@ -122,6 +129,30 @@ public:
 				Edge<D> e = this->dom.apply(state, op);
 
 				Node* next = wrap(state, n, e.cost, e.pop);
+
+				///////////////////////////
+				/// TESTS
+				/// Compare nodes, n & next
+				/// 1. f value does increase (or same)
+				/// 2. g increases by cost
+				///
+				/// Compare states
+				/// 1. operation working fine
+				///////////////////////////
+				if (n->f > next->f) {
+					// heuristic was calculating too big.
+					printf("!!!ERROR: f decreases: %u %u\n", n->f, next->f);
+					unsigned int nh = n->f - n->g;
+					unsigned int nxh = next->f - next->g;
+					printf("h = %u %u\n", nh, nxh);
+					printf("cost = %d\n", e.cost);
+				}
+				if (static_cast<unsigned int>(n->g + e.cost)
+						!= static_cast<unsigned int>(next->g)) {
+					printf("!!!ERROR: g is wrong: %u + %d != %u\n", n->g,
+							e.cost, next->g);
+				}
+
 				if (next->f > incumbent) {
 //					delete next;
 					printf("f > incumbent\n");
