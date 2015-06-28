@@ -414,12 +414,21 @@ Strips::Strips(std::istream & domain, std::istream & instance) {
 		std::cout << "parsing constants..." << std::endl;
 		getConstants(domain, constants, ":constants");
 		// Constants will be included in init states.
-		for (int i = 0; i < constants.size(); ++i) {
-			cout << "(type_" << constants[i].second << " " << constants[i].first
-					<< ")" << endl;
-		}
+//		for (int i = 0; i < constants.size(); ++i) {
+//			cout << constants[i].first << " - " << constants[i].second << endl;
+//		}
 		if (constants.size() == 0) {
 			cout << "no constants." << endl;
+		}
+		for (int i = 0; i < constants.size(); ++i) {
+			if (!constants[i].first.empty() && !constants[i].second.empty()) {
+				std::cout << constants[i].first << " ";
+				Object obj;
+				obj.key = objects.size();
+				obj.symbol = constants[i].first;
+				obj.type = matchStringIndex(types, constants[i].second);
+				objects.push_back(obj);
+			}
 		}
 
 	}
@@ -433,6 +442,15 @@ Strips::Strips(std::istream & domain, std::istream & instance) {
 // 2. learn objects instance.pddl.
 	std::cout << "parsing objects..." << std::endl;
 	readObjects(instance);
+
+//	for (int i = 0; i < objects.size(); ++i) {
+//		if (objects[i].type >= 0) {
+//			cout << objects[i].symbol << " - " << types[objects[i].type].first
+//					<< endl;
+//		} else {
+//			cout << objects[i].symbol << endl;
+//		}
+//	}
 	std::cout << "generated " << objects.size() << " objects." << std::endl;
 
 // 3. instantiate all predicates.
@@ -528,10 +546,10 @@ Strips::Strips(std::istream & domain, std::istream & instance) {
 
 // this is only for HDA* or PDB, but we can just analyze them everytime.
 
-	std::cout << "analyzing balances of predicates..." << std::endl;
-	analyzeAllBalances(predicates);
-
-	analyzeXORGroups();
+//	std::cout << "analyzing balances of predicates..." << std::endl;
+//	analyzeAllBalances(predicates);
+//
+//	analyzeXORGroups();
 
 	/**
 	 * input PDDL structure
@@ -613,6 +631,10 @@ void Strips::readInstanceName(std::istream &instance) {
 	}
 	std::vector<std::string> backward_delimeds = split(forward_delimeds[2],
 			')');
+	if (backward_delimeds.size() == 0) {
+		instance_ = "";
+		return;
+	}
 	instance_ = backward_delimeds[0];
 	std::cout << "instance name = " << instance_ << std::endl;
 }
@@ -661,7 +683,7 @@ void Strips::readPredicates(std::istream &domain,
 			unsigned int arg_before = 0;
 			for (int j = 1; j < token.size(); ++j) {
 				if (!isType) {
-					if (token[j].find(delim) != string::npos) {
+					if (token[j].compare(delim) == 0) {
 						isType = true;
 					} else {
 						++arg_num;
@@ -678,7 +700,7 @@ void Strips::readPredicates(std::istream &domain,
 						cout << "error: no matching type to " << token[i];
 					}
 					for (int k = arg_before; k < arg_num; ++k) {
-						arg_types[i].push_back(type);
+						arg_types[i - 1].push_back(type);
 					}
 					arg_before = arg_num;
 					isType = false;
@@ -767,8 +789,9 @@ vector<pair<string, int>> Strips::readTypes(istream& domain) {
 void Strips::readObjects(std::istream &instance) {
 //	std::vector<std::string> strings;
 	std::string text;
-//	getText(instance, ":objects", ":init", 0, text);
-	getBracket(instance, ":objects", 0, text);
+	getText(instance, "(:objects", ":init", 0, text);
+//	getBracket(instance, ":objects", 0, text);
+//	text.substr(8);
 	if (text.empty()) {
 		return;
 	}
@@ -776,7 +799,7 @@ void Strips::readObjects(std::istream &instance) {
 	std::istringstream iss(text);
 
 	vector<pair<string, string>> obs;
-	getConstants(iss, obs, "");
+	getConstants(iss, obs, ":objects");
 
 //	std::vector<std::string> tokens;
 //	std::copy(std::istream_iterator<std::string>(iss),
@@ -788,12 +811,14 @@ void Strips::readObjects(std::istream &instance) {
 //	std::cout << "strings" << std::endl;
 //	objects.resize(strings.size());
 	for (int i = 0; i < obs.size(); ++i) {
-		std::cout << obs[i].first << " ";
-		Object obj;
-		obj.key = i;
-		obj.symbol = obs[i].first;
-		obj.type = matchStringIndex(types, obs[i].second);
-		objects.push_back(obj);
+		if (!obs[i].first.empty()) {
+//			std::cout << obs[i].first << " - " << obs[i].second << endl;
+			Object obj;
+			obj.key = objects.size();
+			obj.symbol = obs[i].first;
+			obj.type = matchStringIndex(types, obs[i].second);
+			objects.push_back(obj);
+		}
 	}
 	std::cout << std::endl;
 }
@@ -848,7 +873,8 @@ void Strips::readInit(std::istream &instance,
 	instance.seekg(0, std::ios_base::beg);
 
 	std::string total_text;
-	getBracket(instance, ":init", 0, total_text);
+//	getBracket(instance, ":init", 0, total_text);
+	getText(instance, ":init", ":goal", 0, total_text);
 //	std::string line;
 //	std::string init_ = ":init";
 //	std::string goal_ = ":goal";
@@ -967,7 +993,7 @@ void Strips::readAction(std::istream &domain, std::vector<Object> obs,
 // 3. read add&delete effect (lifted).
 // 4. assign objects for parameters and ground preconditions & effects.
 // 5. build Action.
-	std::vector<std::string> parameters;
+//	std::vector<std::string> parameters;
 
 	std::string text;
 
@@ -999,14 +1025,43 @@ void Strips::readAction(std::istream &domain, std::vector<Object> obs,
 		std::string parametersText = "";
 		getText(domain, ":parameters", ":precondition", actionNumber,
 				parametersText);
-//		std::cout << parametersText << std::endl;
-		std::vector<std::string> parameters;
-		std::vector<std::string> forward_delimeds = split(parametersText, '?');
-		for (int i = 1; i < forward_delimeds.size(); ++i) {
-//			std::cout << "fd = " << forward_delimeds[i] << std::endl;
-			std::vector<std::string> token = split(forward_delimeds[i], ')');
-			parameters.push_back("?" + trim(token[0]));
+//		parametersText = parametersText.substr(13);
+//		getBracket(domain, ":parameters", actionNumber, parametersText);
+		stringstream iss(parametersText);
+		std::vector<std::pair<std::string, std::string>> param_text;
+		std::vector<std::pair<std::string, int>> param;
+		getConstants(iss, param_text, "?");
+
+		for (int i = 0; i < param_text.size(); ++i) {
+			param_text[i].first.erase(
+					std::remove(param_text[i].first.begin(),
+							param_text[i].first.end(), '('),
+					param_text[i].first.end());
+			if (!param_text[i].first.empty()) {
+				pair<string, int> p(param_text[i].first,
+						matchStringIndex(types, param_text[i].second));
+				param.push_back(p);
+			}
 		}
+
+//		cout << "params: " << endl;
+//		for (int i = 0; i < param.size(); ++i) {
+//			if (param[i].second >= 0) {
+//			cout << param[i].first << " - " << types[param[i].second].first
+//					<< endl;
+//			} else {
+//				cout << param[i].first << endl;
+//			}
+//		}
+
+//		std::cout << parametersText << std::endl;
+//		std::vector<std::string> parameters;
+		std::vector<std::string> forward_delimeds; // = split(parametersText, '?');
+//		for (int i = 1; i < forward_delimeds.size(); ++i) {
+////			std::cout << "fd = " << forward_delimeds[i] << std::endl;
+//			std::vector<std::string> token = split(forward_delimeds[i], ')');
+//			parameters.push_back("?" + trim(token[0]));
+//		}
 //		std::cout << "parameters: ";
 //		for (int i = 0; i < parameters.size(); ++i) {
 //			std::cout << parameters[i];
@@ -1016,7 +1071,7 @@ void Strips::readAction(std::istream &domain, std::vector<Object> obs,
 		// Read in lifted expression
 		LiftedAction lf;
 		lf.key = actionNumber;
-		lf.n_arguments = parameters.size();
+		lf.n_arguments = param.size();
 		lf.symbol = actionname;
 
 		std::string effectText = findRange(text, ":effect",
@@ -1039,7 +1094,7 @@ void Strips::readAction(std::istream &domain, std::vector<Object> obs,
 				effects.push_back(token[0]);
 			}
 			if (token[0].find("total-cost") != std::string::npos) {
-				std::cout << token[0] << " " << token[1] << std::endl;
+//				std::cout << token[0] << " " << token[1] << std::endl;
 				action_cost = atoi(token[1].c_str());
 			}
 		}
@@ -1059,22 +1114,20 @@ void Strips::readAction(std::istream &domain, std::vector<Object> obs,
 					predicate.first = o;
 					//　here we detect constants too.
 					for (int i = 1; i < lits.size(); ++i) {
-						for (int parms = 0; parms < parameters.size();
-								++parms) {
-							if (lits[i].compare(parameters[parms]) == 0) {
-								predicate.second.push_back(parms);
-								break;
+						int m = matchStringIndex(param, lits[i]);
+						if (m >= 0) {
+							predicate.second.push_back(m);
+						} else {
+							// object keys are given in parameters.size() + ob.
+							// not sure how this is working.
+							for (int ob = 0; ob < obs.size(); ++ob) {
+								if (lits[i].compare(obs[ob].symbol) == 0) {
+									predicate.second.push_back(
+											param.size() + ob);
+									break;
+								}
 							}
 						}
-						// object keys are given in parameters.size() + ob.
-						for (int ob = 0; ob < obs.size(); ++ob) {
-							if (lits[i].compare(obs[ob].symbol) == 0) {
-								predicate.second.push_back(
-										parameters.size() + ob);
-								break;
-							}
-						}
-
 					}
 					if (isDel) {
 						delnums.push_back(predicate);
@@ -1086,28 +1139,6 @@ void Strips::readAction(std::istream &domain, std::vector<Object> obs,
 				}
 			}
 
-			// read action cost
-//			if (effects[p].find("increase") != std::string::npos) {
-//				isIncrease = true;
-//				continue;
-//			}
-//
-//			if (isIncrease) {
-//				if (effects[p].find("total-cost") != std::string::npos) {
-//					std::cout << effects[p] << std::endl;
-//					continue;
-//				} else {
-//					std::cout << effects[p] << std::endl;
-//				}
-//			}
-
-			// read action costs.
-			// (increase (total-cost) 1)
-//			if (lits[0].compare("increase") == 0) {
-//				for (int l = 0; l < lits.size(); ++l) {
-//					std::cout << "lits" << l << ": " << lits[l] << std::endl;
-//				}
-//			}
 		}
 
 //		std::stringstream efst(effectText);
@@ -1127,7 +1158,7 @@ void Strips::readAction(std::istream &domain, std::vector<Object> obs,
 //		getText(t, ":precondition", ":effect", 0, precText);
 		std::string precText = findRange(text, ":precondition", ":effect");
 		std::vector<std::pair<unsigned int, std::vector<unsigned int>>>precnums;
-		std::vector<std::pair<unsigned int, std::vector<unsigned int>>>typeprecnums;
+//		std::vector<std::pair<unsigned int, std::vector<unsigned int>>>typeprecnums;
 
 		forward_delimeds = split(precText, '(');
 		for (int i = 1; i < forward_delimeds.size(); ++i) {
@@ -1149,29 +1180,30 @@ void Strips::readAction(std::istream &domain, std::vector<Object> obs,
 
 					predicate.first = o;
 					for (int i = 1; i < lits.size(); ++i) {
-						for (int parms = 0; parms < parameters.size();
-								++parms) {
-							if (lits[i].compare(parameters[parms]) == 0) {
-								predicate.second.push_back(parms);
-								break;
+						int m = matchStringIndex(param, lits[i]);
+						if (m >= 0) {
+							predicate.second.push_back(m);
+						} else {
+							// object keys are given in parameters.size() + ob.
+							for (int ob = 0; ob < obs.size(); ++ob) {
+								if (lits[i].compare(obs[ob].symbol) == 0) {
+									predicate.second.push_back(
+											param.size() + ob);
+									std::cout << "const: " << lits[i] << ": "
+											<< ob << endl;
+									break;
+								}
 							}
-						}
-						// object keys are given in parameters.size() + ob.
-						for (int ob = 0; ob < obs.size(); ++ob) {
-							if (lits[i].compare(obs[ob].symbol) == 0) {
-								predicate.second.push_back(
-										parameters.size() + ob);
-								break;
-							}
+
 						}
 					}
 					precnums.push_back(predicate);
 
 					// check if the precondition is in form of type_xxx.
 					// type_xxx is useful precondition for pruning when instantiation.
-					if (ps[o].symbol.find("type_") != std::string::npos) {
-						typeprecnums.push_back(predicate);
-					}
+//					if (ps[o].symbol.find("type_") != std::string::npos) {
+//						typeprecnums.push_back(predicate);
+//					}
 
 					break;
 				}
@@ -1188,19 +1220,66 @@ void Strips::readAction(std::istream &domain, std::vector<Object> obs,
 //		}
 
 		lActions.push_back(lf);
-		std::cout << "instantiating " << lf.symbol << "..." << std::endl;
+		std::cout << "instantiating " << lf.symbol << "/" << lf.n_arguments
+				<< ":";
+		for (int g = 0; g < param.size(); ++g) {
+			if (param[g].second >= 0) {
+				std::cout << " " << types[param[g].second].first;
+			}
+		}
+		std::cout << "..." << std::endl;
 
-		int param_max = pow(obs.size(), parameters.size());
+		// enumerate all objects matches argument typing.
+		std::vector<std::vector<unsigned int> > possible_objs;
+		possible_objs.resize(param.size());
+		for (int p = 0; p < param.size(); ++p) {
+			for (int o = 0; o < obs.size(); ++o) {
+				if (isType(obs[o].type, param[p].second, types)) {
+					possible_objs[p].push_back(o);
+				}
+			}
+		}
+
+//		cout << "possible assignments: ";
+//		for (int p = 0; p < possible_objs.size(); ++p) {
+//			for (int pp = 0; pp < possible_objs[p].size(); ++pp) {
+//				cout << obs[possible_objs[p][pp]].symbol << " ";
+//			}
+//		}
+//		cout << endl;
+
+		int param_max = 1; // pow(obs.size(), param.size());
+
+		for (int p = 0; p < possible_objs.size(); ++p) {
+			param_max *= possible_objs[p].size();
+		}
 //		std::cout << "param_max = " << param_max << std::endl;
+
+		// TODO: This enumeration is not optimal as it enumerate then find if it matches typing.
+		//       we can first check typing and then match typing.
 		for (unsigned int pnum = 0; pnum < param_max; ++pnum) {
 			std::vector<unsigned int> args;
-			args.resize(parameters.size());
+			args.resize(param.size());
 			// build arguments list.
-			for (unsigned int arg = 0; arg < parameters.size(); ++arg) {
-				args[arg] = obs[(pnum
-						/ pow(obs.size(), parameters.size() - 1 - arg))
-						% obs.size()].key;
+//			bool valid_type = true;
+			unsigned int p = pnum;
+			for (int arg = param.size() - 1; arg >= 0; --arg) {
+				unsigned int id = p % possible_objs[arg].size();
+				args[arg] = obs[possible_objs[arg][id]].key;
+				p /= possible_objs[arg].size();
+//				unsigned int id = (pnum
+//						/ pow(obs.size(), param.size() - 1 - arg)) % obs.size();
+//				args[arg] = obs[possible_objs[arg][id]].key;
+//				if (!isType(obs[id].type, param[arg].second, types)) {
+//					valid_type = false;
+//					break;
+//				}
 			}
+//			if (!valid_type) {
+////				std::cout << "invalid types" << endl;
+//				continue;
+//			}
+//			std::cout << "valid types" << endl;
 
 			std::vector<unsigned int> precnums;
 			std::vector<unsigned int> addnums;
@@ -1381,6 +1460,10 @@ std::vector<unsigned int> Strips::analyzeBalance(unsigned int p,
 
 	if (predicates.size() == predargs.size()) {
 //		std::cout << prefix << "failed" << std::endl;
+		return std::vector<unsigned int>();
+	}
+
+	if (predicates.size() >= 6) {
 		return std::vector<unsigned int>();
 	}
 
@@ -1847,6 +1930,7 @@ void Strips::getConstants(std::istream& domain,
 	std::vector<std::pair<std::string, std::string>> constants;
 	std::string text;
 	getBracket(domain, header, 0, text);
+//	text = text.substr(1);
 //	vector<string> undelimed = split(text, ' ');
 
 	std::string deliminator = "-";

@@ -36,10 +36,11 @@
 #define ANALYZE_SEMISYNC
 #endif
 
-#include "../strips/strips.hpp"
-
 #include "../astar.hpp"
 #include "../hdastar.hpp"
+#include "../astar_heap.hpp"
+
+#include "../strips/strips.hpp"
 #include "../strips/zobrist.hpp"
 
 //
@@ -94,7 +95,6 @@ int main(int argc, const char *argv[]) {
 
 		unsigned int n_threads = 1;
 
-
 		SearchAlg<Strips> *search = NULL;
 
 		if (strcmp(argv[1], "astar") == 0) {
@@ -102,7 +102,16 @@ int main(int argc, const char *argv[]) {
 			double weight = 1.0;
 			unsigned int incumbent = 100000;
 			unsigned int closed = 4477457;
-			search = new Astar<Strips>(strips, open, weight, incumbent, closed);
+			search = new Astar<Strips>(strips, open, weight, incumbent,
+					closed);
+
+		} else if (strcmp(argv[1], "astar-heap") == 0) {
+			unsigned int open = 100;
+			double weight = 1.0;
+			unsigned int incumbent = 100000;
+			unsigned int closed = 4477457;
+			search = new AstarHeap<Strips>(strips, open, weight, incumbent,
+					closed);
 		} else if (sscanf(argv[1], "hdastar-%u", &n_threads) == 1) {
 			// transitions are needed to build Structured Zobrist or Abstraction.
 			strips.analyzeTransitions();
@@ -130,14 +139,15 @@ int main(int argc, const char *argv[]) {
 				/// Auto-Selection
 				////////////////////////////////
 				HDAstar<Strips, StripsZobrist<Strips> > *subsearch =
-						new HDAstar<Strips, StripsZobrist<Strips> >(strips, tnum, 1000000, // income threshould
-						10000000, // outgo threshould
-						abst, // abstraction
-						0, // overrun
-						4477457, // closed list size
-						100, // open list size
-						10000000 // max cost
-						);
+						new HDAstar<Strips, StripsZobrist<Strips> >(strips,
+								tnum, 1000000, // income threshould
+								10000000, // outgo threshould
+								abst, // abstraction
+								0, // overrun
+								4477457, // closed list size
+								100, // open list size
+								10000000 // max cost
+								);
 
 				Strips::State g = strips.initial();
 				subsearch->setTimer(timer);
@@ -164,9 +174,8 @@ int main(int argc, const char *argv[]) {
 				delete subsearch;
 			}
 
-
-			search = new HDAstar<Strips, StripsZobrist<Strips> >(strips,
-					tnum, 1000000, // income threshould
+			search = new HDAstar<Strips, StripsZobrist<Strips> >(strips, tnum,
+					1000000, // income threshould
 					10000000, // outgo threshould
 					abst, // abstraction
 					0, // overrun

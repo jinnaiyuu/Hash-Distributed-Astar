@@ -263,6 +263,25 @@ int matchStringInt(const std::vector<std::pair<std::string, int>>& dic, const st
 	return -1;
 }
 
+// Check if obj_type is type of subtype of req type.
+static
+bool isType(const int obj_type, const int req_type, const std::vector<std::pair<std::string, int>>& dic) {
+	if (obj_type == req_type) {
+		return true;
+	}
+	if (req_type == -1) {
+		return true;
+	}
+
+	int super_obj_type = dic[obj_type].second;
+	while (super_obj_type >= 0) {
+		if (super_obj_type == req_type) {
+			return true;
+		}
+		super_obj_type = dic[super_obj_type].second;
+	}
+	return false;
+}
 
 /**
  * @param from: first literal inside bracket.

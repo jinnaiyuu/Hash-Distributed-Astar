@@ -122,13 +122,16 @@ struct Strips {
 	Edge<Strips> apply(State &s, int action) const {
 //		std::cout << "apply" << std::endl;
 		int cost = 1;
-		Edge<Strips> e(cost, action, -100);
-		e.undo.propositions = s.propositions;
-		e.undo.h = s.h;
+		std::vector<unsigned int> p = s.propositions;
+		int h = s.h;
 
 //		std::cout << "apply " << actionTable.getAction(action).name << std::endl;
 //		print_state(s.propositions);
-		apply_action(s, action);
+		apply_action(s, action, cost);
+
+		Edge<Strips> e(cost, action, cost);
+		e.undo.propositions = p;
+		e.undo.h = h;
 //		print_state(s.propositions);
 
 		s.h = heuristic(s);
@@ -290,7 +293,7 @@ private:
 	bool built_pdb = false;
 
 	// TODO: add new utility method to speed-up this.
-	void apply_action(State& s, int action_key) const {
+	void apply_action(State& s, int action_key, int& cost) const {
 		std::vector<unsigned int> p;
 		Action action = actionTable.getAction(action_key);
 //		for (int i = 0; i < action.adds.size(); ++i) {
@@ -310,6 +313,7 @@ private:
 //				unique(s.propositions.begin(), s.propositions.end()),
 //				s.propositions.end());
 		s.propositions = p;
+		cost = action.action_cost;
 	}
 
 	// TODO: can we optimize this?
@@ -424,7 +428,7 @@ public:
 	struct Object {
 		unsigned int key;
 		std::string symbol;
-		unsigned int type;
+		int type;
 	};
 
 	struct LiftedAction {
@@ -456,6 +460,7 @@ public:
 private:
 	bool typing = false;
 	bool action_costs = false;
+	bool need_heap_openlist = false;
 	std::vector<Object> objects;
 	std::vector<LiftedAction> lActions; // for abstractions.
 	std::vector<PredicateArg> predargs;
