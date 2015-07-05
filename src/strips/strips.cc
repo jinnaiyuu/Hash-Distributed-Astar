@@ -5,6 +5,8 @@
 #include "action.hpp"
 #include "utils.hpp"
 #include "dijkstra.hpp"
+#include "dijkstra2.hpp"
+#include "graph.hpp"
 #include "../astar.hpp"
 #include "../astar_heap.hpp"
 #include "../search.hpp"
@@ -14,32 +16,6 @@
 #include <algorithm>
 #include <iterator>
 using namespace std;
-
-// spirit
-//#include <boost/config/warning_disable.hpp>
-//#include <boost/spirit/include/qi.hpp>
-//#include <boost/spirit/include/phoenix_core.hpp>
-//#include <boost/spirit/include/phoenix_operator.hpp>
-//#include <boost/spirit/include/phoenix_object.hpp>
-//#include <boost/spirit/include/phoenix_stl.hpp>
-//#include <boost/fusion/include/adapt_struct.hpp>
-//#include <boost/fusion/include/io.hpp>
-//
-//namespace qi = boost::spirit::qi;
-//namespace ascii = boost::spirit::ascii;
-//namespace phoenix = boost::phoenix;
-//using qi::int_;
-//using qi::lit;
-//using qi::_val;
-//using qi::_1;
-//using qi::eps;
-//using qi::alpha;
-//using qi::alnum;
-//using qi::double_;
-//using qi::lexeme;
-//using qi::phrase_parse;
-//using ascii::char_;
-//using boost::spirit::ascii::space;
 
 ////////////////////////////////////////////
 /// heuristics
@@ -98,7 +74,6 @@ int Strips::pdb(const State& s) const {
 
 // TODO: implement true or false group. binary condition.
 void Strips::buildPDB() {
-	const unsigned int TRUE_PREDICATE = 10000000;
 	pd = new PDB();
 
 	std::string name = domain_ + "_" + instance_ + ".pat";
@@ -146,12 +121,19 @@ void Strips::buildPDB() {
 		std::cout << "size = " << size << std::endl;
 	}
 
+	if (size <= 1) {
+		std::cout << "default back to goal count" << std::endl;
+		set_heuristic(1);
+		return;
+	}
+
+
 // TODO: for all goal_conditions which is out of groups,
 //       add TRUE OR FALSE group to the patterns.
 	for (int c = 0; c < goal_condition.size(); ++c) {
-//		if (size * 2 > 500000) {
-//			break;
-//		}
+		if (size * 2 > 100000) {
+			break;
+		}
 
 		bool is_grouped = false;
 		for (int gs = 0; gs < pdb_groups.size(); ++gs) {
@@ -162,6 +144,7 @@ void Strips::buildPDB() {
 			}
 		}
 
+		// TODO: not sure what if we have no xor groups with goal propositions.
 		if (!is_grouped) {
 			std::vector<unsigned int> g;
 			g.push_back(goal_condition[c]);
@@ -170,8 +153,8 @@ void Strips::buildPDB() {
 			pdb_groups.push_back(g);
 			size *= 2;
 		}
-
 	}
+
 	std::cout << size << " patterns to build" << std::endl;
 
 	std::cout << "goal conditions = ";
@@ -202,6 +185,7 @@ void Strips::buildPDB() {
 
 //	std::vector<unsigned int> ungroupeds;
 // here, args_in_preds are the pattern we want. we need to add predicates which is out of groups.
+	// TODO: obviously this is wasting time.
 	for (int p = 0; p < g_feasible_predicates.size(); ++p) {
 		bool grouped = false;
 		for (int gs = 0; gs < pdb_groups.size(); ++gs) {
@@ -275,6 +259,8 @@ void Strips::buildPDB() {
 // iterate over size.
 // for each pattern
 
+	double pdb_start = walltime();
+
 	std::vector<std::vector<unsigned int>> all_patterns_preds;
 
 	for (int pat = 0; pat < size; ++pat) {
@@ -287,29 +273,163 @@ void Strips::buildPDB() {
 			arg_pat /= pdb_groups[a].size();
 		}
 
-//		std::cout << "pat = ";
+//		std::cout << "pat " << pat << ": ";
 		for (int a = 0; a < args_in_groups.size(); ++a) {
-//			std::cout << "(" << g_predicates->at(groups[a][args_in_groups[a]]).symbol << ") ";
+			if (pdb_groups[a][args_in_groups[a]] == TRUE_PREDICATE) {
+//				std::cout << "(true) ";
+			} else {
+//				std::cout << "(" << g_predicates->at(pdb_groups[a][args_in_groups[a]]).symbol << ") ";
+			}
 			args_in_preds.push_back(pdb_groups[a][args_in_groups[a]]);
 		}
+//		std::cout << endl;
 		std::sort(args_in_preds.begin(), args_in_preds.end());
 
 		all_patterns_preds.push_back(args_in_preds);
 	}
+
+	std::vector<unsigned int> true_false_preds;
+	cout << "true_false_pred: ";
+	for (int g = 0; g < pdb_groups.size(); ++g) {
+		if (pdb_groups[g][pdb_groups[g].size() - 1] == TRUE_PREDICATE) {
+			for (int gs = 0; gs < pdb_groups[g].size() - 1; ++gs) {
+				true_false_preds.push_back(pdb_groups[g][gs]);
+				cout << g_predicates->at(pdb_groups[g][gs]).symbol << " ";
+			}
+		}
+	}
+	cout << endl;
+	std::sort(true_false_preds.begin(), true_false_preds.end());
+
 
 // TODO: here, we got init state as args_in_preds.
 //       we need to run search from this init state to the goal state, or the other way around.
 //       efficient way is to trace back from the goal state. how do i do that?
 // pattern: abstract
 
-	dijkstra(all_patterns_preds, pdb_groups);
-// input: patterns, ungroupeds, simplified actions,
+	// TODO: we already have action trie here.
+	//       it isn't so hard to build all edges from these patterns & action trie.
+	//       just make sure we're trying to run regression search, so go the opposite way.
+	// Alg:  1. for all patterns, list all possible successor abstract states and store to dictionary.
+	//       2. put that dictionary to Graph()
+	//       3. run dijkstra
+	std::vector<std::vector<unsigned int>> edge_dictionary;
+	edge_dictionary.resize(all_patterns_preds.size());
 
-//	pd.addPattern()
+	// pattern + ungroupeds
+	// find all actions which deletes any of the predicates in pattern.
+	for (int p = 0; p < all_patterns_preds.size(); ++p) {
+		std::vector<unsigned int> abstnode = uniquelyMergeSortedVectors(
+				all_patterns_preds[p], ungroupeds);
+		std::vector<unsigned int> actions = actionTrie.searchPossibleActions(
+				abstnode);
+//		std::cout << p << ": " << actions.size() << " actions" << std::endl;
+		for (int a = 0; a < actions.size(); ++a) {
+			Action act = actionTable.getAction(actions[a]);
+			std::vector<unsigned int> succ;
+			// TODO: not sure why this is not detecting transitions for rovers.
+//			for (int ads = 0; ads < act.adds.size(); ++ads) {
+//				cout << act.adds[ads] << " ";
+//			}
+//			cout << endl;
+			if (isAnyContainedSortedVectors(act.deletes, all_patterns_preds[p])
+					|| isAnyContainedSortedVectors(act.adds,
+							true_false_preds)) {
+//				cout << act.name << " edge" << endl;
+				succ = uniquelyMergeSortedVectors(abstnode, act.adds);
+				succ = differenceSortedVectors(succ, act.deletes);
+//				for (int succs = 0; succs < succ.size(); ++succs) {
+//					if (succ[succs] != TRUE_PREDICATE) {
+////						cout << "(" << g_predicates->at(succ[succs]).symbol
+////								<< ") ";
+//					} else {
+////						std::cout << "(true)" << " ";
+//					}
+//				}
+//				cout << endl;
+				unsigned int succ_id = match_pattern(succ, pdb_groups);
+				if (succ_id == p) {
+//					std::cout << std::endl;
+//					std::cout << "succ_id dupped " << succ_id << endl;
+				} else {
+//					std::cout << " -> " << succ_id << endl;
+//					edge_dictionary[p].push_back(succ_id);
+					edge_dictionary[succ_id].push_back(p);
+				}
+			} else {
 
+			}
+		}
+	}
+
+	for (int i = 0; i < edge_dictionary.size(); ++i) {
+		std::sort(edge_dictionary[i].begin(), edge_dictionary[i].end());
+		edge_dictionary[i].erase(
+				std::unique(edge_dictionary[i].begin(),
+						edge_dictionary[i].end()), edge_dictionary[i].end());
+	}
+
+
+//	for (int e = 0; e < edge_dictionary.size(); ++e) {
+//		std::vector<unsigned int> epat = all_patterns_preds[e];
+//		std::cout << e << " ";
+//		for (int ps = 0; ps < epat.size(); ++ps) {
+//			if (epat[ps] != TRUE_PREDICATE) {
+//				std::cout << "(" << g_predicates->at(epat[ps]).symbol << ") ";
+//			} else {
+//				std::cout << "(true)" << " ";
+//			}
+//		}
+//		std::cout << "-> " << endl;
+//
+//		for (int ss = 0; ss < edge_dictionary[e].size(); ++ss) {
+//			std::vector<unsigned int> epat =
+//					all_patterns_preds[edge_dictionary[e][ss]];
+//			std::cout << "  ";
+//			for (int ps = 0; ps < epat.size(); ++ps) {
+//				if (epat[ps] != TRUE_PREDICATE) {
+//					std::cout << "(" << g_predicates->at(epat[ps]).symbol
+//							<< ") ";
+//				} else {
+//					std::cout << "(true)" << " ";
+//				}
+//			}
+//			std::cout << endl;
+//		}
+//		std::cout << std::endl;
+//	}
+
+//	std::cout << "end" << std::endl;
+
+	Graph graph(edge_dictionary);
+
+	Dijkstra2<Graph>* search = new Dijkstra2<Graph>(graph, all_patterns_preds,
+			pdb_groups);
+
+	Graph::State g;
+	g.id = match_pattern(goal_condition, pdb_groups);
+	std::cout << "goal id = " << g.id << std::endl;
+	search->search(g);
+	std::vector<unsigned int> costs = search->get_costs();
+
+	delete search;
 	pd->setGroups(pdb_groups);
-
+	pd->setPattern(costs);
 	pd->dump_all(name);
+
+	double pdb_end = walltime();
+	std::cout << "pdb_walltime = " << pdb_end - pdb_start << std::endl;
+
+	return;
+
+//	dijkstra(all_patterns_preds, pdb_groups);
+//// input: patterns, ungroupeds, simplified actions,
+//
+////	pd.addPattern()
+//
+//	pd->setGroups(pdb_groups);
+//
+//	pd->dump_all(name);
 
 }
 
@@ -333,6 +453,7 @@ void Strips::dijkstra(std::vector<std::vector<unsigned int> > patterns,
 
 	std::vector<unsigned int> costs = search->get_costs();
 
+	// TODO: this should be done in O(1)
 	for (int p = 0; p < costs.size(); ++p) {
 //		std::cout << p << " " << costs[p] << std::endl;
 		if (costs[p] != -1) {
@@ -364,6 +485,35 @@ void Strips::buildRegressionTree() {
 			<< std::endl;
 }
 
+// return the number of pattern that matches the node.
+unsigned int Strips::match_pattern(std::vector<unsigned int> p,
+		const std::vector<std::vector<unsigned int>>& groups) {
+	// TODO: build BDD (or perfect hash) for the patterns.
+	unsigned int arg_pat = 0;
+//		std::cout << "g: ";
+	for (int gs = groups.size() - 1; gs >= 0; --gs) {
+		for (int ps = 0; ps < groups[gs].size(); ++ps) {
+//			std::cout << ps << " " << std::endl;
+			if (isContainedSortedVectors(groups[gs][ps], p)) {
+				arg_pat += ps;
+				if (gs != 0) {
+					arg_pat *= groups[gs].size();
+				}
+				break;
+			}
+			if (groups[gs][ps] == TRUE_PREDICATE) {
+//					std::cout << gs << "," << ps << ": -2" << std::endl;
+				arg_pat += ps;
+				if (gs != 0) {
+					arg_pat *= groups[gs].size();
+				}
+				break;
+			}
+		}
+	}
+	return arg_pat;
+}
+
 ////////////////////////////////////////////
 /// parser
 ////////////////////////////////////////////
@@ -377,9 +527,17 @@ Strips::Strips() {
  * :functions
  *
  */
-Strips::Strips(std::istream & domain, std::istream & instance) {
-	domain.seekg(0, std::ios_base::beg);
-	instance.seekg(0, std::ios_base::beg);
+Strips::Strips(std::istream & d, std::istream & i) {
+	d.seekg(0, std::ios_base::beg);
+	i.seekg(0, std::ios_base::beg);
+
+	std::string dt = readAll(d);
+	std::string it = readAll(i);
+	std::istringstream domain(dt);
+	std::istringstream instance(it);
+
+//	cout << domain.str() << endl;
+//	cout << instance.str() << endl;
 
 	std::vector<Predicate> predicates; // uninstantiated, ungrounded
 //	std::vector<Object> objects;
@@ -521,9 +679,27 @@ Strips::Strips(std::istream & domain, std::istream & instance) {
 	std::cout << g_feasible_predicates.size() << " predicates feasible."
 			<< std::endl;
 
+//	std::cout << "feasible actions:" << endl;
 //	for (int i = 0; i < feasible_actions.size(); ++i) {
 //		Action a = actionTable.getAction(feasible_actions[i]);
-//		a.print();
+//		std::cout << a.action_key << ": ";
+//		std::cout << a.name << std::endl;
+//		std::cout << "pred:  ";
+//		for (int j = 0; j < a.preconditions.size(); ++j) {
+//			std::cout << "(" << g_predicates->at(a.preconditions[j]).symbol
+//					<< ") ";
+//		}
+//		std::cout << std::endl;
+//		std::cout << "adds:  ";
+//		for (int j = 0; j < a.adds.size(); ++j) {
+//			std::cout << "(" << g_predicates->at(a.adds[j]).symbol << ") ";
+//		}
+//		std::cout << std::endl;
+//		std::cout << "dels:  ";
+//		for (int j = 0; j < a.deletes.size(); ++j) {
+//			std::cout << "(" << g_predicates->at(a.deletes[j]).symbol << ") ";
+//		}
+//		std::cout << std::endl << std::endl;
 //	}
 //	actionTrie.printTree();
 
@@ -536,6 +712,14 @@ Strips::Strips(std::istream & domain, std::istream & instance) {
 				<< init_state[i] << ") ";
 	}
 	std::cout << std::endl;
+
+	std::cout << "goal condition: ";
+	for (int i = 0; i < goal_condition.size(); ++i) {
+		std::cout << "(" << g_predicates->at(goal_condition[i]).symbol << ":"
+				<< goal_condition[i] << ") ";
+	}
+	std::cout << std::endl;
+
 //	std::cout << init_actions.size() << " initial actions." << std::endl;
 //	for (int i = 0; i < init_actions.size(); ++i) {
 //		actionTable.getAction(init_actions[i]).print();
@@ -546,10 +730,10 @@ Strips::Strips(std::istream & domain, std::istream & instance) {
 
 // this is only for HDA* or PDB, but we can just analyze them everytime.
 
-//	std::cout << "analyzing balances of predicates..." << std::endl;
-//	analyzeAllBalances(predicates);
-//
-//	analyzeXORGroups();
+	std::cout << "analyzing balances of predicates..." << std::endl;
+	analyzeAllBalances(predicates);
+
+	analyzeXORGroups();
 
 	/**
 	 * input PDDL structure
@@ -589,60 +773,41 @@ Strips::Strips(std::istream & domain, std::istream & instance) {
 // 7. make prefix tree of preconditions&actions. (TODO: search how to make prefix tree)
 }
 
-//BOOST_FUSION_ADAPT_STRUCT( Strips::Predicate,
-//		(std::string, symbol) (unsigned int, number_of_arguments))
-//
-//template<typename Iterator>
-//struct predicate_parser: qi::grammar<Iterator, Strips::Predicate(),
-//		ascii::space_type> {
-//	predicate_parser() :
-//			predicate_parser::base_type(start) {
-//		symbol %= lexeme[+(alnum)];
-//		args = eps[_val = 0] >> *(lexeme['?' >> +(alnum)])[_val += 1];
-//		start %= '(' >> symbol >> args >> ')';
-//	}
-//	qi::rule<Iterator, std::string(), ascii::space_type> symbol;
-//	qi::rule<Iterator, unsigned(), ascii::space_type> args;
-//	qi::rule<Iterator, Strips::Predicate(), ascii::space_type> start;
-//};
-
 void Strips::readDomainName(std::istream &domain) {
 	domain.seekg(0, std::ios_base::beg);
 	std::string text;
-	getBracket(domain, "domain", 0, text);
-	std::vector<std::string> forward_delimeds = split(text, ' ');
-	std::vector<std::string> backward_delimeds = split(forward_delimeds[2],
-			')');
-	domain_ = backward_delimeds[0];
+
+	while (domain >> text) {
+		if (text.compare("domain") == 0) {
+			break;
+		}
+	}
+	domain >> text;
+	domain_ = text;
+
 	std::cout << "domain name = " << domain_ << std::endl;
 }
 
 void Strips::readInstanceName(std::istream &instance) {
 	instance.seekg(0, std::ios_base::beg);
 	std::string text;
-	getBracket(instance, "problem", 0, text);
-	std::vector<std::string> forward_delimeds = split(text, ' ');
-	if (forward_delimeds.size() < 3) {
-		std::cout << "instance name broken" << std::endl;
-		std::cout << "text = " << text;
 
-		instance_ = "";
-		return;
+	while (instance >> text) {
+		if (text.compare("problem") == 0) {
+			break;
+		}
 	}
-	std::vector<std::string> backward_delimeds = split(forward_delimeds[2],
-			')');
-	if (backward_delimeds.size() == 0) {
-		instance_ = "";
-		return;
-	}
-	instance_ = backward_delimeds[0];
+	instance >> text;
+	instance_ = text;
+
 	std::cout << "instance name = " << instance_ << std::endl;
 }
 
 void Strips::readRequirements(std::istream &domain) {
 	domain.seekg(0, std::ios_base::beg);
 	std::string text;
-	getBracket(domain, ":requirements", 0, text);
+	getBracket2(domain, ":requirements", 0, text);
+	cout << "requirements: " << text << endl;
 	if (text.find("typing") != std::string::npos) {
 		typing = true;
 	}
@@ -656,20 +821,34 @@ void Strips::readPredicates(std::istream &domain,
 	domain.seekg(0, std::ios_base::beg);
 
 	std::string text;
-	getText(domain, ":predicates", ":action", 0, text);
-	replace(text, "(:predicates", "");
+	getBracket2(domain, ":predicates", 0, text);
+
+//	getText(domain, ":predicates", ":action", 0, text);
+//	getText3(domain, ":predicates", ":action", 0, text);
+
+//	replace(text, "(:predicates", "");
 //	std::cout << "predicates text = " << text << std::endl;
+//	std::cout << "###############################" << std::endl;
 
 //	predicate_parser<std::string::const_iterator> g;
 
 	std::vector<std::string> symbols;
-	std::vector<unsigned int> argcs;
-	std::vector<std::vector<unsigned int>> arg_types;
+	std::vector<unsigned int> argcs; // if no typing
+	std::vector<std::vector<unsigned int>> arg_types; // if typings
 	std::vector<std::string> forward_delimeds = split(text, '(');
 	arg_types.resize(forward_delimeds.size());
 	for (int i = 1; i < forward_delimeds.size(); ++i) {
+//		cout << "read pred: " << i << ": " <<  forward_delimeds[i] << endl;
 		std::vector<std::string> predicate = split(forward_delimeds[i], ')');
 		std::vector<std::string> token = split(predicate[0], ' ');
+
+//		token.erase(token.begin());
+
+//		cout << "tokens: ";
+//		for (int t = 0; t < token.size(); ++t) {
+//			cout << token[t] << " ";
+//		}
+//		cout << endl;
 
 		// tokens:
 		if (!typing) {
@@ -789,9 +968,10 @@ vector<pair<string, int>> Strips::readTypes(istream& domain) {
 void Strips::readObjects(std::istream &instance) {
 //	std::vector<std::string> strings;
 	std::string text;
-	getText(instance, "(:objects", ":init", 0, text);
-//	getBracket(instance, ":objects", 0, text);
+//	getText(instance, "(:objects", ":init", 0, text);
+	getBracket2(instance, ":objects", 0, text);
 //	text.substr(8);
+	std::cout << "object text = " << text << endl;
 	if (text.empty()) {
 		return;
 	}
@@ -808,10 +988,13 @@ void Strips::readObjects(std::istream &instance) {
 //	for (int i = 1; i < tokens.size() - 1; ++i) {
 //		strings.push_back(tokens[i]);
 //	}
-//	std::cout << "strings" << std::endl;
+//	std::cout << "objs" << std::endl;
 //	objects.resize(strings.size());
 	for (int i = 0; i < obs.size(); ++i) {
 		if (!obs[i].first.empty()) {
+			if (obs[i].first.compare(":objects") == 0) {
+				continue;
+			}
 //			std::cout << obs[i].first << " - " << obs[i].second << endl;
 			Object obj;
 			obj.key = objects.size();
@@ -873,8 +1056,8 @@ void Strips::readInit(std::istream &instance,
 	instance.seekg(0, std::ios_base::beg);
 
 	std::string total_text;
-//	getBracket(instance, ":init", 0, total_text);
-	getText(instance, ":init", ":goal", 0, total_text);
+	getBracket2(instance, ":init", 0, total_text);
+//	getText(instance, ":init", ":goal", 0, total_text);
 //	std::string line;
 //	std::string init_ = ":init";
 //	std::string goal_ = ":goal";
@@ -905,20 +1088,22 @@ void Strips::readInit(std::istream &instance,
 //	}
 
 // parse the total_text.
-//	std::cout << "inital state: " << total_text << std::endl;
+	std::cout << "inital state: " << total_text << std::endl;
 
 	std::vector<std::string> symbols; // parse into here.
 
 // now we need to parse total text into vector of strings(symbols).
 	std::vector<std::string> forward_delimeds = split(total_text, '(');
-	for (int i = 2; i < forward_delimeds.size(); ++i) {
+	for (int i = 1; i < forward_delimeds.size(); ++i) {
 		std::vector<std::string> token = split(forward_delimeds[i], ')');
 
 		symbols.push_back(token[0]);
 	}
 
+//	std::cout << "symbols" << endl;
 	for (int i = 0; i < symbols.size(); ++i) {
-//		std::cout << i << ": " << symbols[i];
+//		std::cout << i << ": " << symbols[i] << endl;
+		symbols[i] = trim(symbols[i]);
 
 		for (int j = 0; j < gs.size(); ++j) {
 //			std::cout << j << ": " << gs[j].symbol << std::endl;
@@ -940,7 +1125,7 @@ void Strips::readGoal(std::istream &instance,
 
 	std::vector<std::string> strings;
 	std::string text;
-	getText(instance, ":goal", ")))", 0, text);
+	getBracket2(instance, ":goal", 0, text);
 	instance.clear();
 
 // parse the total_text.
@@ -958,6 +1143,7 @@ void Strips::readGoal(std::istream &instance,
 
 	for (int i = 0; i < symbols.size(); ++i) {
 //		std::cout << i << ": " << symbols[i];
+		symbols[i] = trim(symbols[i]);
 
 		for (int j = 0; j < gs.size(); ++j) {
 //			std::cout << j << ": " << gs[j].symbol << std::endl;
@@ -1005,32 +1191,34 @@ void Strips::readAction(std::istream &domain, std::vector<Object> obs,
 	unsigned int actionNumber = 0;
 	unsigned int gActionNumber = 0;
 	unsigned int action_cost_buf = 0; // ad hoc implementation as getText DOES read :action-costs
-	while (getText(domain, ":action", ":action", actionNumber + action_cost_buf,
-			text)) {
+	while (getBracket2(domain, ":action", actionNumber + action_cost_buf, text)) {
 		if (text.find(":action-costs") != std::string::npos) {
 			++action_cost_buf;
 			continue;
 		}
-//		std::cout << "action-> " << text << std::endl;
+//		std::cout << "action text: " << text << std::endl;
 		std::stringstream textstream(text);
 
 		// action name
 		std::vector<std::string> tokens;
 		std::copy(std::istream_iterator<std::string>(textstream),
 				std::istream_iterator<std::string>(), back_inserter(tokens));
-		std::string actionname = tokens[1];
+		std::string actionname = tokens[2];
 //		std::cout << "action name: " << actionname << std::endl;
 
 		// parameters
 		std::string parametersText = "";
-		getText(domain, ":parameters", ":precondition", actionNumber,
-				parametersText);
-//		parametersText = parametersText.substr(13);
+		getBracketAfter(textstream, ":parameters", 0, parametersText);
+//		std::cout << "param text" << parametersText << endl;
+
+		//		parametersText = parametersText.substr(13);
 //		getBracket(domain, ":parameters", actionNumber, parametersText);
 		stringstream iss(parametersText);
 		std::vector<std::pair<std::string, std::string>> param_text;
 		std::vector<std::pair<std::string, int>> param;
-		getConstants(iss, param_text, "?");
+//		std::cout << "read action " << endl;
+//		std::cout << iss.str() << endl;
+		getConstants(iss, param_text, "", true);
 
 		for (int i = 0; i < param_text.size(); ++i) {
 			param_text[i].first.erase(
@@ -1047,8 +1235,8 @@ void Strips::readAction(std::istream &domain, std::vector<Object> obs,
 //		cout << "params: " << endl;
 //		for (int i = 0; i < param.size(); ++i) {
 //			if (param[i].second >= 0) {
-//			cout << param[i].first << " - " << types[param[i].second].first
-//					<< endl;
+//				cout << param[i].first << " - " << types[param[i].second].first
+//						<< endl;
 //			} else {
 //				cout << param[i].first << endl;
 //			}
@@ -1102,14 +1290,19 @@ void Strips::readAction(std::istream &domain, std::vector<Object> obs,
 		bool isDel = false;
 		bool isIncrease = false;
 		for (int p = 0; p < effects.size(); ++p) {
-			if (effects[p].compare("not ") == 0) {
+			if (effects[p].find(" not ") != effects[p].npos) {
 				isDel = true;
 				continue;
 			}
 			// matches predicates to literal
 			std::vector<std::string> lits = split(effects[p], ' ');
+			for (int i = 0; i < lits.size(); ++i) {
+				lits[i] = trim(lits[i]);
+			}
+//			cout << lits[0] << lits[1];
 			for (int o = 0; o < ps.size(); ++o) {
 				if (lits[0].compare(ps[o].symbol) == 0) {
+//					cout << " matches " << ps[o].symbol << endl;
 					std::pair<unsigned int, std::vector<unsigned int>> predicate;
 					predicate.first = o;
 					//　here we detect constants too.
@@ -1174,8 +1367,13 @@ void Strips::readAction(std::istream &domain, std::vector<Object> obs,
 
 		for (int p = 0; p < effects.size(); ++p) {
 			std::vector<std::string> lits = split(effects[p], ' ');
+			for (int i = 0; i < lits.size(); ++i) {
+				lits[i] = trim(lits[i]);
+			}
+//			cout << "preconditions: " << lits[0] << ", " << lits[1] << endl;
 			for (int o = 0; o < ps.size(); ++o) {
 				if (lits[0].compare(ps[o].symbol) == 0) {
+//					cout << " matches " << ps[o].symbol << endl;
 					std::pair<unsigned int, std::vector<unsigned int>> predicate;
 
 					predicate.first = o;
@@ -1189,8 +1387,8 @@ void Strips::readAction(std::istream &domain, std::vector<Object> obs,
 								if (lits[i].compare(obs[ob].symbol) == 0) {
 									predicate.second.push_back(
 											param.size() + ob);
-									std::cout << "const: " << lits[i] << ": "
-											<< ob << endl;
+//									std::cout << "const: " << lits[i] << ": "
+//											<< ob << endl;
 									break;
 								}
 							}
@@ -1220,14 +1418,14 @@ void Strips::readAction(std::istream &domain, std::vector<Object> obs,
 //		}
 
 		lActions.push_back(lf);
-		std::cout << "instantiating " << lf.symbol << "/" << lf.n_arguments
-				<< ":";
-		for (int g = 0; g < param.size(); ++g) {
-			if (param[g].second >= 0) {
-				std::cout << " " << types[param[g].second].first;
-			}
-		}
-		std::cout << "..." << std::endl;
+//		std::cout << "instantiating " << lf.symbol << "/" << lf.n_arguments
+//				<< ":";
+//		for (int g = 0; g < param.size(); ++g) {
+//			if (param[g].second >= 0) {
+//				std::cout << " " << types[param[g].second].first;
+//			}
+//		}
+//		std::cout << "..." << std::endl;
 
 		// enumerate all objects matches argument typing.
 		std::vector<std::vector<unsigned int> > possible_objs;
@@ -1361,9 +1559,11 @@ void Strips::readAction(std::istream &domain, std::vector<Object> obs,
 
 		// TODO: efficient way is to instantiate lifted actions.
 		//       how can we do that?
-
+//		cout << "actionNumber++" << endl;
 		++actionNumber;
 	}
+//	cout << actionNumber << " lifted actions" << endl;
+//	cout << gActionNumber << " grounded actions" << endl;
 
 }
 
@@ -1926,10 +2126,15 @@ void Strips::analyzeTransitions() {
  */
 void Strips::getConstants(std::istream& domain,
 		std::vector<std::pair<std::string, std::string>>& type_object,
-		std::string header) {
+		std::string header, bool whole_text) {
 	std::vector<std::pair<std::string, std::string>> constants;
 	std::string text;
-	getBracket(domain, header, 0, text);
+	if (whole_text) {
+		text = gulp(domain);
+	} else {
+		getBracket2(domain, header, 0, text);
+	}
+//	cout << "getConstants: " << text << endl;
 //	text = text.substr(1);
 //	vector<string> undelimed = split(text, ' ');
 
@@ -1941,10 +2146,20 @@ void Strips::getConstants(std::istream& domain,
 	std::vector<std::string> tokens {
 			std::istream_iterator<std::string> { iss }, std::istream_iterator<
 					std::string> { } };
-	//
 
-	// If no typing information there
-	if (text.find(deliminator) == std::string::npos) {
+	bool hasTypingInfo = (text.find(deliminator) != text.npos);
+	if (hasTypingInfo) {
+		hasTypingInfo = false;
+		for (int i = 0; i < tokens.size(); ++i) {
+			if (tokens[i].compare(deliminator) == 0) {
+				hasTypingInfo = true;
+				break;
+			}
+		}
+	}
+
+// If no typing information there
+	if (!hasTypingInfo) {
 		for (int i = 1; i < tokens.size(); ++i) {
 			std::vector<std::string> lits = split(tokens[i], ')');
 			if (lits.size() == 0) {
@@ -1958,6 +2173,9 @@ void Strips::getConstants(std::istream& domain,
 		return;
 	}
 
+//////////////////////////////
+/// Objects with typing
+//////////////////////////////
 	for (int i = 1; i < tokens.size(); ++i) {
 		std::vector<std::string> lits = split(tokens[i], ')');
 		if (lits.size() == 0) {
@@ -2009,6 +2227,10 @@ void Strips::print_state(const std::vector<unsigned int>& propositions) const {
 		std::cout << "(" << g_predicates->at(propositions[p]).symbol << ") ";
 	}
 	std::cout << std::endl;
+}
+
+void Strips::print_state(const State& s) const {
+	print_state(s.propositions);
 }
 
 void Strips::print_plan(std::vector<State>& path) const {

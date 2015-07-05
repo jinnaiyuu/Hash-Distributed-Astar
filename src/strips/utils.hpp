@@ -14,7 +14,9 @@ static std::vector<std::string> &split(const std::string &s, char delim,
 	std::stringstream ss(s);
 	std::string item;
 	while (std::getline(ss, item, delim)) {
-		elems.push_back(item);
+		if (!item.empty()) {
+			elems.push_back(item);
+		}
 	}
 	return elems;
 }
@@ -36,6 +38,12 @@ static std::string& replace(std::string& s, const std::string& from,
 static std::string trim(std::string& str) {
 	size_t first = str.find_first_not_of(' ');
 	size_t last = str.find_last_not_of(' ');
+	if (first == str.npos) {
+		first = 0;
+	}
+	if (last == str.npos) {
+		return str.substr(first);
+	}
 	return str.substr(first, (last - first + 1));
 }
 
@@ -45,7 +53,7 @@ static std::string findRange(std::string& s, const std::string& from,
 	size_t t = 0;
 	f = s.find(from, f);
 	t = s.find(to, f);
-	if (t == std::string::npos) {
+	if (t == std::string::npos || f == std::string::npos) {
 		return s.substr(f);
 	} else {
 		return s.substr(f, t - f);
@@ -90,6 +98,24 @@ bool isContainedSortedVectors(unsigned int v1,
 			return true;
 		} else if (v1 < v2[v2it]) {
 			return false;
+		} else {
+			++v2it;
+		}
+	}
+	return false;
+}
+
+static
+bool isAnyContainedSortedVectors(const std::vector<unsigned int>& v1,
+		const std::vector<unsigned int>& v2) {
+	unsigned int v1it = 0;
+	unsigned int v2it = 0;
+
+	while (v1it < v1.size() && v2it < v2.size()) {
+		if (v1[v1it] == v2[v2it]) {
+			return true;
+		} else if (v1[v1it] < v2[v2it]) {
+			++v1it;
 		} else {
 			++v2it;
 		}
@@ -243,7 +269,8 @@ inline unsigned int hash(const std::vector<unsigned int> v) {
 }
 
 static
-int matchStringIndex(const std::vector<std::pair<std::string, int>>& dic, const std::string& string) {
+int matchStringIndex(const std::vector<std::pair<std::string, int>>& dic,
+		const std::string& string) {
 	for (int i = 0; i < dic.size(); ++i) {
 		if (dic[i].first.compare(string) == 0) {
 			return i;
@@ -252,9 +279,9 @@ int matchStringIndex(const std::vector<std::pair<std::string, int>>& dic, const 
 	return -1;
 }
 
-
 static
-int matchStringInt(const std::vector<std::pair<std::string, int>>& dic, const std::string& string) {
+int matchStringInt(const std::vector<std::pair<std::string, int>>& dic,
+		const std::string& string) {
 	for (int i = 0; i < dic.size(); ++i) {
 		if (dic[i].first.compare(string) == 0) {
 			return dic[i].second;
@@ -265,7 +292,8 @@ int matchStringInt(const std::vector<std::pair<std::string, int>>& dic, const st
 
 // Check if obj_type is type of subtype of req type.
 static
-bool isType(const int obj_type, const int req_type, const std::vector<std::pair<std::string, int>>& dic) {
+bool isType(const int obj_type, const int req_type,
+		const std::vector<std::pair<std::string, int>>& dic) {
 	if (obj_type == req_type) {
 		return true;
 	}
@@ -355,8 +383,147 @@ bool getBracket(std::istream &file, const std::string &from,
 	return true;
 }
 
+/**
+ * @param from: first literal inside bracket.
+ * @param number: if there are multiple brackets starting from "from", it selects which one to read.
+ * @param ret: returning value.
+ * @return: if it has the
+ *
+ */
 static
 bool getBracket2(std::istream &file, const std::string &from,
+		unsigned int number, std::string& ret) {
+//	std::cout << "getBracket2" << std::endl;
+	if (!file.good()) {
+//		std::cout << "error on file" << std::endl;
+		file.clear();
+	}
+	file.seekg(0, std::ios_base::beg);
+
+	std::string r = "( ";
+	std::string token;
+	int parenthesis = 0;
+	int token_parenthesis;
+
+//	std::cout << "start" << std::endl;
+	int n = 0;
+
+	while (file.good()) {
+		file >> token;
+//		std::cout << "token = " << token;
+		if (token.compare(from) == 0) {
+			++n;
+			if (n > number) {
+				token_parenthesis = parenthesis;
+				break;
+			}
+		} else if (token.compare("(") == 0) {
+			++parenthesis;
+		} else if (token.compare(")") == 0) {
+			--parenthesis;
+		} else if (file.eof()) {
+			return false;
+		}
+	}
+
+	if (!file.good()) {
+		return false;
+	}
+
+//	std::cout << token;
+
+	r.append(from);
+	r.append(" ");
+	while (file.good()) {
+		file >> token;
+		r.append(token);
+		r.append(" ");
+		if (token.compare("(") == 0) {
+			++parenthesis;
+		} else if (token.compare(")") == 0) {
+			--parenthesis;
+			if (parenthesis == token_parenthesis - 1) {
+				break;
+			}
+		} else if (file.eof()) {
+			return false;
+		}
+
+	}
+	ret = r;
+
+	return true;
+}
+
+static
+bool getBracketAfter(std::istream &file, const std::string &from,
+		unsigned int number, std::string& ret) {
+//	std::cout << "getBracket2" << std::endl;
+	if (!file.good()) {
+//		std::cout << "error on file" << std::endl;
+		file.clear();
+	}
+	file.seekg(0, std::ios_base::beg);
+
+	std::string r = "";
+	std::string token;
+	int parenthesis = 0;
+	int token_parenthesis;
+
+//	std::cout << "start" << std::endl;
+
+	while (file.good()) {
+		file >> token;
+//		std::cout << "token = " << token;
+		if (token.compare(from) == 0) {
+			token_parenthesis = parenthesis;
+			break;
+		} else if (token.compare("(") == 0) {
+			++parenthesis;
+		} else if (token.compare(")") == 0) {
+			--parenthesis;
+		} else if (file.eof()) {
+			return false;
+		}
+	}
+
+//	std::cout << token;
+
+//	r.append(from);
+//	r.append(" ");
+//	file >> token;
+
+	while (file.good()) {
+		file >> token;
+		r.append(token);
+		r.append(" ");
+		if (token.compare("(") == 0) {
+			++parenthesis;
+		} else if (token.compare(")") == 0) {
+			--parenthesis;
+			if (parenthesis == token_parenthesis) {
+				break;
+			}
+		} else if (file.eof()) {
+			return false;
+		}
+	}
+	ret = r;
+
+	return true;
+}
+
+static std::string gulp(std::istream &in) {
+	std::string ret;
+	char buffer[4096];
+	while (in.read(buffer, sizeof(buffer)))
+		ret.append(buffer, sizeof(buffer));
+	ret.append(buffer, in.gcount());
+	return ret;
+}
+
+static
+bool getText3(std::istream &file, const std::string &from, std::string to,
 		unsigned int number, std::string& ret) {
 	if (!file.good()) {
 //		std::cout << "error on file" << std::endl;
@@ -364,56 +531,30 @@ bool getBracket2(std::istream &file, const std::string &from,
 	}
 	file.seekg(0, std::ios_base::beg);
 
-	char c;
-	int braket_pos;
-	while (file.good()) {
-		file.get(c);
-		if (c == '(') {
-			braket_pos = file.tellg();
-			braket_pos -= 1;
-		}
-		if (c == from[0]) {
-			file.seekg(-1, file.cur);
-			unsigned int from_length = from.size();
-			char* buf = new char[from_length];
-			file.read(buf, from_length);
-			if (from.compare(buf) == 0) {
-				std::cout << "matched!" << std::endl;
-				file.seekg(braket_pos, file.beg);
-				break;
-			} else {
-				int p = - from_length + 1;
-				file.seekg(p, file.cur);
-			}
-			delete buf;
+	std::string text = gulp(file);
+	file.seekg(0, std::ios_base::beg);
+
+	size_t s_from = 0;
+	unsigned int n = 0;
+
+	while (n <= number) {
+		s_from = text.find(from, s_from);
+		if (s_from != text.npos) {
+			++n;
+		} else {
+			return false;
 		}
 	}
 
-	int end_pos;
-	int braket_count = 0;
-	while (file.good()) {
-		file.get(c);
-		if (c == '(') {
-			++braket_count;
-		} else if (c == ')') {
-			--braket_count;
-		}
-
-		if (braket_count == 0) {
-			end_pos = file.tellg();
-			end_pos += 1;
-		}
+	size_t s_to = text.find(to, s_from);
+	if (s_to == text.npos) {
+		return false;
 	}
-	file.seekg(braket_pos, file.beg);
-	char* buf = new char[end_pos - braket_pos];
-	file.read(buf, end_pos - braket_pos);
-	std::string s(buf,  end_pos - braket_pos);
-	ret = s;
-	delete buf;
+
+	std::string f = text.substr(s_from, s_to - s_from);
+	ret = f;
 	return true;
 }
-
-
 
 static
 bool getText2(std::istream &file, std::string from, std::string to,
@@ -527,6 +668,30 @@ bool getText(std::istream &file, std::string from, std::string to,
 	}
 	ret = total_text;
 	return true;
+}
+
+// read all and then
+// 1. replace ";;" -> comment out
+// 2. replace "("  -> " ( "
+// 3. replace ")"  -> " ) "
+
+static std::string readAll(std::istream& f) {
+	std::string allin;
+	std::string input;
+	while (std::getline(f, input)) {
+		// comment out
+		size_t c = input.find(";;");
+		if (c != input.npos) {
+			input = input.substr(0, c);
+		}
+		allin.append(input);
+		allin.append("\n");
+	}
+	replace(allin, "(", " ( ");
+	replace(allin, ")", " ) ");
+	transform(allin.begin(), allin.end(), allin.begin(), ::tolower);
+
+	return allin;
 }
 
 #endif

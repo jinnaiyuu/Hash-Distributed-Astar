@@ -86,6 +86,15 @@ struct Strips {
 		return !isAnyNotContainedSortedVectors(goal_condition, s.propositions);
 	}
 
+	std::vector<unsigned int> ops(const State &s) const {
+//		std::cout << "nops" << std::endl;
+//		actionTrie.printTree();
+		std::vector<unsigned int> actions = actionTrie.searchPossibleActions(
+				s.propositions);
+		std::cout << "expand state: " << actions.size() << std::endl;
+		return actions;
+	}
+
 	int nops(const State &s) const {
 //		std::cout << "nops" << std::endl;
 //		actionTrie.printTree();
@@ -93,15 +102,6 @@ struct Strips {
 				s.propositions);
 //		std::cout << "expand state: " << actions.size() << std::endl;
 		return actions.size();
-	}
-
-	std::vector<unsigned int> ops(const State &s) const {
-//		std::cout << "nops" << std::endl;
-//		actionTrie.printTree();
-		std::vector<unsigned int> actions = actionTrie.searchPossibleActions(
-				s.propositions);
-//		std::cout << "expand state: " << actions.size() << std::endl;
-		return actions;
 	}
 
 	// TODO: nops&nthop is duplication of work for STRIPS planning. should be optimized.
@@ -129,7 +129,7 @@ struct Strips {
 //		print_state(s.propositions);
 		apply_action(s, action, cost);
 
-		Edge<Strips> e(cost, action, cost);
+		Edge<Strips> e(cost, action, -1);
 		e.undo.propositions = p;
 		e.undo.h = h;
 //		print_state(s.propositions);
@@ -456,8 +456,12 @@ public:
 
 	void print_plan(std::vector<State>& path) const;
 	void print_state(const std::vector<unsigned int>& propositions) const;
+	void print_state(const State& s) const;
 
 private:
+
+	const unsigned int TRUE_PREDICATE = 10000000;
+
 	bool typing = false;
 	bool action_costs = false;
 	bool need_heap_openlist = false;
@@ -499,6 +503,7 @@ private:
 	void listFeasibleActions(std::vector<unsigned int> gs,
 			std::vector<unsigned int>& actions);
 	void buildActionTrie(std::vector<unsigned> keys);
+	unsigned int match_pattern(std::vector<unsigned int> p, const std::vector<std::vector<unsigned int>>& groups);
 
 	std::vector<unsigned int> analyzeBalance(unsigned int p,
 			const std::vector<unsigned int>& predicates,
@@ -506,7 +511,7 @@ private:
 	void analyzeAllBalances(std::vector<Predicate> ps);
 	void analyzeXORGroups();
 	void getConstants(std::istream& domain, std::vector<std::pair<std::string, std::string>>& type_object,
-			std::string header);
+			std::string header, bool whole_text = false);
 	int pow(int base, int p);
 
 

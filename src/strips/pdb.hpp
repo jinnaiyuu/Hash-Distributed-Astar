@@ -27,10 +27,9 @@ public:
 		database[pattern] = h;
 	}
 
-//	void addPattern(std::vector<unsigned int> pattern, int h) {
-//		std::pair<std::vector<unsigned int>, int> n(pattern, h);
-//		database.push_back(n);
-//	}
+	void setPattern(std::vector<unsigned int> pattern) {
+		database = pattern;
+	}
 
 	void setGroups(std::vector<std::vector<unsigned int>> groups) {
 		this->groups = groups;

@@ -1,4 +1,5 @@
 #include "trie.hpp"
+#include "utils.hpp"
 #include <iostream>
 
 Trie::Node* Trie::Node::findChild(unsigned int c) {
@@ -158,8 +159,17 @@ std::vector<unsigned int> Trie::searchPossibleActions(
 //	}
 //	std::cout << std::endl;
 
+	// TODO: check whether this sorting method is optimal or not.
+	//       I guess it is not optimal, and we do not need to order the actions.
+	//       also, all actions appears at most one time. therefore no need to check its uniqueness.
+
 	for (int i = 0; i < matchingChildren.size(); ++i) {
 		searchNodes(matchingChildren[i], p, actions);
+	}
+
+	if (root->wordMarker()) {
+//		actions = uniquelyMergeSortedVectors(actions, root->action());
+		actions.insert(actions.end(), root->action().begin(), root->action().end());
 	}
 
 	std::sort(actions.begin(), actions.end());
@@ -180,10 +190,12 @@ void Trie::searchNodes(Node* c, const std::vector<unsigned int>& p,
 
 	if (c->wordMarker()) {
 //		std::cout << "marked: " << c->action().size() << " actions added." << std::endl;
-		// TODO: push all
-		for (int i = 0; i < c->action().size(); ++i) {
-			actions.push_back(c->action()[i]);
-		}
+		// TODO: uniquely merge sorted vectors.
+//		for (int i = 0; i < c->action().size(); ++i) {
+//			actions.push_back(c->action()[i]);
+//		}
+		actions.insert(actions.end(), c->action().begin(), c->action().end());
+//		actions = uniquelyMergeSortedVectors(actions, c->action());
 	}
 	// if c is inner node, then search deeper
 

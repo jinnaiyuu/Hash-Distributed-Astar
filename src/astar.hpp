@@ -88,6 +88,15 @@ public:
 //			printf("while loop\n");
 			Node *n = static_cast<Node*>(open.pop());
 			if (closed.find(n->packed)) {
+//				std::cout << "destruct" << std::endl;
+//				typename D::State state;
+//				this->dom.unpack(state, n->packed);
+//				this->dom.print_state(state);
+//				Node* c = closed.find(n->packed);
+//				typename D::State cs;
+//				this->dom.unpack(cs, c->packed);
+//				this->dom.print_state(cs);
+//				std::cout << std::endl;
 				nodes.destruct(n);
 				continue;
 			}
@@ -120,6 +129,7 @@ public:
 			}
 
 			int nops = this->dom.nops(state);
+//			this->dom.print_state(state);
 
 			for (int i = 0; i < nops; i++) {
 				int op = this->dom.nthop(state, i);
@@ -127,8 +137,8 @@ public:
 				if (op == n->pop)
 					continue;
 				Edge<D> e = this->dom.apply(state, op);
-
 				Node* next = wrap(state, n, e.cost, e.pop);
+//				this->dom.print_state(state);
 
 				///////////////////////////
 				/// TESTS
