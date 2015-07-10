@@ -192,6 +192,29 @@ static std::vector<unsigned int> intersectingSortedVectors(
 	return intersecting;
 }
 
+static std::vector<unsigned int> uniquelyMergeSortedVectors2(
+		const std::vector<unsigned int>& v1, const unsigned int& v2) {
+	std::vector<unsigned int> uniqueMerge;
+	unsigned int v1it = 0;
+	while (v1it < v1.size()) {
+		if (v1[v1it] == v2) {
+			uniqueMerge.push_back(v1[v1it]);
+			++v1it;
+			break;
+		} else if (v1[v1it] < v2) {
+			uniqueMerge.push_back(v1[v1it]);
+			++v1it;
+		} else {
+			uniqueMerge.push_back(v2);
+			break;
+		}
+	}
+	if (v1it < v1.size()) {
+		uniqueMerge.insert(uniqueMerge.end(), v1.begin() + v1it, v1.end());
+	}
+	return uniqueMerge;
+}
+
 static std::vector<unsigned int> uniquelyMergeSortedVectors(
 		const std::vector<unsigned int>& v1,
 		const std::vector<unsigned int>& v2) {
@@ -671,7 +694,7 @@ bool getText(std::istream &file, std::string from, std::string to,
 }
 
 // read all and then
-// 1. replace ";;" -> comment out
+// 1. replace ";" -> comment out
 // 2. replace "("  -> " ( "
 // 3. replace ")"  -> " ) "
 
@@ -680,7 +703,7 @@ static std::string readAll(std::istream& f) {
 	std::string input;
 	while (std::getline(f, input)) {
 		// comment out
-		size_t c = input.find(";;");
+		size_t c = input.find(";");
 		if (c != input.npos) {
 			input = input.substr(0, c);
 		}

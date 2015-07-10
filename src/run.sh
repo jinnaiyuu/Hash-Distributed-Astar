@@ -12,11 +12,19 @@
 d=`echo $2 | awk -F / '{print $3}'`
 i=`echo $3 | awk -F / '{print $4}'`
 
-echo "$d $i"
+echo "1=$1"
+echo "2=$2"
+echo "3=$3"
+echo "4=$4"
+echo "5=$5"
+echo "6=$6"
+echo "7=$7"
+echo "d=$d"
+echo "i=$i"
 
 filename=`echo "$1$d$i$4$5$6"`
 
-./strips.out $1 $2 $3 $4 $5 $6 >> $7/$filename
+./strips.out $1 $2 $3 $4 $5 $6 > "$7/$filename"
 
 
 # TODO: where did the program died?
@@ -37,5 +45,5 @@ filename=`echo "$1$d$i$4$5$6"`
 #             /failed to find a plan/{solved=0} \
 #             END{printf("%s %s %f %d %d %d\n", dom, ins, wtime, expd, solved, stage)}' >> $7/summary
 
-cat $7/$filename
+cat "$7/$filename"
 

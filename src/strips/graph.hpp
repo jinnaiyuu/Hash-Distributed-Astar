@@ -14,17 +14,15 @@
 #include <vector>
 #include <utility>
 
-
-
 struct Graph {
 
 	struct State {
 		int id;
-		char h;
+		char h; // do we need this?
 	};
 
 	struct PackedState {
-		int word;
+		int word; // = state.id
 
 		unsigned long hash() const {
 			return word;
@@ -35,13 +33,22 @@ struct Graph {
 		}
 	};
 
-	Graph(const std::vector<std::vector<unsigned int>>& dic) {
+	Graph(const std::vector<std::vector<unsigned int>>& dic) :
+			action_cost(false) {
 		edge_dictionary = dic;
 	}
+
+//	Graph(const std::vector<std::vector<unsigned int>>& dic,
+//			const std::vector<std::vector<unsigned int>>& cost) :
+//			action_cost(true) {
+//		edge_dictionary = dic;
+//		edgecost_dictionary = cost;
+//	}
 
 	State initial() const {
 		State s;
 		s.id = init_id;
+		s.h = 0;
 		return s;
 	}
 
@@ -49,9 +56,9 @@ struct Graph {
 		return s.h;
 	}
 
-	// TODO:
+	// TODO: this is useless for dijkstra regression search.
 	bool isgoal(const State &s) const {
-		return s.h == 0;
+		return false;
 	}
 
 //	int nops(const State &s) const {
@@ -66,15 +73,20 @@ struct Graph {
 		return edge_dictionary[s.id];
 	}
 
-	struct Undo { int id; };
+	struct Undo {
+		int id;
+	};
 
 	Edge<Graph> apply(State &s, int newb) const {
-		Edge<Graph> e(1, newb, s.id);
+		int cost = 1;
 
+		// TODO: this is not so simple as newb does not  contain information of the edge.
+		if (action_cost) {
+//			cost = edgecost_dictionary[];
+		}
+		Edge<Graph> e(cost, newb, s.id);
 		e.undo.id = s.id;
-
 		s.id = newb;
-
 		return e;
 	}
 
@@ -92,20 +104,22 @@ struct Graph {
 		dst.id = s.word;
 	}
 
-
 	void set_init(int id) {
 		init_id = id;
 	}
 
-
 	// TODO: garbage method for debugging 24 tiles.
-	unsigned int print_h(char tiles[]) const {return 0;}
+	unsigned int print_h(char tiles[]) const {
+		return 0;
+	}
 
 private:
 
-
 	std::vector<std::vector<unsigned int>> edge_dictionary;
+	std::vector<std::vector<unsigned int>> edgecost_dictionary;
+
 	int init_id;
+	bool action_cost;
 
 };
 

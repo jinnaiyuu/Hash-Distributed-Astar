@@ -2,10 +2,20 @@
 # this script translate all strips domain with types to STRIPS without types.
 # translating types are not the optimal implementation. Shouldn't do this.
 
+##################################################
+## IMPORTANT NOTES
+##################################################
+
+# 1. this script is FOR ONE SINGLE EVALUATION.
+#    SHOULD NOT use this script for several parameters.
+#    SINGLE PARAMETER SETTING for single run.
+#    Use one level meta script to make comparison among parameters. 
+
 declare -A domain_file
 declare -A instance_files
 
 date=`date +%m%d%H%M`
+system=`uname -a | sed -e 's/#//g'`
 
 cd ../src
 
@@ -13,37 +23,86 @@ cd ../src
 ## Command line arguments
 ########################
 
-# if -t then 
-#    test run with blocks, gripper, openstacks-strips
-# if -m then
-#    test run with gripper
+# algorithms
+# -a "astar hdastar-N"
 
-t=0
-m=0
+# structure hash method
+# -s abst-N
 
-while getopts ":tm" opt; do
+# heuristic
+# -h h-N
+
+# PDB
+# -p pdb-N
+
+# instances
+# -t: test run with blocks, gripper, openstacks-strips
+# -m: test run with gripper
+
+alg="hdastar-1"
+structure="abst-0"
+heuristic="h-1"
+pdb="pdb-0"
+runtime="5m"
+i=150
+dom=""
+
+while getopts "i:t:d:a:s:h:p:" opt; do
     case $opt in
-	t)
-	        t=1
+	a) # alg
+	        alg="$OPTARG"
 		    ;;
-	m)
-	        m=1
+	s) # structured zobrist hash
+	        structure="$OPTARG"
+		    ;;
+	h) # heuristic
+	        heuristic="$OPTARG"
+		    ;;
+	p) # pdb
+	        pdb="$OPTARG"
+		    ;;
+	i) # number of instances to run
+	        i=$OPTARG
+		    ;;
+	t) # time to run each instance
+	        runtime="$OPTARG"
+		    ;;
+	d) # domains to run
+	        dom="$OPTARG"
 		    ;;
 	\?)
 	        ;;
     esac
 done
 
-if [ $t -eq 1 ]
+n_threads=`echo "$alg" | awk -F '-' '{print $2}'`
+
+if echo $n_threads | egrep -q '^[0-9]+$'; then
+    echo
+else
+    n_threads=1
+fi
+sim_job=`expr 100 / $n_threads / 2`
+
+
+if [ $i -ne 150 ]
 then
-    echo "test run"
+    echo "run $i instances each domain"
 fi
 
-if [ $m -eq 1 ]
+if [ "$dom" ]
 then
-    echo "minimal test run"
+    echo "run only $d domain"
 fi
-#echo $t $m 
+
+echo "alg=$alg"
+echo "simjob=$sim_job"
+echo "structure=$structure"
+echo "heuristic=$heuristic"
+echo "pdb=$pdb"
+echo "i=$i"
+echo "runtime=$runtime"
+echo "dom=$dom"
 #exit 0
 
 
@@ -339,22 +398,46 @@ done
 domains="$d1 $d2 $d3 $d4 $d5 $d6 $d7 $d8 $d9 $d10 $d11"
 domains2="$d12 $d13 $d14 $d15"
 
-if [ $t -eq 1 ]
+
+### domains to run
+if [ "$dom" ]
 then
-    domains="blocks gripper"
-    domains2="openstacks-strips"
+    if [[ $domains == *"$dom"* ]]
+    then
+	domains=$dom
+	domains2=""
+    else
+	domains=""
+	domains2=$dom
+    fi
 fi
 
-if [ $m -eq 1 ]
+
+### instances to run
+
+if [ $i -ne 150 ]
 then
-    domains="gripper"
-    domains2=""
+#    domains="storage blocks rovers gripper"
+#    domains2="openstacks-strips psr-small"
+    for domain in $domains
+    do
+	instance_files[${domain}]="`echo ${instance_files[${domain}]} | \
+        awk -v i=$i '{t=0; while(t<i) {++t; printf(\"%s\n\", $t);}}'`"
+    done
+    for domain in $domains2
+    do
+	domain_file[${domain}]="`echo ${domain_file[${domain}]} | \
+        awk -v i=$i '{t=0; while(t<i) {++t; printf(\"%s\n\", $t);}}'`"
+	instance_files[${domain}]="`echo ${instance_files[${domain}]} | \
+        awk -v i=$i '{t=0; while(t<i) {++t; printf(\"%s\n\", $t);}}'`"
+    done
 fi
+
 
 #echo "$domains $domains2"
 
-if false
-then
+#if false
+#then
 for domain in $domains
 do
     dfile=${domain_file[${domain}]}
@@ -382,7 +465,7 @@ do
     echo "$ifiles"
     echo
 done
-fi
+#fi
 
 #exit 0
 
@@ -400,6 +483,12 @@ mkdir ../results/raws/${date}
 #if false
 #then
 
+#alg="hdastar-1"
+#structure=abst-1
+#heuristic=h-1
+#pdb=pdb-0
+
+
 #############################
 ### Run Instances
 #############################
@@ -410,8 +499,9 @@ do
     echo "domain: $domain"
     dfile=${domain_file[${domain}]}
     ifiles=${instance_files[${domain}]}
-    parallel --noswap --results $output_dir timeout 5m ./run.sh ::: \
-	astar ::: ../pddl/${domain}/${dfile} ::: "$ifiles" ::: "h-1" ::: "abst-1" ::: "pdb-1" ::: $output_dir
+    echo "instance: $ifiles"
+    parallel --noswap --jobs ${sim_job}% --results $output_dir timeout "$runtime" ./run.sh ::: \
+	"$alg" ::: ../pddl/${domain}/${dfile} ::: "$ifiles" ::: "$heuristic" ::: "$structure" ::: "$pdb" ::: $output_dir
     echo
 done
 
@@ -421,8 +511,20 @@ do
     echo "domain: $domain"
     dfiles=${domain_file[${domain}]}
     ifiles=${instance_files[${domain}]}
-    parallel --noswap --results $output_dir --xapply timeout 5m ./run.sh \
-	::: astar ::: "$dfiles" ::: "$ifiles" ::: "h-1" ::: "abst-1" ::: "pdb-1" ::: $output_dir
+    echo "instance: $ifiles"
+    for a in $alg
+    do
+	for h in $heuristic
+	do
+	    for s in $structure
+	    do
+		parallel --noswap --jobs ${sim_job}% --results $output_dir --xapply \
+		    timeout "$runtime" ./run.sh \
+		    ::: "$a" ::: "$dfiles" ::: "$ifiles" \
+		    ::: "$h" ::: "$s" ::: "$pdb" ::: $output_dir
+	    done
+	done
+    done
     echo
 done
 
@@ -437,8 +539,9 @@ do
     echo "domain: $domain"
     dfile=${domain_file[${domain}]}
     ifiles=${instance_files[${domain}]}
-    parallel --noswap --results $output_dir timeout 5m ./summarize.sh ::: \
-	astar ::: ../pddl/${domain}/${dfile} ::: "$ifiles" ::: "h-1" ::: "abst-1" ::: "pdb-1" ::: $output_dir
+    parallel --noswap --results $output_dir timeout "$runtime" \
+	./summarize.sh ::: \
+	"$alg" ::: ../pddl/${domain}/${dfile} ::: $ifiles ::: "$heuristic" ::: "$structure" ::: "$pdb" ::: $output_dir
     echo
 done
 for domain in $domains2
@@ -447,41 +550,45 @@ do
     echo "domain: $domain"
     dfiles=${domain_file[${domain}]}
     ifiles=${instance_files[${domain}]}
-    parallel --noswap --results $output_dir --xapply timeout 5m ./summarize.sh \
-	::: astar ::: "$dfiles" ::: "$ifiles" ::: "h-1" ::: "abst-1" ::: "pdb-1" ::: $output_dir
+    for a in $alg
+    do
+	for h in $heuristic
+	do
+	    for s in $structure
+	    do
+		parallel --noswap --results $output_dir --xapply \
+		    timeout "$runtime" ./summarize.sh \
+		    ::: "$a" ::: "$dfiles" ::: $ifiles \
+		    ::: "$h" ::: "$s" ::: "$pdb" ::: $output_dir
+	    done
+	done
+    done
     echo
 done
 
 
 
+echo "date=$date, alg=$alg, simjob=$sim_job, structure=$structure, heuristic=$heuristic, pdb=$pdb, runtime=$runtime, system=$system"
+
+parameter_text="
+date=$date\n
+alg=$alg\n
+simjob=$sim_job\n
+structure=$structure\n
+heuristic=$heuristic\n
+pdb=$pdb\n
+runtime=$runtime\n
+system=$system\n"
+
+echo -e $parameter_text > $output_dir/parameters
 
 echo "summary: "
-cat $output_dir/summary
+cat $output_dir/summary  | sort -V > $output_dir/summary_buf
+rm $output_dir/summary
+mv $output_dir/summary_buf $output_dir/summary
 
-cat $output_dir/summary | mailx -s "run_all.sh done $date" ddyuudd@gmail.com
+cat $output_dir/summary | ../scripts/print.sh $output_dir # $output_dir/parameters
 
+cat $output_dir/parameters $output_dir/summary | mailx -s "run_all.sh done $date" -A $output_dir/summary.pdf ddyuudd@gmail.com
 
-#############################
-### Print into PDF
-#############################
-
-# TODO: output as coverage and node evaluations in table.
-
-# syntax of the input
-# <domain> <instance> <walltime> <expanded nodes> <solved> <stage>
-# <domain> <instance> <walltime> <expanded nodes> <solved> <stage>
-# <domain> <instance> <walltime> <expanded nodes> <solved> <stage>
-# ....
-
-# put this into a latex style and print into a pdf.
-
-# syntax of the output
-# Domain(#problems)   | solved   | expd(total)
-# ----------------------------------------------
-# <domain><#problems> | <solved> | <expd(total)>
-# <domain><#problems> | <solved> | <expd(total)>
-# .... 
-
-
-cat $output_dir/summary | ../scripts/print.sh > $output_dir/summary_print
 

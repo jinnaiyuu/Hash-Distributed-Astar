@@ -20,10 +20,11 @@ filename=`echo "$1$d$i$4$5$6"`
 
 
 # TODO: where did the program died?
-#    1. when parsing
-#    2. when analyzing the balance of predicates, key=/analyzing balances of predicates/
-#    3. when generating PDB, key=/generating PDB/
-#    4. when searching , key=/#pair  initial heuristic/
+#    1: when parsing
+#    2: when analyzing the balance of predicates, 
+#             key=/analyzing balances of predicates/
+#    3: when generating PDB, key=/generating PDB/
+#    4: when searching, key=/#pair  initial heuristic/
 
 cat $7/$filename | awk -v dom=$d -v ins=$i 'BEGIN{solved=0; stage=0} \
              /analyzing balances of predicates/{stage=1} \

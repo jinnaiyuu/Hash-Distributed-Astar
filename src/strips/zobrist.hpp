@@ -18,12 +18,12 @@ class StripsZobrist {
 public:
 	// list abstraction strategies
 	enum ABST {
-		SINGLE = 1, FIVE = 5
 	};
 
 	// TODO: Should delete compatibility for performance.
-	StripsZobrist(D &d, ABST abst = SINGLE) :
+	StripsZobrist(D &d, ABST abst = 0) :
 			d(d) {
+		structures = this->d.get_structures();
 		initZobrist(abst);
 	}
 
@@ -52,7 +52,7 @@ public:
 //#define RANDOM_ZOBRIST_INITIALIZATION
 private:
 	void initZobrist(unsigned int abst) {
-		map.resize(d.getActionSize());
+		map.resize(d.getGroundedPredicatesSize());
 		std::fill(map.begin(), map.end(), 0);
 		gen = std::mt19937(rd());
 		dis = std::uniform_int_distribution<>(INT_MIN, INT_MAX);
@@ -62,7 +62,7 @@ private:
 
 		if (abst == 2) {
 			strucutured_zobrist(abst);
-		} else if (abst == 1){
+		} else if (abst == 1) {
 			strucutured_zobrist(abst);
 			zobrist();
 		} else {
@@ -73,7 +73,7 @@ private:
 
 	// Structured Zobrist
 	void strucutured_zobrist(unsigned int abst) {
-		std::vector<std::vector<unsigned int>> structures = d.get_structures();
+//		const std::vector<std::vector<unsigned int>> structures;
 		for (unsigned int i = 0; i < structures.size(); ++i) {
 			int r = random();
 			for (unsigned int j = 0; j < structures[i].size(); ++j) {
@@ -110,9 +110,10 @@ private:
 	}
 
 	D& d;
+	std::vector<std::vector<unsigned int>> structures;
 //	unsigned int structure;
 
-	// TODO: ebable some kind of abstraction.
+// TODO: ebable some kind of abstraction.
 	std::vector<unsigned int> map;
 
 	std::random_device rd;

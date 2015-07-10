@@ -242,7 +242,7 @@ public:
 		outgo_buffer.reserve(tnum);
 
 		std::vector<Node*> tmp;
-		tmp.reserve(10); // TODO: ad hoc random number
+//		tmp.reserve(10); // TODO: ad hoc random number
 
 		uint expd_here = 0;
 		uint gend_here = 0;

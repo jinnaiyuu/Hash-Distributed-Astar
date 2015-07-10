@@ -156,6 +156,14 @@ public:
 					unsigned int nxh = next->f - next->g;
 					printf("h = %u %u\n", nh, nxh);
 					printf("cost = %d\n", e.cost);
+
+					printf("after:\n");
+					this->dom.print_state(state);
+
+					this->dom.undo(state, e);
+					printf("before:\n");
+					this->dom.print_state(state);
+					continue;
 				}
 				if (static_cast<unsigned int>(n->g + e.cost)
 						!= static_cast<unsigned int>(next->g)) {

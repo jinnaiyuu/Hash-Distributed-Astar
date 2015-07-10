@@ -115,7 +115,7 @@ int main(int argc, const char *argv[]) {
 		} else if (sscanf(argv[1], "hdastar-%u", &n_threads) == 1) {
 			// transitions are needed to build Structured Zobrist or Abstraction.
 			strips.analyzeTransitions();
-			int tnum = std::stoi(argv[3]);
+//			int tnum = n_threads;
 			unsigned int abst = 0;
 			for (unsigned int i = 0; i < argc; ++i) {
 				if (sscanf(argv[i], "abst-%u", &abst) == 1) {
@@ -138,9 +138,10 @@ int main(int argc, const char *argv[]) {
 				////////////////////////////////
 				/// Auto-Selection
 				////////////////////////////////
+				std::cout << "auto-selection" << std::endl;
 				HDAstar<Strips, StripsZobrist<Strips> > *subsearch =
 						new HDAstar<Strips, StripsZobrist<Strips> >(strips,
-								tnum, 1000000, // income threshould
+								n_threads, 1000000, // income threshould
 								10000000, // outgo threshould
 								abst, // abstraction
 								0, // overrun
@@ -163,7 +164,7 @@ int main(int argc, const char *argv[]) {
 				unsigned int push = 0;
 				unsigned int expd = 0;
 				unsigned int dup = 0;
-				for (int i = 0; i < tnum; ++i) {
+				for (int i = 0; i < n_threads; ++i) {
 					gend += gends[i];
 					push += pushes[i];
 					expd += expds[i];
@@ -174,7 +175,8 @@ int main(int argc, const char *argv[]) {
 				delete subsearch;
 			}
 
-			search = new HDAstar<Strips, StripsZobrist<Strips> >(strips, tnum,
+			std::cout << "abst = " << abst << std::endl;
+			search = new HDAstar<Strips, StripsZobrist<Strips> >(strips, n_threads,
 					1000000, // income threshould
 					10000000, // outgo threshould
 					abst, // abstraction

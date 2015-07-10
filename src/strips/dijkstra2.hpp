@@ -65,7 +65,7 @@ public:
 
 	Dijkstra2(D &d, std::vector<std::vector<unsigned int>> patterns,
 			std::vector<std::vector<unsigned int>> groups) :
-				SearchAlg<D>(d), closed(5129273), open(120), incumbent(1000000), patterns(
+			SearchAlg<D>(d), closed(5129273), open(120), incumbent(1000000), patterns(
 					patterns), groups(groups), costs(patterns.size(),
 					NO_HEURISTIC), costs_it(0), updated(0), expd(0), gend(0) {
 	}
@@ -81,20 +81,24 @@ public:
 		double t = walltime();
 
 //		printf("start dijkstra\n");
-		while (!open.isempty() && !terminate()) {
+//		while (!open.isempty() && !terminate()) {
+		while (!open.isempty()) {
 //			printf("l\n");
 
 //			printf("while loop\n");
-			if (walltime() - t > time) {
-				std::cout << walltime() - t << " sec " << std::endl;
-				break;
-			}
+//			if (walltime() - t > time) {
+//				std::cout << walltime() - t << " sec " << std::endl;
+//				break;
+//			}
 
 			Node *n = static_cast<Node*>(open.pop());
 			if (closed.find(n->packed)) {
-				nodes.destruct(n);
+				Node* d = closed.find(n->packed);
+				if (d->f <= n->f) {
+					nodes.destruct(n);
 //				printf("searched\n");
-				continue;
+					continue;
+				}
 			}
 			typename D::State state;
 			this->dom.unpack(state, n->packed);
@@ -172,7 +176,7 @@ public:
 		n->g = c;
 		if (p)
 			n->g += p->g;
-		n->f = n->g; // f is set to zero.
+		n->f = n->g; // h is set to zero.
 //		unsigned int nw = n->g + this->dom.h(s);
 //		printf("h, wh = %u, %u\n", this->dom.h(s), static_cast<unsigned int>(this->dom.h(s) * w));
 //		printf("h = %d\n", this->dom.weight_h(s));

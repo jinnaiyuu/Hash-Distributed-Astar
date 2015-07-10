@@ -127,7 +127,6 @@ void Strips::buildPDB() {
 		return;
 	}
 
-
 // TODO: for all goal_conditions which is out of groups,
 //       add TRUE OR FALSE group to the patterns.
 	for (int c = 0; c < goal_condition.size(); ++c) {
@@ -301,7 +300,6 @@ void Strips::buildPDB() {
 	cout << endl;
 	std::sort(true_false_preds.begin(), true_false_preds.end());
 
-
 // TODO: here, we got init state as args_in_preds.
 //       we need to run search from this init state to the goal state, or the other way around.
 //       efficient way is to trace back from the goal state. how do i do that?
@@ -316,6 +314,7 @@ void Strips::buildPDB() {
 	std::vector<std::vector<unsigned int>> edge_dictionary;
 	edge_dictionary.resize(all_patterns_preds.size());
 
+	// TODO: this algorithm is a bit too slow. read Efficient Implementation of Pattern .....
 	// pattern + ungroupeds
 	// find all actions which deletes any of the predicates in pattern.
 	for (int p = 0; p < all_patterns_preds.size(); ++p) {
@@ -369,7 +368,6 @@ void Strips::buildPDB() {
 						edge_dictionary[i].end()), edge_dictionary[i].end());
 	}
 
-
 //	for (int e = 0; e < edge_dictionary.size(); ++e) {
 //		std::vector<unsigned int> epat = all_patterns_preds[e];
 //		std::cout << e << " ";
@@ -420,6 +418,8 @@ void Strips::buildPDB() {
 	double pdb_end = walltime();
 	std::cout << "pdb_walltime = " << pdb_end - pdb_start << std::endl;
 
+//	pd->dump_all(name);
+
 	return;
 
 //	dijkstra(all_patterns_preds, pdb_groups);
@@ -429,7 +429,6 @@ void Strips::buildPDB() {
 //
 //	pd->setGroups(pdb_groups);
 //
-//	pd->dump_all(name);
 
 }
 
@@ -539,7 +538,7 @@ Strips::Strips(std::istream & d, std::istream & i) {
 //	cout << domain.str() << endl;
 //	cout << instance.str() << endl;
 
-	std::vector<Predicate> predicates; // uninstantiated, ungrounded
+//	std::vector<Predicate> predicates; // uninstantiated, ungrounded
 //	std::vector<Object> objects;
 
 //	std::vector<unsigned int> g_feasible_predicates;
@@ -631,6 +630,11 @@ Strips::Strips(std::istream & d, std::istream & i) {
 // 6. read actions from domain.pddl.
 	std::cout << "parsing actions..." << std::endl;
 	readAction(domain, objects, predicates, *g_predicates);
+
+	std::cout << "analyzing static predicates..." << std::endl;
+	analyzeStaticLiftedPredicates();
+
+	groundAction(domain, objects, predicates, *g_predicates);
 
 	std::cout << "generated " << actionTable.getSize() << " grounded actions."
 			<< std::endl;
@@ -1189,7 +1193,6 @@ void Strips::readAction(std::istream &domain, std::vector<Object> obs,
 	// 3. store object key for that.
 	// 4. use that information in instantiation.
 	unsigned int actionNumber = 0;
-	unsigned int gActionNumber = 0;
 	unsigned int action_cost_buf = 0; // ad hoc implementation as getText DOES read :action-costs
 	while (getBracket2(domain, ":action", actionNumber + action_cost_buf, text)) {
 		if (text.find(":action-costs") != std::string::npos) {
@@ -1261,6 +1264,7 @@ void Strips::readAction(std::istream &domain, std::vector<Object> obs,
 		lf.key = actionNumber;
 		lf.n_arguments = param.size();
 		lf.symbol = actionname;
+		lf.param = param;
 
 		std::string effectText = findRange(text, ":effect",
 				"aaaaaaaaaaaaaaaaa");
@@ -1339,6 +1343,15 @@ void Strips::readAction(std::istream &domain, std::vector<Object> obs,
 //		getBracket2(efst, "increase", 0, inc);
 //		std::cout << "inc: " << inc << std::endl;
 
+		for (int as = 0; as < addnums.size(); ++as) {
+			for (int ds = 0; ds < delnums.size(); ++ds) {
+				if (addnums[as] == delnums[ds]) {
+//					std::cout << "collision of effects!" << endl;
+					delnums.erase(delnums.begin() + ds);
+				}
+			}
+		}
+
 		lf.adds = addnums;
 		lf.dels = delnums;
 		lf.action_cost = action_cost;
@@ -1396,13 +1409,6 @@ void Strips::readAction(std::istream &domain, std::vector<Object> obs,
 						}
 					}
 					precnums.push_back(predicate);
-
-					// check if the precondition is in form of type_xxx.
-					// type_xxx is useful precondition for pruning when instantiation.
-//					if (ps[o].symbol.find("type_") != std::string::npos) {
-//						typeprecnums.push_back(predicate);
-//					}
-
 					break;
 				}
 			}
@@ -1426,8 +1432,72 @@ void Strips::readAction(std::istream &domain, std::vector<Object> obs,
 //			}
 //		}
 //		std::cout << "..." << std::endl;
+		// TODO: efficient way is to instantiate lifted actions.
+		//       how can we do that?
+//		cout << "actionNumber++" << endl;
+		++actionNumber;
+	}
+//	cout << actionNumber << " lifted actions" << endl;
+//	cout << gActionNumber << " grounded actions" << endl;
+
+}
+
+/**
+ * From lifted actions, detect static predicates.
+ * This method is to reduce the time of grounding actions.
+ *
+ * TODO: backchaining is the way to find all of feasible predicates.
+ *       this method will be the prototype of that.
+ */
+void Strips::analyzeStaticLiftedPredicates() {
+	// for all lifted predicates,
+	//   if for all lifted actions,
+	//       there is no actions to add the predicate.
+	//   then the predicate is static.
+//	bool isStatic
+
+	// TODO: can optimize the loops.
+	for (int i = 0; i < predicates.size(); ++i) {
+		Predicate p = predicates[i];
+		bool isStatic = true;
+		for (int j = 0; j < lActions.size(); ++j) {
+			LiftedAction lf = lActions[j];
+
+			for (int k = 0; k < lf.adds.size(); ++k) {
+				if (i == lf.adds[k].first) {
+					isStatic = false;
+					break;
+				}
+			}
+		}
+		predicates[i].isStatic = isStatic;
+		if (predicates[i].isStatic) {
+			cout << p.symbol << "/" << p.number_of_arguments << " is static."
+					<< endl;
+		}
+	}
+	cout << "done" << endl;
+
+}
+
+/**
+ * PDDL format
+ * parameters:
+ * precondition:
+ * effect:       add&delete effect
+ *
+ */
+void Strips::groundAction(std::istream &domain, std::vector<Object> obs,
+		std::vector<Predicate> ps, std::vector<GroundedPredicate> gs) {
+	unsigned int gActionNumber = 0;
+
+	for (int i = 0; i < lActions.size(); ++i) {
+		LiftedAction lf = lActions[i];
+		std::vector<std::pair<std::string, int>> param = lf.param;
+		std::cout << "ground: " << lf.symbol << endl;
 
 		// enumerate all objects matches argument typing.
+		// TODO: check if the preconditions are feasible for the object.
 		std::vector<std::vector<unsigned int> > possible_objs;
 		possible_objs.resize(param.size());
 		for (int p = 0; p < param.size(); ++p) {
@@ -1437,6 +1507,99 @@ void Strips::readAction(std::istream &domain, std::vector<Object> obs,
 				}
 			}
 		}
+
+		// TODO: here we check that the preconditions are feasible.
+		// TODO: correct but far away from efficient.
+		//
+		// XXX: this algorithm is incorrect. it does not support predicates with 2 arity.
+		//      ex. (successor ?a ?b) is hard to explain with this possible_obj method.
+		//      -> checking static with 1 arity is a good way to reduce the search effect i guess.
+		//         let's just check for 1 arity statics.
+		//      freecell has many 2 arity statics. need to implement those to solve this domain.
+		//
+		// for all parameters,
+		//   for all preconditions
+		//     list all static preds which contains the parameter.
+		//   if those are not in init state, then this object is unassignable.
+//		for (int p = 0; p < possible_objs.size(); ++p) {
+		for (int j = 0; j < lf.precs.size(); ++j) {
+			unsigned int predicate_key = lf.precs[j].first;
+			if (predicates[predicate_key].isStatic) {
+				for (int k = 0; k < lf.precs[j].second.size(); ++k) {
+					unsigned int argument = lf.precs[j].second[k];
+
+					if (argument > possible_objs.size()) {
+						// it is constant. then just assume it is feasible.
+						continue;
+					}
+					// delete objects that does not have the predicate in init state.
+					//					std::cout << "going to erase objs " << endl;
+					//				std::cout << "argument " << argument << endl;
+					//				std::cout << "possible_objs.size() = " << possible_objs.size() << endl;
+
+					vector<bool> feasible_arg(possible_objs[argument].size(),
+							false);
+
+//					std::cout << predicates[predicate_key].symbol << ": ";
+					for (int l = 0; l < init_state.size(); ++l) {
+						GroundedPredicate g = g_predicates->at(init_state[l]);
+//						vector<unsigned int> g_arg_to_action_arg = g.arguments;
+//
+//						for (int m = 0; m < g_arg_to_action_arg.size(); ++m) {
+//							if (g_arg_to_action_arg[m] == argument) {
+//								for (int n = 0; n < possible_objs[argument].size(); ++n) {
+//									if () {
+//
+//									}
+//								}
+//							}
+//						}
+						// TODO: this argvalue is not working.
+						int argvalue = g.argValue(predicate_key, k);
+						if (argvalue >= 0) {
+//							std::cout << g.symbol << "/" << argvalue << ", ";
+							vector<unsigned int>::iterator it = find(
+									possible_objs[argument].begin(),
+									possible_objs[argument].end(), argvalue);
+							unsigned int ps = it
+									- possible_objs[argument].begin();
+							feasible_arg[ps] = true;
+						}
+					}
+//					std::cout << ": ";
+					vector<unsigned int> new_possible_objs;
+					for (int l = 0; l < feasible_arg.size(); ++l) {
+						if (feasible_arg[l] == true) {
+							new_possible_objs.push_back(
+									possible_objs[argument][l]);
+//							std::cout << possible_objs[argument][l] << " ";
+						}
+					}
+//					std::cout << endl;
+					possible_objs[argument] = new_possible_objs;
+
+//					for (int pp = 0; pp < possible_objs[argument].size(); ++pp) {
+//
+//						// key
+////						unsigned key = g_predicates_index[predicate_key] + possible_objs[argument][pp];
+//
+//						unsigned key = 0;
+//						for (int k = 0; k < possible_objs.size(); ++k) {
+//							key = key * obs.size() + possible_objs[k][pp];
+//						}
+//						key += g_predicates_index[prec.first];
+//
+//						if (find(init_state.begin(), init_state.end(), key)
+//								== init_state.end()) {
+//	//									std::cout << "erased obj" << endl;
+//							possible_objs[argument].erase(
+//									possible_objs[argument].begin() + pp);
+//						}
+//					}
+				}
+			}
+		}
+//		}
 
 //		cout << "possible assignments: ";
 //		for (int p = 0; p < possible_objs.size(); ++p) {
@@ -1486,6 +1649,7 @@ void Strips::readAction(std::istream &domain, std::vector<Object> obs,
 			// TODO: These implementations can be optimized more.
 			//       seems its closed to be able to parse freecell, but still slow.
 			// TODO: build predicate table which return predicate key with lifted key and arguments.
+			bool isFeasible = true;
 			for (int i = 0; i < lf.precs.size(); ++i) {
 				std::pair<unsigned int, std::vector<unsigned int>> prec =
 						lf.precs[i];
@@ -1496,6 +1660,17 @@ void Strips::readAction(std::istream &domain, std::vector<Object> obs,
 					key = key * obs.size() + prec_arg[k];
 				}
 				key += g_predicates_index[prec.first];
+
+				// TODO: here, if the predicate is static & not in init_state,
+				//       then we can get out of the instantiation here.
+				if (predicates[prec.first].isStatic) {
+					if (!isContainedSortedVectors(key, init_state)) {
+//						std::cout << "unfeasible action. " << g_predicates->at(key).symbol << " unsat." << endl;
+						isFeasible = false;
+						break;
+					}
+				}
+
 				precnums.push_back(key);
 
 //				for (int j = 0; j < g_predicates->size(); ++j) {
@@ -1506,6 +1681,10 @@ void Strips::readAction(std::istream &domain, std::vector<Object> obs,
 //					}
 //				}
 			}
+			if (!isFeasible) {
+				continue;
+			}
+
 			for (int i = 0; i < lf.adds.size(); ++i) {
 				std::pair<unsigned int, std::vector<unsigned int>> add =
 						lf.adds[i];
@@ -1530,7 +1709,7 @@ void Strips::readAction(std::istream &domain, std::vector<Object> obs,
 				key += g_predicates_index[del.first];
 				delnums.push_back(key);
 			}
-			std::string groundedName = actionname;
+			std::string groundedName = lf.symbol;
 
 			for (int i = 0; i < args.size(); ++i) {
 				groundedName.append(" " + obs[args[i]].symbol);
@@ -1556,11 +1735,6 @@ void Strips::readAction(std::istream &domain, std::vector<Object> obs,
 //			std::cout << "grounded name = " << groundedName << std::endl;
 
 		}
-
-		// TODO: efficient way is to instantiate lifted actions.
-		//       how can we do that?
-//		cout << "actionNumber++" << endl;
-		++actionNumber;
 	}
 //	cout << actionNumber << " lifted actions" << endl;
 //	cout << gActionNumber << " grounded actions" << endl;
@@ -1570,6 +1744,64 @@ void Strips::readAction(std::istream &domain, std::vector<Object> obs,
 void Strips::listFeasiblePredicates(std::vector<unsigned int>& gs) {
 	for (int i = 0; i < init_state.size(); ++i) {
 		gs.push_back(init_state[i]);
+	}
+
+	for (int a = 0; a < actionTable.getSize(); ++a) {
+		Action act = actionTable.getAction(a);
+		for (int p = 0; p < act.adds.size(); ++p) {
+			gs.push_back(act.adds[p]);
+		}
+	}
+
+	std::sort(gs.begin(), gs.end());
+	gs.erase(unique(gs.begin(), gs.end()), gs.end());
+}
+
+// TODO: Check the validity of the predicates with backchaining.
+/**
+ * Backchaining:
+ * 1. if the predicate in init_state, then true.
+ * 2. if there is an action to add the predicate,
+ * 3.   for all preconditions of the action, check those are all feasible. (recursive)
+ * 4.   if all preconditions feasible, then true.
+ * 5.   if not, then see other actions.
+ * 6. if no action to add the predicate, then false.
+ *
+ */
+void Strips::listFeasiblePredicates2(std::vector<unsigned int>& gs) {
+
+	// lActions are already there.
+
+	// -1: not calculated yet, 0: not feasible, 1: feasible
+	vector<int> isFeasible(g_predicates->size(), -1);
+
+	for (int i = 0; i < init_state.size(); ++i) {
+		isFeasible[init_state[i]] = 1;
+	}
+
+	// TODO: backchaining
+	//       seems like it is a difficult thing to implement.
+	//       let's try out naive implementation first and see how it works.
+	for (int i = 0; i < isFeasible.size(); ++i) {
+		GroundedPredicate g = g_predicates->at(i);
+		if (isFeasible[i] == -1) {
+			for (int la = 0; la < lActions.size(); ++la) {
+				vector<pair<unsigned int, vector<unsigned int> > > adds =
+						lActions[la].adds;
+				for (int ad = 0; ad < adds.size(); ++ad) {
+					// XXX: second is not the object key. it is the arguments.
+					if (g.isEqual(adds[ad].first, adds[ad].second)) {
+						// if the action has add effect, check all preconditions are feasible.
+						vector<pair<unsigned int, vector<unsigned int> > > precs =
+								lActions[la].precs;
+						for (int ps = 0; ps < precs.size(); ++ps) {
+
+//							getArguements(precs[ps], lActions[la].param);
+						}
+					}
+				}
+			}
+		}
 	}
 
 	for (int a = 0; a < actionTable.getSize(); ++a) {
@@ -1651,6 +1883,9 @@ void Strips::buildActionTrie(std::vector<unsigned> keys) {
 /**
  * Greedy algorithm to find balances.
  *
+ * TODO: this algorithm is too slow to solve some domains (e.g. airport).
+ *       1. get rid of static predicates.
+ *
  */
 std::vector<unsigned int> Strips::analyzeBalance(unsigned int p,
 		const std::vector<unsigned int>& predicates,
@@ -1663,7 +1898,7 @@ std::vector<unsigned int> Strips::analyzeBalance(unsigned int p,
 		return std::vector<unsigned int>();
 	}
 
-	if (predicates.size() >= 6) {
+	if (predicates.size() > 4) {
 		return std::vector<unsigned int>();
 	}
 
@@ -1676,6 +1911,7 @@ std::vector<unsigned int> Strips::analyzeBalance(unsigned int p,
 			if (find(adds.begin(), adds.end(), predicates[ps]) != adds.end()) {
 				// found
 				actions_add_p.push_back(laas[a]);
+				break;
 			}
 		}
 	}
@@ -1735,8 +1971,11 @@ std::vector<unsigned int> Strips::analyzeBalance(unsigned int p,
 
 		if (howManyContainedSortedVectors(dels, predicates) != 1) {
 			std::vector<unsigned int> difs;
-			std::set_difference(dels.begin(), dels.end(), predicates.begin(),
-					predicates.end(), std::back_inserter(difs));
+//			std::set_difference(dels.begin(), dels.end(), predicates.begin(),
+//					predicates.end(), std::back_inserter(difs));
+
+			difs = differenceSortedVectors(dels, predicates);
+
 //			std::cout << prefix << "  difs: ";
 //			for (int g = 0; g < difs.size(); ++g) {
 //				std::cout << "(" << predargs[difs[g]].pred.symbol << "-" << predargs[difs[g]].instantiated_arg << ") ";
@@ -1751,6 +1990,8 @@ std::vector<unsigned int> Strips::analyzeBalance(unsigned int p,
 				// df
 				args.push_back(difs[df]);
 				std::sort(args.begin(), args.end());
+
+//				std::vector<unsigned int> args = uniquelyMergeSortedVectors2(predicates, difs[df]);
 
 //				std::cout << prefix << "  ";
 //				for (int g = 0; g < args.size(); ++g) {
@@ -1898,8 +2139,8 @@ void Strips::analyzeAllBalances(std::vector<Predicate> ps) {
 		if (predargs[i].group_key == -1) {
 			std::vector<unsigned int> pss;
 			pss.push_back(predargs[i].key);
-//			std::cout << predargs[i].pred.symbol << "/"
-//					<< predargs[i].instantiated_arg << std::endl;
+			std::cout << predargs[i].pred.symbol << "/"
+					<< predargs[i].instantiated_arg << std::endl;
 			groups.push_back(analyzeBalance(predargs[i].key, pss, laas));
 		}
 	}
@@ -1958,17 +2199,17 @@ void Strips::analyzeXORGroups() {
 
 void Strips::analyzeTransitions() {
 
-	/////////////////////////////////////
-	/// Transition analysis
-	/////////////////////////////////////
+/////////////////////////////////////
+/// Transition analysis
+/////////////////////////////////////
 	std::vector<std::vector<std::vector<unsigned int> > > xor_groups_transitions;
 	xor_groups_transitions.resize(xor_groups.size());
 	for (int g = 0; g < xor_groups.size(); ++g) {
 		xor_groups_transitions[g].resize(xor_groups[g].size());
 	}
-	// find all actions to delete the predicate.
-	// for all that actions, find the replacing group predicate.
-	// list up transitions.
+// find all actions to delete the predicate.
+// for all that actions, find the replacing group predicate.
+// list up transitions.
 
 	for (int g = 0; g < xor_groups.size(); ++g) {
 		for (int p = 0; p < xor_groups[g].size(); ++p) {
@@ -2000,15 +2241,15 @@ void Strips::analyzeTransitions() {
 		}
 	}
 
-	// TODO: this algorithm can be optimized in many ways.
-	//       for now this is just a prototype, going to be improved.
-	// TODO: make multiple way of making
-	/////////////////////////////////////
-	/// Build Structures for SZ
-	/////////////////////////////////////
-	// 1. find the node with least edges and add that to group 0.
-	// 2. add a node which is mostly connected to group 0.
-	// 3. do it until the size of group 0 reaches n/2.
+// TODO: this algorithm can be optimized in many ways.
+//       for now this is just a prototype, going to be improved.
+// TODO: make multiple way of making
+/////////////////////////////////////
+/// Build Structures for SZ
+/////////////////////////////////////
+// 1. find the node with least edges and add that to group 0.
+// 2. add a node which is mostly connected to group 0.
+// 3. do it until the size of group 0 reaches n/2.
 	std::cout << "building structure..." << std::endl;
 	for (int gs = 0; gs < xor_groups_transitions.size(); ++gs) {
 		// 1. find the most isolated node.
@@ -2067,7 +2308,7 @@ void Strips::analyzeTransitions() {
 		std::sort(structure.begin(), structure.end());
 		structures.push_back(structure);
 
-		// the rest of the predicates will be the second structure.
+		// the rest of the predicates will be in the second structure.
 		// TODO: not sure this assumption is right or not.
 		//       maybe not right.
 		std::vector<unsigned int> structure2; // = xor_groups[gs] - structure;
@@ -2086,9 +2327,9 @@ void Strips::analyzeTransitions() {
 		std::cout << std::endl;
 	}
 
-	/////////////////////////////////////
-	// list of ungroupeds.
-	/////////////////////////////////////
+/////////////////////////////////////
+// list of ungroupeds.
+/////////////////////////////////////
 
 	for (int p = 0; p < g_feasible_predicates.size(); ++p) {
 		bool grouped = false;
@@ -2209,12 +2450,26 @@ void Strips::getConstants(std::istream& domain,
 	type_object = constants;
 }
 
+unsigned int Strips::groundedPredicateKey(
+		const std::pair<unsigned int, std::vector<unsigned int> >& pred) {
+	unsigned key = 0;
+	for (int k = 0; k < pred.second.size(); ++k) {
+		key = key * this->objects.size() + pred.second[k];
+	}
+	key += g_predicates_index[pred.first];
+	return key;
+}
+
 int Strips::pow(int base, int p) {
 	int ret = 1;
 	for (int i = 0; i < p; ++i) {
 		ret *= base;
 	}
 	return ret;
+}
+
+const std::vector<std::vector<unsigned int>> Strips::get_structures() {
+	return structures;
 }
 
 //////////////////////////////////////////////////////

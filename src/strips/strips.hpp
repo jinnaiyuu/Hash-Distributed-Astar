@@ -91,7 +91,7 @@ struct Strips {
 //		actionTrie.printTree();
 		std::vector<unsigned int> actions = actionTrie.searchPossibleActions(
 				s.propositions);
-		std::cout << "expand state: " << actions.size() << std::endl;
+//		std::cout << "expand state: " << actions.size() << std::endl;
 		return actions;
 	}
 
@@ -194,6 +194,10 @@ struct Strips {
 		return actionTable.getSize();
 	}
 
+	unsigned int getGroundedPredicatesSize() {
+		return g_predicates->size();
+	}
+
 	struct GroundedPredicate {
 		unsigned int key;
 		std::string symbol;
@@ -202,8 +206,24 @@ struct Strips {
 		std::string lifted_symbol;
 		std::vector<unsigned int> arguments;
 
-		bool isEqual(unsigned int lifted_key, std::vector<unsigned int> arguments) {
-			return (this->lifted_key == lifted_key) && (this->arguments == arguments);
+		bool isEqual(unsigned int lifted_key,
+				std::vector<unsigned int> arguments) {
+			return (this->lifted_key == lifted_key)
+					&& (this->arguments == arguments);
+		}
+
+		bool matches(unsigned int lifted_key, unsigned int argposition,
+				unsigned int argvalue) {
+			return (this->lifted_key == lifted_key)
+					&& (this->arguments[argposition] == argvalue);
+		}
+
+		int argValue(unsigned int lifted_key, unsigned int argposition) {
+			if (this->lifted_key == lifted_key) {
+				return arguments[argposition];
+			} else {
+				return -1;
+			}
 		}
 	};
 
@@ -301,7 +321,6 @@ private:
 //		}
 		p = uniquelyMergeSortedVectors(s.propositions, action.adds);
 
-
 		// TODO: is this correct?
 		if (!is_delete_relaxed) {
 //			std::vector<unsigned int> d;
@@ -329,7 +348,8 @@ private:
 							action.adds[i]), s.propositions.end());
 		}
 
-		std::vector<unsigned int> n = uniquelyMergeSortedVectors(s.propositions, action.preconditions);
+		std::vector<unsigned int> n = uniquelyMergeSortedVectors(s.propositions,
+				action.preconditions);
 		s.propositions = n;
 	}
 
@@ -398,13 +418,14 @@ public:
 		unsigned int number_of_arguments;
 		std::vector<unsigned int> types_of_arguments;
 		int group_key;
+		bool isStatic;
 		Predicate() {
 		}
 		;
 		Predicate(unsigned int key, std::string symbol,
 				unsigned int number_of_arguments) :
 				key(key), symbol(symbol), number_of_arguments(
-						number_of_arguments), group_key(-1) {
+						number_of_arguments), group_key(-1), isStatic(false) {
 		}
 
 	};
@@ -435,13 +456,17 @@ public:
 		unsigned int key;
 		std::string symbol;
 		unsigned int n_arguments;
-		std::vector<std::pair<unsigned int, std::vector<unsigned int>>> adds;
+
+		// lifted predicate key & arguments.
+		std::vector<std::pair<unsigned int, std::vector<unsigned int>>>adds;
 		std::vector<std::pair<unsigned int, std::vector<unsigned int>>> dels;
 		std::vector<std::pair<unsigned int, std::vector<unsigned int>>> precs;
 
 		std::vector<unsigned int> addsInst; // PredicateArg keys.
 		std::vector<unsigned int> delsInst;
 		unsigned int action_cost;
+
+		std::vector<std::pair<std::string, int>> param;
 	};
 
 	struct LiftedActionArg {
@@ -450,9 +475,7 @@ public:
 		unsigned int instantiated_arg; // which argument is instantiated
 	};
 
-	std::vector<std::vector<unsigned int>> get_structures() {
-		return structures;
-	};
+	const std::vector<std::vector<unsigned int>> get_structures();
 
 	void print_plan(std::vector<State>& path) const;
 	void print_state(const std::vector<unsigned int>& propositions) const;
@@ -467,11 +490,12 @@ private:
 	bool need_heap_openlist = false;
 	std::vector<Object> objects;
 	std::vector<LiftedAction> lActions; // for abstractions.
+	std::vector<Predicate> predicates;// uninstantiated, ungrounded
 	std::vector<PredicateArg> predargs;
 	std::vector<unsigned int> g_feasible_predicates;
 	std::vector<std::vector<unsigned int>> xor_groups;
 	std::vector<unsigned int> xor_ungroupeds;
-	std::vector<std::vector<unsigned int>> structures; // structures are made of xor_groups.
+	std::vector<std::vector<unsigned int>> structures;// structures are made of xor_groups.
 
 	std::vector<std::pair<std::string, int>> types;
 	std::vector<std::pair<std::string, std::string>> constants;
@@ -498,7 +522,12 @@ private:
 	void readAction(std::istream &domain, std::vector<Object> obs,
 			std::vector<Predicate> ps,
 			std::vector<GroundedPredicate> gs);
+	void analyzeStaticLiftedPredicates();
+	void groundAction(std::istream &domain, std::vector<Object> obs,
+			std::vector<Predicate> ps,
+			std::vector<GroundedPredicate> gs);
 	void listFeasiblePredicates(std::vector<unsigned int>& gs);
+	void listFeasiblePredicates2(std::vector<unsigned int>& gs);
 	void listFeasiblePredicatesWithActions(std::vector<unsigned int>& gs, std::vector<unsigned int>& actions);
 	void listFeasibleActions(std::vector<unsigned int> gs,
 			std::vector<unsigned int>& actions);
@@ -512,8 +541,9 @@ private:
 	void analyzeXORGroups();
 	void getConstants(std::istream& domain, std::vector<std::pair<std::string, std::string>>& type_object,
 			std::string header, bool whole_text = false);
-	int pow(int base, int p);
+	unsigned int groundedPredicateKey(const std::pair<unsigned int, std::vector<unsigned int> >& pred);
 
+	int pow(int base, int p);
 
 public:
 	// this is for structured zobrist hash.

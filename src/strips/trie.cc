@@ -18,7 +18,7 @@ Trie::Node* Trie::Node::findChild(unsigned int c) {
  *
  */
 std::vector<Trie::Node*> Trie::Node::findMatchingChildren(const std::vector<unsigned int>& propositions) {
-	std::vector<Node*> intersection;
+	std::vector<Trie::Node*> intersection;
 	unsigned int cit = 0;
 	unsigned int pit = 0;
 
@@ -32,9 +32,17 @@ std::vector<Trie::Node*> Trie::Node::findMatchingChildren(const std::vector<unsi
 //	for (int i = 0; i < propositions.size(); ++i) {
 //		std::cout << propositions[i] << " ";
 //	}
-
 	while(cit < mChildren.size() && pit < propositions.size()) {
-		if(mChildren[cit]->mPrecondition == propositions[pit]) {
+//		if (mChildren[cit] == NULL) {
+//			std::cout << "trie.c: nullptr" << std::endl;
+//		}
+//		Trie::Node* m = mChildren[cit];
+//		if (m == NULL) {
+//			std::cout << "nullptr" << std::endl;
+//		}
+
+		if(mChildren[cit]->precondition()
+				== propositions[pit]) {
 			intersection.push_back(mChildren[cit]);
 			++cit;
 			++pit;
@@ -82,7 +90,7 @@ Trie::~Trie() {
 //	for (int i = 0; i < root->children().size(); ++i) {
 //		delete root->children().at(i);
 //	}
-//	delete root;
+	delete root;
 }
 
 void Trie::addAction(const Action& a) {
