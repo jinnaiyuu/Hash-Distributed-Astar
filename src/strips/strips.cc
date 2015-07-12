@@ -2243,7 +2243,13 @@ void Strips::analyzeTransitions() {
 
 // TODO: this algorithm can be optimized in many ways.
 //       for now this is just a prototype, going to be improved.
-// TODO: make multiple way of making
+
+// TODO: How to build structure?
+/**
+ * 1. divide xor groups into two structures. (prototype, is not successful.)
+ * 2.
+ *
+ */
 /////////////////////////////////////
 /// Build Structures for SZ
 /////////////////////////////////////

@@ -545,6 +545,8 @@ private:
 
 	int pow(int base, int p);
 
+	void buildStructure();
+
 public:
 	// this is for structured zobrist hash.
 	void analyzeTransitions();

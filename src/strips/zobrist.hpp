@@ -60,20 +60,37 @@ private:
 		srand(time(NULL));
 #endif
 
-		if (abst == 2) {
-			strucutured_zobrist(abst);
+		// abst = 3: Abstraction. using structure. 1 key for 1 abstract state.
+		// abst = 2: only using structure. TODO: what if no structure
+		// abst = 1: using structure.
+		// abst = 0: Zobrist Hash
+
+		if (abst == 3) {
+			abstraction();
+		} else if (abst == 2) {
+			strucutured_zobrist();
 		} else if (abst == 1) {
-			strucutured_zobrist(abst);
+			strucutured_zobrist();
 			zobrist();
-		} else {
+		} else if (abst == 0) {
 			zobrist();
 		}
 
 	}
 
+	// Abstraction
+	// hash key for each abstract state.
+	void abstraction() {
+		for (unsigned int i = 0; i < structures.size(); ++i) {
+			for (unsigned int j = 0; j < structures[i].size(); ++j) {
+				map[structures[i][j]] = random();
+			}
+		}
+	}
+
 	// Structured Zobrist
-	void strucutured_zobrist(unsigned int abst) {
-//		const std::vector<std::vector<unsigned int>> structures;
+	// 1 key for each structure.
+	void strucutured_zobrist() {
 		for (unsigned int i = 0; i < structures.size(); ++i) {
 			int r = random();
 			for (unsigned int j = 0; j < structures[i].size(); ++j) {
