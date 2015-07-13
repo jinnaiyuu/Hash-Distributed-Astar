@@ -2047,13 +2047,15 @@ void Strips::analyzeAllBalances(std::vector<Predicate> ps) {
 //	std::vector<PredicateArg> predargs;
 	unsigned int key = 0;
 	for (int i = 0; i < ps.size(); ++i) {
-		for (int arg = 0; arg < ps[i].number_of_arguments; ++arg) {
-			PredicateArg paa;
-			paa.key = key++;
-			paa.pred = ps[i];
-			paa.instantiated_arg = arg;
-			paa.group_key = -1;
-			predargs.push_back(paa);
+		if (!ps[i].isStatic) {
+			for (int arg = 0; arg < ps[i].number_of_arguments; ++arg) {
+				PredicateArg paa;
+				paa.key = key++;
+				paa.pred = ps[i];
+				paa.instantiated_arg = arg;
+				paa.group_key = -1;
+				predargs.push_back(paa);
+			}
 		}
 	}
 
@@ -2245,11 +2247,11 @@ void Strips::analyzeTransitions() {
 //       for now this is just a prototype, going to be improved.
 
 // TODO: How to build structure?
-/**
- * 1. divide xor groups into two structures. (prototype, is not successful.)
- * 2.
- *
- */
+	/**
+	 * 1. divide xor groups into two structures. (prototype, is not successful.)
+	 * 2.
+	 *
+	 */
 /////////////////////////////////////
 /// Build Structures for SZ
 /////////////////////////////////////
