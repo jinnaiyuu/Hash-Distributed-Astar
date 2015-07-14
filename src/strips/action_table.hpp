@@ -38,6 +38,11 @@ public:
 		return table->at(key);
 	}
 
+	Action* getActionR(unsigned int key) const {
+		assert(table->at(key).action_key == key);
+		return &(table->at(key));
+	}
+
 	std::vector<Action> getActionsWhichAdds(unsigned int pred) const {
 		std::vector<Action> ret;
 		for (int i = 0; i < table->size(); ++i) {

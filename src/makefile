@@ -18,7 +18,8 @@ tiles: main_comb/*.cc *.cc *.hpp msa/*.cc msa/*.hpp
 
 strips.out: *.cc *.hpp strips/*.cc strips/*.hpp
 	$(CXX) $(CXXFLAGS) *.cc strips/*.cc -o strips.out
-	
+
+
 parser: strips/utils.hpp strips/parser/*.cc
 	$(CXX) $(CXXFLAGS) strips/parser/*.cc -o parser 
 

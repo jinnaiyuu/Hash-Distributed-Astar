@@ -315,24 +315,31 @@ private:
 	// TODO: add new utility method to speed-up this.
 	void apply_action(State& s, int action_key, int& cost) const {
 		std::vector<unsigned int> p;
-		Action action = actionTable.getAction(action_key);
+		Action* action = actionTable.getActionR(action_key);
 //		for (int i = 0; i < action.adds.size(); ++i) {
 //			s.propositions.push_back(action.adds[i]);
 //		}
-		p = uniquelyMergeSortedVectors(s.propositions, action.adds);
+
+		std::set_difference(s.propositions.begin(), s.propositions.end(),
+				action->deletes.begin(), action->deletes.end(),
+				std::back_inserter(p));
+		s.propositions.clear();
+		std::set_union(p.begin(), p.end(), action->adds.begin(),
+				action->adds.end(), std::back_inserter(s.propositions));
+//		p = uniquelyMergeSortedVectors(s.propositions, action.adds);
 
 		// TODO: is this correct?
-		if (!is_delete_relaxed) {
+//		if (!is_delete_relaxed) {
 //			std::vector<unsigned int> d;
-			p = differenceSortedVectors(p, action.deletes);
+//			p = differenceSortedVectors(p, action.deletes);
 //			p = d;
-		}
+//		}
 //		std::sort(s.propositions.begin(), s.propositions.end());
 //		s.propositions.erase(
 //				unique(s.propositions.begin(), s.propositions.end()),
 //				s.propositions.end());
-		s.propositions = p;
-		cost = action.action_cost;
+//		s.propositions = p;
+		cost = action->action_cost;
 	}
 
 	// TODO: can we optimize this?

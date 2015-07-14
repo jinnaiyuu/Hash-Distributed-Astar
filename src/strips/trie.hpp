@@ -76,7 +76,10 @@ class Trie {
 	private:
 		unsigned int mPrecondition;
 		bool mMarker;
+
+//		std::vector<unsigned int> mChildrenPreconditions;
 		std::vector<Node*> mChildren;
+
 		std::vector<unsigned int> mActions; // should this be just a number or actions?
 	};
 

@@ -13,11 +13,13 @@ Trie::Node* Trie::Node::findChild(unsigned int c) {
 	return NULL;
 }
 
+// TODO: store precondition values to parent nodes rather than child nodes.
 /**
  * @param propositions are ordered.
  *
  */
-std::vector<Trie::Node*> Trie::Node::findMatchingChildren(const std::vector<unsigned int>& propositions) {
+std::vector<Trie::Node*> Trie::Node::findMatchingChildren(
+		const std::vector<unsigned int>& propositions) {
 	std::vector<Trie::Node*> intersection;
 	unsigned int cit = 0;
 	unsigned int pit = 0;
@@ -32,7 +34,7 @@ std::vector<Trie::Node*> Trie::Node::findMatchingChildren(const std::vector<unsi
 //	for (int i = 0; i < propositions.size(); ++i) {
 //		std::cout << propositions[i] << " ";
 //	}
-	while(cit < mChildren.size() && pit < propositions.size()) {
+	while (cit < mChildren.size() && pit < propositions.size()) {
 //		if (mChildren[cit] == NULL) {
 //			std::cout << "trie.c: nullptr" << std::endl;
 //		}
@@ -41,8 +43,7 @@ std::vector<Trie::Node*> Trie::Node::findMatchingChildren(const std::vector<unsi
 //			std::cout << "nullptr" << std::endl;
 //		}
 
-		if(mChildren[cit]->precondition()
-				== propositions[pit]) {
+		if (mChildren[cit]->precondition() == propositions[pit]) {
 			intersection.push_back(mChildren[cit]);
 			++cit;
 			++pit;
@@ -53,7 +54,6 @@ std::vector<Trie::Node*> Trie::Node::findMatchingChildren(const std::vector<unsi
 		}
 	}
 
-
 //	std::cout << std::endl << "returns ";
 //	for (int i = 0; i < intersection.size(); ++i) {
 //		std::cout << intersection[i]->mPrecondition << " ";
@@ -62,7 +62,6 @@ std::vector<Trie::Node*> Trie::Node::findMatchingChildren(const std::vector<unsi
 
 	return intersection;
 }
-
 
 void Trie::Node::printNode(unsigned int depth) {
 	std::cout << std::string(depth * 2, ' ') << mPrecondition << "(";
@@ -96,6 +95,7 @@ Trie::~Trie() {
 void Trie::addAction(const Action& a) {
 	Node* current = root;
 	++nActions;
+
 	if (a.preconditions.size() == 0) {
 		current->setWordMarker(); // an empty word
 //		std::cout << "empty preconditions" << std::endl;
@@ -159,7 +159,7 @@ std::vector<unsigned int> Trie::searchPossibleActions(
 	std::vector<unsigned int> actions;
 
 //	std::cout << "searchPossibleActions" << std::endl;
-	std::vector<Node*> matchingChildren = root->findMatchingChildren(p);
+//	std::vector<Node*> matchingChildren = root->findMatchingChildren(p);
 
 //	std::cout << "returns ";
 //	for (int i = 0; i < matchingChildren.size(); ++i) {
@@ -171,13 +171,22 @@ std::vector<unsigned int> Trie::searchPossibleActions(
 	//       I guess it is not optimal, and we do not need to order the actions.
 	//       also, all actions appears at most one time. therefore no need to check its uniqueness.
 
-	for (int i = 0; i < matchingChildren.size(); ++i) {
-		searchNodes(matchingChildren[i], p, actions);
+//	for (int i = 0; i < matchingChildren.size(); ++i) {
+//		searchNodes(matchingChildren[i], p, actions);
+//	}
+
+	for (int i = 0; i < root->children().size(); ++i) {
+		if (isContainedSortedVectors(root->children()[i]->precondition(), p)) {
+			searchNodes(root->children()[i], p, actions);
+		}
 	}
 
 	if (root->wordMarker()) {
 //		actions = uniquelyMergeSortedVectors(actions, root->action());
-		actions.insert(actions.end(), root->action().begin(), root->action().end());
+		for (int i = 0; i < root->action().size(); ++i) {
+			actions.push_back(root->action()[i]);
+		}
+//		actions.insert(actions.end(), root->action().begin(), root->action().end());
 	}
 
 	std::sort(actions.begin(), actions.end());
@@ -195,26 +204,29 @@ void Trie::searchNodes(Node* c, const std::vector<unsigned int>& p,
 		std::vector<unsigned int>& actions) const {
 //	std::cout << "searchNodes" << std::endl;
 
-
 	if (c->wordMarker()) {
 //		std::cout << "marked: " << c->action().size() << " actions added." << std::endl;
 		// TODO: uniquely merge sorted vectors.
-//		for (int i = 0; i < c->action().size(); ++i) {
-//			actions.push_back(c->action()[i]);
-//		}
-		actions.insert(actions.end(), c->action().begin(), c->action().end());
+		for (int i = 0; i < c->action().size(); ++i) {
+			actions.push_back(c->action()[i]);
+		}
+//		actions.insert(actions.end(), c->action().begin(), c->action().end());
 //		actions = uniquelyMergeSortedVectors(actions, c->action());
 	}
 	// if c is inner node, then search deeper
 
-	std::vector<Node*> matchingChildren = c->findMatchingChildren(p);
-
-	for (int i = 0; i < matchingChildren.size(); ++i) {
-		searchNodes(matchingChildren[i], p, actions);
+//	std::vector<Node*> matchingChildren = c->findMatchingChildren(p);
+//
+//	for (int i = 0; i < matchingChildren.size(); ++i) {
+//		searchNodes(matchingChildren[i], p, actions);
+//	}
+	for (int i = 0; i < c->children().size(); ++i) {
+		if (isContainedSortedVectors(c->children()[i]->precondition(), p)) {
+			searchNodes(c->children()[i], p, actions);
+		}
 	}
+
 }
-
-
 
 void Trie::printTree() const {
 	root->printNode(0);

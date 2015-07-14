@@ -705,7 +705,7 @@ Strips::Strips(std::istream & d, std::istream & i) {
 //		}
 //		std::cout << std::endl << std::endl;
 //	}
-//	actionTrie.printTree();
+	actionTrie.printTree();
 
 	std::vector<unsigned int> init_actions = actionTrie.searchPossibleActions(
 			init_state);

@@ -103,7 +103,7 @@ echo "pdb=$pdb"
 echo "i=$i"
 echo "runtime=$runtime"
 echo "dom=$dom"
-exit 0
+#exit 0
 
 
 #########################

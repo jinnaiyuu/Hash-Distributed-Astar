@@ -106,6 +106,24 @@ bool isContainedSortedVectors(unsigned int v1,
 }
 
 static
+unsigned int whichIsContainedSortedVectorsIndex(const std::vector<unsigned int>& v1,
+		const std::vector<unsigned int>& v2) {
+	unsigned int v1it = 0;
+	unsigned int v2it = 0;
+
+	while (v1it < v1.size() && v2it < v2.size()) {
+		if (v1[v1it] == v2[v2it]) {
+			return v1it;
+		} else if (v1[v1it] < v2[v2it]) {
+			++v1it;
+		} else {
+			++v2it;
+		}
+	}
+	return -1;
+}
+
+static
 bool isAnyContainedSortedVectors(const std::vector<unsigned int>& v1,
 		const std::vector<unsigned int>& v2) {
 	unsigned int v1it = 0;
@@ -267,6 +285,16 @@ static std::vector<unsigned int> differenceSortedVectors(
 	}
 	return difference;
 }
+
+//static std::vector<unsigned int> addAndDelSortedVectors(
+//		const std::vector<unsigned int>& src,
+//		const std::vector<unsigned int>& add,
+//		const std::vector<unsigned int>& del) {
+//	std::vector<unsigned int> ret;
+//	unsigned int srcit = 0;
+//	unsigned int addit = 0;
+//	unsigned int delit = 0;
+//}
 
 static std::vector<unsigned int> getArguements(
 		const std::vector<unsigned int>& argument,

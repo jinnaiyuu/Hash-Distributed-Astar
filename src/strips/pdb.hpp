@@ -48,24 +48,37 @@ public:
 //		std::cout << "ps = ";
 //		for (int gs = 0; gs < groups.size(); ++gs) {
 		for (int gs = groups.size() - 1; gs >= 0; --gs) {
-			for (int ps = 0; ps < groups[gs].size(); ++ps) {
-				if (isContainedSortedVectors(groups[gs][ps], state)) {
-//					std::cout << groups[gs][ps] << " ";
-					arg_pat += ps;
-					if (gs != 0) {
-						arg_pat *= groups[gs].size();
-					}
-					break;
+			unsigned int contained = whichIsContainedSortedVectorsIndex(groups[gs], state);
+			if (contained != -1) {
+				arg_pat += contained;
+				if (gs != 0) {
+					arg_pat *= groups[gs].size();
 				}
-				if (groups[gs][ps] == TRUE_PREDICATE) {
-//					std::cout << gs << "," << ps << ": -2" << std::endl;
-					arg_pat += ps;
-					if (gs != 0) {
-						arg_pat *= groups[gs].size();
-					}
-					break;
+			} else {
+				arg_pat += contained;
+				if (gs != 0) {
+					arg_pat *= groups[gs].size();
 				}
 			}
+
+//			for (int ps = 0; ps < groups[gs].size(); ++ps) {
+//				if (isContainedSortedVectors(groups[gs][ps], state)) {
+////					std::cout << groups[gs][ps] << " ";
+//			arg_pat += contained;
+//			if (gs != 0) {
+//				arg_pat *= groups[gs].size();
+//			}
+//					break;
+//				}
+//				if (groups[gs][ps] == TRUE_PREDICATE) {
+////					std::cout << gs << "," << ps << ": -2" << std::endl;
+//			arg_pat += contained;
+//			if (gs != 0) {
+//				arg_pat *= groups[gs].size();
+//			}
+//					break;
+//				}
+//			}
 		}
 		return database[arg_pat];
 
@@ -164,7 +177,11 @@ public:
 			size *= g.size();
 //			std::cout << size << " patterns to read..." << std::endl;
 		}
-		std::cout << size << " patterns to read...";
+
+		for (int i = 0; i < groups.size() - 1; ++i) {
+			std::cout << groups[i].size() << "x";
+		}
+		std::cout << groups[groups.size() - 1].size() << " = " << size << " patterns to read...";
 
 
 		// g0 g1 g2 ... gn -1 heuristic
