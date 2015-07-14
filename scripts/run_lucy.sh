@@ -511,7 +511,6 @@ done
 # -l nodes=1:ppn=1,walltime=00:05:00,mem=14gb 
 #-M ddyuudd@gmail.com -m ae -N $NAME -j oe 
 
-exit 0
 
 for domain in $domains2
 do
@@ -520,21 +519,17 @@ do
     dfiles=${domain_file[${domain}]}
     ifiles=${instance_files[${domain}]}
     echo "instance: $ifiles"
-    for a in $alg
+    
+    size=`echo $dfiles | wc -w`
+    i=0
+    while [ $i -st $size ]
     do
-	for h in $heuristic
-	do
-	    for s in $structure
-	    do
-		parallel --noswap --jobs ${sim_job}% --results $output_dir --xapply \
-		    timeout "$runtime" ./run.sh \
-		    ::: "$a" ::: "$dfiles" ::: "$ifiles" \
-		    ::: "$h" ::: "$s" ::: "$pdb" ::: $output_dir
-	    done
-	done
+	qsub -v arg1="$alg",arg2="../pddl/${domain}/${dfile}",arg3="$i",arg4="$heuristic",arg5="$structure",arg6="$pdb",arg7="$output_dir" ./run.sh
     done
     echo
 done
+
+exit 0
 
 
 #############################

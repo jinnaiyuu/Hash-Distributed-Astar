@@ -2029,6 +2029,7 @@ std::vector<unsigned int> Strips::analyzeBalance(unsigned int p,
 	return ret;
 }
 
+// TODO: analyze predicates in goal conditions first.
 void Strips::analyzeAllBalances(std::vector<Predicate> ps) {
 //	for (int i = 0; i < lActions.size(); ++i) {
 //		std::cout << lActions[i].symbol << std::endl;
@@ -2054,6 +2055,16 @@ void Strips::analyzeAllBalances(std::vector<Predicate> ps) {
 				paa.pred = ps[i];
 				paa.instantiated_arg = arg;
 				paa.group_key = -1;
+
+				paa.isInGoal = false;
+				for (int j = 0; j < goal_condition.size(); ++j) {
+					if (paa.matchesLiftedKey(
+							g_predicates->at(goal_condition[j]))) {
+						paa.isInGoal = true;
+						break;
+					}
+				}
+
 				predargs.push_back(paa);
 			}
 		}
@@ -2137,6 +2148,22 @@ void Strips::analyzeAllBalances(std::vector<Predicate> ps) {
 
 	std::vector<std::vector<unsigned int>> groups;
 //	std::cout << "PredicateArgs" << std::endl;
+
+	// check predargs in goal conditions first.
+	// then check other args later.
+
+	for (int i = 0; i < predargs.size(); ++i) {
+		if (predargs[i].isInGoal) {
+			if (predargs[i].group_key == -1) {
+				std::vector<unsigned int> pss;
+				pss.push_back(predargs[i].key);
+				std::cout << predargs[i].pred.symbol << "/"
+						<< predargs[i].instantiated_arg << std::endl;
+				groups.push_back(analyzeBalance(predargs[i].key, pss, laas));
+			}
+		}
+	}
+
 	for (int i = 0; i < predargs.size(); ++i) {
 		if (predargs[i].group_key == -1) {
 			std::vector<unsigned int> pss;

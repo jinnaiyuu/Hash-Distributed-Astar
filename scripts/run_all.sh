@@ -82,7 +82,7 @@ if echo $n_threads | egrep -q '^[0-9]+$'; then
 else
     n_threads=1
 fi
-sim_job=`expr 100 / $n_threads / 2`
+sim_job=`expr 100 / $n_threads`
 
 
 if [ $i -ne 150 ]
@@ -103,7 +103,7 @@ echo "pdb=$pdb"
 echo "i=$i"
 echo "runtime=$runtime"
 echo "dom=$dom"
-#exit 0
+exit 0
 
 
 #########################

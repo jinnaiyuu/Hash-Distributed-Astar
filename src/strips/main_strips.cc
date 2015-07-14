@@ -80,9 +80,11 @@ int main(int argc, const char *argv[]) {
 			}
 		}
 
-		// if PDB heuristic
+		// pdb-0: read from prebuild PDB if available
+		// pdb-1: build PDB and run
+		// pdb-2: build PDB
+		unsigned int pdb = 0;
 		if (h == 3) {
-			unsigned int pdb = 0;
 			for (unsigned int i = 0; i < argc; ++i) {
 				if (sscanf(argv[i], "pdb-%u", &pdb) == 1) {
 					break;
@@ -92,6 +94,10 @@ int main(int argc, const char *argv[]) {
 		}
 
 		strips.set_heuristic(h);
+
+		if (pdb == 2) {
+			return 0;
+		}
 
 		unsigned int n_threads = 1;
 

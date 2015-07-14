@@ -435,6 +435,8 @@ public:
 		Predicate pred;
 		unsigned int instantiated_arg;
 		int group_key;
+		bool isInGoal;
+
 		bool isEqual(unsigned int pred_key, unsigned int inst_arg) {
 			return pred.key == pred_key && instantiated_arg == inst_arg;
 		}
@@ -442,6 +444,10 @@ public:
 		bool matches(const GroundedPredicate& g, unsigned int obj) {
 			return pred.key == g.lifted_key
 					&& g.arguments[instantiated_arg] == obj;
+		}
+
+		bool matchesLiftedKey(const GroundedPredicate& g) {
+			return pred.key == g.lifted_key;
 		}
 
 	};
