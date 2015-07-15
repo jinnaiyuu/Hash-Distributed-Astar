@@ -1,7 +1,9 @@
 #ifndef TRIE_HPP_
 #define TRIE_HPP_
 
+#include "utils.hpp"
 #include "action.hpp"
+#include "action_table.hpp"
 
 #include <iostream>
 #include <vector>
@@ -21,7 +23,7 @@
 class Trie {
 	class Node {
 	public:
-		Node(){
+		Node() {
 			mMarker = false;
 		}
 		~Node() {
@@ -42,7 +44,8 @@ class Trie {
 			mMarker = true;
 		}
 		Node* findChild(unsigned int c);
-		std::vector<Node*> findMatchingChildren(const std::vector<unsigned int>& propositions);
+		std::vector<Node*> findMatchingChildren(
+				const std::vector<unsigned int>& propositions);
 
 		void appendChild(Node* child) {
 			mChildren.push_back(child);
@@ -53,7 +56,9 @@ class Trie {
 		}
 
 		void addAction(unsigned int action_key) {
-			mActions.push_back(action_key);
+			if (!isContainedSortedVectors(action_key, mActions)) {
+				mActions.push_back(action_key);
+			}
 		}
 
 		std::vector<unsigned int>& action() {
@@ -70,7 +75,10 @@ class Trie {
 			return (mPrecondition < str.mPrecondition);
 		}
 
-
+		void buildTrie(
+				const std::vector<
+						std::pair<std::vector<unsigned int>, unsigned int> >& actions,
+				const std::vector<unsigned int>& parents_keys);
 		void printNode(unsigned int depth);
 
 	private:
@@ -81,12 +89,21 @@ class Trie {
 		std::vector<Node*> mChildren;
 
 		std::vector<unsigned int> mActions; // should this be just a number or actions?
+		void buildTrie(const ActionTable& table,
+				const std::vector<unsigned int>& action_keys,
+				unsigned int n_predicates);
 	};
 
 public:
 	Trie();
 	Trie(const Trie& other);
 	~Trie(); // this gonna take some time.
+//	void buildTrie(const ActionTable& table,
+//			const std::vector<unsigned int>& actions,
+//			unsigned int n_predicates);
+	void buildTrie(
+			const std::vector<std::pair<std::vector<unsigned int>, unsigned int> >& actions);
+
 	void addAction(const Action& a);
 	void addRegressionAction(const Action& a);
 	std::vector<unsigned int> searchPossibleActions(
@@ -98,11 +115,17 @@ public:
 	unsigned int getSize() const {
 		return nActions;
 	}
+
+	void setNPredicates(unsigned int np) {
+		nPredicates = np;
+	}
+
 private:
 	void searchNodes(Node* current, const std::vector<unsigned int>& p,
 			std::vector<unsigned int>& actions) const;
 	Node* root;
 	unsigned int nActions;
+	static unsigned int nPredicates;
 };
 
 #endif

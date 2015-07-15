@@ -2,6 +2,8 @@
 #include "utils.hpp"
 #include <iostream>
 
+unsigned int Trie::nPredicates;
+
 Trie::Node* Trie::Node::findChild(unsigned int c) {
 	for (int i = 0; i < mChildren.size(); i++) {
 		Node* tmp = mChildren.at(i);
@@ -92,6 +94,91 @@ Trie::~Trie() {
 	delete root;
 }
 
+/**
+ * Method to build efficient trie.
+ * Efficient trie is a tree with minimal number of edges.
+ * Trie access is being the overhead of this planner.
+ * This method is to improve the planner by solving this bottle neck.
+ *
+ * Algorithm:
+ * 1. List all preconditions for actions and rank preconditions with the number of appearance.
+ * 2. Add node of the most frequent precondition P.
+ * 3. Under the node, build trie with all actions with precondition P.
+ * 4. Delete all actions with the precondition P.
+ * 5. For the rest of the actions, add a node of the most frequent precondition P'.
+ * 6. repeat 2~5.
+ *
+ */
+void Trie::Node::buildTrie(
+		const std::vector<std::pair<std::vector<unsigned int>, unsigned int> >& actions,
+		const std::vector<unsigned int>& parents_keys) {
+	std::vector<unsigned int> prec_freq(nPredicates, 0); // frequencies of each predicates.
+	for (int a = 0; a < actions.size(); ++a) {
+		for (int i = 0; i < actions[a].first.size(); ++i) {
+			++prec_freq[actions[a].first[i]];
+		}
+		if (actions[a].first == parents_keys) {
+			this->setWordMarker();
+			this->addAction(actions[a].second);
+//			std::cout << "a:" << actions[a].second;
+		}
+	}
+	std::sort(this->mActions.begin(), this->mActions.end());
+
+	for (int i = 0; i < parents_keys.size(); ++i) {
+		prec_freq[parents_keys[i]] = 0;
+	}
+
+	std::vector<unsigned int>::iterator max = std::max_element(
+			prec_freq.begin(), prec_freq.end());
+	unsigned int which_max = std::distance(prec_freq.begin(), max);
+
+//	std::cout << "most freq = " << which_max << " with " << *max << " times"
+//			<< std::endl;
+
+	if (*max == 0) {
+		return;
+	}
+
+	std::vector<std::pair<std::vector<unsigned int>, unsigned int> > actions_with_max;
+	std::vector<std::pair<std::vector<unsigned int>, unsigned int> > actions_without_max;
+	for (int a = 0; a < actions.size(); ++a) {
+		if (isContainedSortedVectors(which_max, actions[a].first)) {
+			actions_with_max.push_back(actions[a]);
+		} else {
+			actions_without_max.push_back(actions[a]);
+		}
+	}
+
+	// create child nodes
+	Node* max_n = new Node();
+	max_n->setPrecondition(which_max);
+	this->appendChild(max_n);
+	std::vector<unsigned int> new_ps = parents_keys;
+	new_ps.push_back(which_max);
+	std::sort(new_ps.begin(), new_ps.end()); // parents_keys are sorted
+	max_n->buildTrie(actions_with_max, new_ps);
+
+	this->buildTrie(actions_without_max, parents_keys);
+
+}
+
+void Trie::buildTrie(
+		const std::vector<std::pair<std::vector<unsigned int>, unsigned int> >& actions) {
+	for (int i = 0; i < actions.size(); ++i) {
+		for (int j = 0; j < actions[i].first.size(); ++j) {
+			std::cout << actions[i].first[j] << " ";
+		}
+		std::cout << ": " << actions[i].second << std::endl;
+	}
+
+
+	std::vector<unsigned int> ps;
+//	ps.clear();
+	root->buildTrie(actions, ps);
+}
+
+// XXX: this method is going to be depricated.
 void Trie::addAction(const Action& a) {
 	Node* current = root;
 	++nActions;

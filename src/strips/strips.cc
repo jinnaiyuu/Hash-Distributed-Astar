@@ -707,6 +707,17 @@ Strips::Strips(std::istream & d, std::istream & i) {
 //	}
 	actionTrie.printTree();
 
+	init_state.erase(
+			remove_if(init_state.begin(), init_state.end(),
+					[&](const unsigned int& x) {return this->predicates[this->g_predicates->at(x).lifted_key].isStatic;}),
+					init_state.end());
+
+
+//	for (int i = 0; i < init_state.size(); ++i) {
+//		if (predicates[g_predicates->at(init_state[i]).lifted_key].isStatic) {
+//
+//		}
+//	}
 	std::vector<unsigned int> init_actions = actionTrie.searchPossibleActions(
 			init_state);
 
@@ -1597,6 +1608,8 @@ void Strips::groundAction(std::istream &domain, std::vector<Object> obs,
 //						}
 //					}
 				}
+
+				// If
 			}
 		}
 //		}
@@ -1661,8 +1674,9 @@ void Strips::groundAction(std::istream &domain, std::vector<Object> obs,
 				}
 				key += g_predicates_index[prec.first];
 
-				// TODO: here, if the predicate is static & not in init_state,
-				//       then we can get out of the instantiation here.
+				// If the predicate is static AND NOT feasible, this action is unfeasible.
+				// If the predicate is static AND feasible, this action is feasible and this precondition is negligible.
+				// If the predicate is not static, then push to precnums.
 				if (predicates[prec.first].isStatic) {
 					if (!isContainedSortedVectors(key, init_state)) {
 //						std::cout << "unfeasible action. " << g_predicates->at(key).symbol << " unsat." << endl;
@@ -1670,8 +1684,9 @@ void Strips::groundAction(std::istream &domain, std::vector<Object> obs,
 						break;
 					}
 				}
-
-				precnums.push_back(key);
+				if (!predicates[prec.first].isStatic) {
+					precnums.push_back(key);
+				}
 
 //				for (int j = 0; j < g_predicates->size(); ++j) {
 //					if (g_predicates->at(j).isEqual(prec.first, prec_arg)) {
@@ -1872,12 +1887,17 @@ void Strips::listFeasiblePredicatesWithActions(std::vector<unsigned int>& gs,
 }
 
 void Strips::buildActionTrie(std::vector<unsigned> keys) {
+	actionTrie.setNPredicates(g_predicates->size());
+	std::vector<std::pair<std::vector<unsigned int>, unsigned int> > precs;
 	for (int a = 0; a < keys.size(); ++a) {
 //		std::cout << a << std::endl;
 		Action action = actionTable.getAction(keys[a]);
 //		action.print();
-		actionTrie.addAction(action);
+		std::pair<std::vector<unsigned int>, unsigned int> p(
+				action.preconditions, keys[a]);
+		precs.push_back(p);
 	}
+	actionTrie.buildTrie(precs);
 }
 
 /**
