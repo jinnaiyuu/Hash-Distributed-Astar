@@ -55,7 +55,7 @@ public:
 					arg_pat *= groups[gs].size();
 				}
 			} else {
-				arg_pat += contained;
+				arg_pat += groups[gs].size() - 1;
 				if (gs != 0) {
 					arg_pat *= groups[gs].size();
 				}

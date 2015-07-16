@@ -74,9 +74,11 @@ int Strips::pdb(const State& s) const {
 
 // TODO: implement true or false group. binary condition.
 void Strips::buildPDB() {
+//	unsigned int pdb_max_size = 1000000;
 	pd = new PDB();
+//	std::string name = domain_ + "_" + instance_ + ".pat";
 
-	std::string name = domain_ + "_" + instance_ + ".pat";
+	std::string name = domain_ + "_" + instance_ + "_" + to_string(pdb_size) + ".pat";
 
 	if (!built_pdb && pd->read_database(name)) {
 //		pd->dump_all(name + "copy");
@@ -112,7 +114,7 @@ void Strips::buildPDB() {
 //		unsigned int rest = 1
 //				<< (goal_condition.size() - pdb_groups.size() - 1);
 
-		if (size * xor_groups[g].size() > 100000) {
+		if (size * xor_groups[g].size() > pdb_size) {
 			full = true;
 			continue;
 		}
@@ -130,7 +132,7 @@ void Strips::buildPDB() {
 // TODO: for all goal_conditions which is out of groups,
 //       add TRUE OR FALSE group to the patterns.
 	for (int c = 0; c < goal_condition.size(); ++c) {
-		if (size * 2 > 100000) {
+		if (size * 2 > pdb_size) {
 			break;
 		}
 

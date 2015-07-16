@@ -165,12 +165,12 @@ void Trie::Node::buildTrie(
 
 void Trie::buildTrie(
 		const std::vector<std::pair<std::vector<unsigned int>, unsigned int> >& actions) {
-	for (int i = 0; i < actions.size(); ++i) {
-		for (int j = 0; j < actions[i].first.size(); ++j) {
-			std::cout << actions[i].first[j] << " ";
-		}
-		std::cout << ": " << actions[i].second << std::endl;
-	}
+//	for (int i = 0; i < actions.size(); ++i) {
+//		for (int j = 0; j < actions[i].first.size(); ++j) {
+//			std::cout << actions[i].first[j] << " ";
+//		}
+//		std::cout << ": " << actions[i].second << std::endl;
+//	}
 
 
 	std::vector<unsigned int> ps;

@@ -21,6 +21,8 @@
 #include <iostream>
 #include <stdint.h>
 
+//typedef unsigned int feature;
+
 /**
  * Possible Optimizations
  * 1. std::find from ordered vector (all predicates are sorted)
@@ -35,6 +37,8 @@ struct Strips {
 	// TODO: would 16 bit enough
 	struct State {
 		std::vector<unsigned int> propositions; // need to be sorted
+
+//		std::vector<unsigned int> propositions; // need to be sorted
 		int h;
 	};
 
@@ -89,10 +93,10 @@ struct Strips {
 	std::vector<unsigned int> ops(const State &s) const {
 //		std::cout << "nops" << std::endl;
 //		actionTrie.printTree();
-		std::vector<unsigned int> actions = actionTrie.searchPossibleActions(
-				s.propositions);
+//		std::vector<unsigned int> actions = actionTrie.searchPossibleActions(
+//				s.propositions);
 //		std::cout << "expand state: " << actions.size() << std::endl;
-		return actions;
+		return actionTrie.searchPossibleActions(s.propositions);
 	}
 
 	int nops(const State &s) const {
@@ -188,6 +192,10 @@ struct Strips {
 
 	void set_pdb(bool pdb) {
 		built_pdb = pdb;
+	}
+
+	void set_pdb_size(unsigned int pdb_size) {
+		this->pdb_size = pdb_size;
 	}
 
 	unsigned int getActionSize() {
@@ -311,6 +319,7 @@ private:
 	Trie rActionTrie; // trie for regression planning. keys are adds.
 	std::vector<unsigned int> ungroupeds;
 	bool built_pdb = false;
+	unsigned int pdb_size = 1000000;
 
 	// TODO: add new utility method to speed-up this.
 	void apply_action(State& s, int action_key, int& cost) const {
@@ -320,12 +329,23 @@ private:
 //			s.propositions.push_back(action.adds[i]);
 //		}
 
+//		std::vector<unsigned int>::iterator it;
+//
+//		it = std::set_difference(s.propositions.begin(), s.propositions.end(),
+//				action->deletes.begin(), action->deletes.end(),
+//				s.propositions.begin());
+//		it = std::set_union(s.propositions.begin(), it, action->adds.begin(),
+//				action->adds.end(), s.propositions.begin());
+//
+//		s.propositions.resize(it - s.propositions.begin());
+
 		std::set_difference(s.propositions.begin(), s.propositions.end(),
 				action->deletes.begin(), action->deletes.end(),
 				std::back_inserter(p));
 		s.propositions.clear();
 		std::set_union(p.begin(), p.end(), action->adds.begin(),
 				action->adds.end(), std::back_inserter(s.propositions));
+
 //		p = uniquelyMergeSortedVectors(s.propositions, action.adds);
 
 		// TODO: is this correct?
@@ -334,10 +354,16 @@ private:
 //			p = differenceSortedVectors(p, action.deletes);
 //			p = d;
 //		}
+
+//		s.propositions = differenceSortedVectors(s.propositions,
+//				action->deletes);
+//		s.propositions.insert(s.propositions.end(), action->adds.begin(),
+//				action->adds.end());
 //		std::sort(s.propositions.begin(), s.propositions.end());
 //		s.propositions.erase(
 //				unique(s.propositions.begin(), s.propositions.end()),
 //				s.propositions.end());
+
 //		s.propositions = p;
 		cost = action->action_cost;
 	}

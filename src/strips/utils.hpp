@@ -68,9 +68,10 @@ static std::string findRange(std::string& s, const std::string& from,
 
 // if v2 has all numbers in v1 then return true.
 // true if v2 >= v1.
+template<typename T>
 static
-bool isContainedSortedVectors(const std::vector<unsigned int>& v1,
-		const std::vector<unsigned int>& v2) {
+bool isContainedSortedVectors(const std::vector<T>& v1,
+		const std::vector<T>& v2) {
 	unsigned int v1it = 0;
 	unsigned int v2it = 0;
 
@@ -88,9 +89,10 @@ bool isContainedSortedVectors(const std::vector<unsigned int>& v1,
 	return true;
 }
 
+template<typename T>
 static
-bool isContainedSortedVectors(unsigned int v1,
-		const std::vector<unsigned int>& v2) {
+bool isContainedSortedVectors(T v1,
+		const std::vector<T>& v2) {
 	unsigned int v2it = 0;
 
 	while (v2it < v2.size()) {
@@ -105,9 +107,11 @@ bool isContainedSortedVectors(unsigned int v1,
 	return false;
 }
 
+template<typename T>
 static
-unsigned int whichIsContainedSortedVectorsIndex(const std::vector<unsigned int>& v1,
-		const std::vector<unsigned int>& v2) {
+T whichIsContainedSortedVectorsIndex(
+		const std::vector<T>& v1,
+		const std::vector<T>& v2) {
 	unsigned int v1it = 0;
 	unsigned int v2it = 0;
 
@@ -123,9 +127,10 @@ unsigned int whichIsContainedSortedVectorsIndex(const std::vector<unsigned int>&
 	return -1;
 }
 
+template<typename T>
 static
-bool isAnyContainedSortedVectors(const std::vector<unsigned int>& v1,
-		const std::vector<unsigned int>& v2) {
+bool isAnyContainedSortedVectors(const std::vector<T>& v1,
+		const std::vector<T>& v2) {
 	unsigned int v1it = 0;
 	unsigned int v2it = 0;
 
@@ -142,13 +147,12 @@ bool isAnyContainedSortedVectors(const std::vector<unsigned int>& v1,
 }
 
 // if any of v1 not contained in v2, return true. false otherwise.
+template<typename T>
 static
-bool isAnyNotContainedSortedVectors(const std::vector<unsigned int>& v1,
-		const std::vector<unsigned int>& v2) {
+bool isAnyNotContainedSortedVectors(const std::vector<T>& v1,
+		const std::vector<T>& v2) {
 	unsigned int v1it = 0;
 	unsigned int v2it = 0;
-
-	unsigned int contained = 0;
 
 	while (v1it < v1.size() && v2it < v2.size()) {
 		if (v1[v1it] == v2[v2it]) {
@@ -167,9 +171,10 @@ bool isAnyNotContainedSortedVectors(const std::vector<unsigned int>& v1,
 	}
 }
 
+template<typename T>
 static
-unsigned int howManyContainedSortedVectors(const std::vector<unsigned int>& v1,
-		const std::vector<unsigned int>& v2) {
+unsigned int howManyContainedSortedVectors(const std::vector<T>& v1,
+		const std::vector<T>& v2) {
 	unsigned int v1it = 0;
 	unsigned int v2it = 0;
 
@@ -189,10 +194,11 @@ unsigned int howManyContainedSortedVectors(const std::vector<unsigned int>& v1,
 	return contained;
 }
 
-static std::vector<unsigned int> intersectingSortedVectors(
-		const std::vector<unsigned int>& v1,
-		const std::vector<unsigned int>& v2) {
-	std::vector<unsigned int> intersecting;
+template<typename T>
+static std::vector<T> intersectingSortedVectors(
+		const std::vector<T>& v1,
+		const std::vector<T>& v2) {
+	std::vector<T> intersecting;
 	unsigned int v1it = 0;
 	unsigned int v2it = 0;
 
@@ -210,9 +216,10 @@ static std::vector<unsigned int> intersectingSortedVectors(
 	return intersecting;
 }
 
-static std::vector<unsigned int> uniquelyMergeSortedVectors2(
-		const std::vector<unsigned int>& v1, const unsigned int& v2) {
-	std::vector<unsigned int> uniqueMerge;
+template<typename T>
+static std::vector<T> uniquelyMergeSortedVectors2(
+		const std::vector<T>& v1, const T& v2) {
+	std::vector<T> uniqueMerge;
 	unsigned int v1it = 0;
 	while (v1it < v1.size()) {
 		if (v1[v1it] == v2) {
@@ -233,10 +240,11 @@ static std::vector<unsigned int> uniquelyMergeSortedVectors2(
 	return uniqueMerge;
 }
 
-static std::vector<unsigned int> uniquelyMergeSortedVectors(
-		const std::vector<unsigned int>& v1,
-		const std::vector<unsigned int>& v2) {
-	std::vector<unsigned int> uniqueMerge;
+template<typename T>
+static std::vector<T> uniquelyMergeSortedVectors(
+		const std::vector<T>& v1,
+		const std::vector<T>& v2) {
+	std::vector<T> uniqueMerge;
 	unsigned int v1it = 0;
 	unsigned int v2it = 0;
 	while (v1it < v1.size() && v2it < v2.size()) {
@@ -263,10 +271,11 @@ static std::vector<unsigned int> uniquelyMergeSortedVectors(
 }
 
 // Take difference of sets, v1 - v2.
-static std::vector<unsigned int> differenceSortedVectors(
-		const std::vector<unsigned int>& v1,
-		const std::vector<unsigned int>& v2) {
-	std::vector<unsigned int> difference;
+template<typename T>
+static std::vector<T> differenceSortedVectors(
+		const std::vector<T>& v1,
+		const std::vector<T>& v2) {
+	std::vector<T> difference;
 	unsigned int v1it = 0;
 	unsigned int v2it = 0;
 	while (v1it < v1.size() && v2it < v2.size()) {
@@ -286,20 +295,32 @@ static std::vector<unsigned int> differenceSortedVectors(
 	return difference;
 }
 
-//static std::vector<unsigned int> addAndDelSortedVectors(
-//		const std::vector<unsigned int>& src,
+//void addAndDelSortedVectors(std::vector<unsigned int>& src,
 //		const std::vector<unsigned int>& add,
 //		const std::vector<unsigned int>& del) {
-//	std::vector<unsigned int> ret;
+////	std::vector<unsigned int> ret;
 //	unsigned int srcit = 0;
 //	unsigned int addit = 0;
 //	unsigned int delit = 0;
+//
+//	while (srcit < src.size() && delit < del.size()) {
+//		if (src[srcit] == del[delit]) {
+//			// remove
+//			++srcit;
+//			++delit;
+//		} else if (src[srcit] < del[delit]) {
+//			++srcit;
+//		} else {
+//			++delit;
+//		}
+//	}
 //}
 
-static std::vector<unsigned int> getArguements(
-		const std::vector<unsigned int>& argument,
-		const std::vector<unsigned int>& which) {
-	std::vector<unsigned int> args;
+template<typename T>
+static std::vector<T> getArguements(
+		const std::vector<T>& argument,
+		const std::vector<T>& which) {
+	std::vector<T> args;
 	for (int i = 0; i < which.size(); ++i) {
 		if (which[i] >= argument.size()) {
 			args.push_back(which[i] - argument.size());
@@ -309,6 +330,7 @@ static std::vector<unsigned int> getArguements(
 	}
 	return args;
 }
+
 
 inline unsigned int hash(const std::vector<unsigned int> v) {
 	std::hash<unsigned int> hasher;

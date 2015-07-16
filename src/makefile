@@ -1,5 +1,5 @@
 CXX=clang++-3.5
-CXXFLAGS=-g -Wall -Wno-unused-value -Wno-char-subscripts -static -pthread -std=c++11 -O0
+CXXFLAGS=-g -Wall -Wno-unused-value -Wno-char-subscripts -static -pthread -std=c++11 -O3
 PROFFLAGS=-pg -static -pthread -std=c++11
 MASSFLAGS=-g -pthread -std=c++11
 

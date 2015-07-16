@@ -84,13 +84,20 @@ int main(int argc, const char *argv[]) {
 		// pdb-1: build PDB and run
 		// pdb-2: build PDB
 		unsigned int pdb = 0;
+		unsigned int pdbs = 0;
 		if (h == 3) {
 			for (unsigned int i = 0; i < argc; ++i) {
 				if (sscanf(argv[i], "pdb-%u", &pdb) == 1) {
+					strips.set_pdb(pdb);
 					break;
 				}
 			}
-			strips.set_pdb(pdb);
+			for (unsigned int i = 0; i < argc; ++i) {
+				if (sscanf(argv[i], "pdbs-%u", &pdbs) == 1) {
+					strips.set_pdb_size(pdbs);
+					break;
+				}
+			}
 		}
 
 		strips.set_heuristic(h);
