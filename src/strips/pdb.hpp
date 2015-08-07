@@ -104,7 +104,7 @@ public:
 	// TODO: read from file.
 	void dump_all(std::string name) {
 		std::ofstream file;
-		std::string fname = "../pdb/" + name;
+		std::string fname = name; //"../pdb/" + name;
 		file.open(fname.c_str());
 
 		for (int gs = 0; gs < groups.size(); ++gs) {
@@ -134,8 +134,8 @@ public:
 	// TODO: way too slow.
 	//       fastest reading method is fscan(). let's refactor to it.
 	bool read_database(std::string name) {
-		std::string fname = "../pdb/" + name;
-		std::ifstream infile(fname);
+//		std::string fname = name;
+		std::ifstream infile(name);
 //		std::ios_base::sync_with_stdio(false);
 //		std::istream_iterator<int> start(infile), end;
 //		std::istream_iterator<unsigned int> start(infile);

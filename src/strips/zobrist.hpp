@@ -24,7 +24,16 @@ public:
 	StripsZobrist(D &d, ABST abst = 0) :
 			d(d) {
 		structures = this->d.get_structures();
-		initZobrist(abst);
+		xor_groups = this->d.get_xor_groups();
+
+		if (abst == 2 && structures.size() < 8) {
+			// use not structured predicates if structures are not enough.
+			initZobrist(1);
+		} else if (abst == 3 && structures.size() < 8) {
+			initZobrist(1);
+		} else {
+			initZobrist(abst);
+		}
 	}
 
 	/**
@@ -78,25 +87,42 @@ private:
 
 	}
 
-	// Abstraction
-	// hash key for each abstract state.
+// Abstraction
+// hash key for each abstract state.
 	void abstraction() {
-		for (unsigned int i = 0; i < structures.size(); ++i) {
-			for (unsigned int j = 0; j < structures[i].size(); ++j) {
-				map[structures[i][j]] = random();
+		// is there a great way to find the best abstraction here?
+		unsigned int size = 1;
+		for (unsigned int i = 0; i < xor_groups.size(); ++i) {
+			size *= xor_groups[i].size();
+			if (size > 16 * 16 * 16 * 16) { // ad hoc
+				break;
+			}
+			for (unsigned int j = 0; j < xor_groups[i].size(); ++j) {
+				map[xor_groups[i][j]] = random();
 			}
 		}
 	}
 
-	// Structured Zobrist
-	// 1 key for each structure.
+// Structured Zobrist
+// 1 key for each structure.
 	void strucutured_zobrist() {
 		for (unsigned int i = 0; i < structures.size(); ++i) {
-			int r = random();
+			unsigned int r = random();
 			for (unsigned int j = 0; j < structures[i].size(); ++j) {
 				map[structures[i][j]] = r;
 			}
 		}
+
+		for (unsigned int i = 0; i < xor_groups.size(); ++i) {
+			for (unsigned int j = 0; j < xor_groups[i].size(); ++j) {
+				unsigned int key = xor_groups[i][j];
+				if (map[key] == 0) {
+					map[key] = random();
+				}
+			}
+		}
+
+
 	}
 
 	void zobrist() {
@@ -107,7 +133,7 @@ private:
 		}
 	}
 
-	// TODO: read automatic abstraction.
+// TODO: read automatic abstraction.
 //	void abstraction(unsigned int abst) {
 //		printf("abst = %u\n", abst);
 //		if (abst == 0) {
@@ -128,6 +154,7 @@ private:
 
 	D& d;
 	std::vector<std::vector<unsigned int>> structures;
+	std::vector<std::vector<unsigned int>> xor_groups;
 //	unsigned int structure;
 
 // TODO: ebable some kind of abstraction.

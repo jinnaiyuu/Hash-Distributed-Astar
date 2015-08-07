@@ -328,6 +328,21 @@ public:
 					break;
 				}
 				++no_work_iteration;
+
+				for (int i = 0; i < tnum; ++i) {
+					// TODO: least number of nodes to send
+					if (i != id && outgo_buffer[i].size() > 0) {
+						if (income_buffer[i].try_lock()) {
+							// acquired lock
+							income_buffer[i].push_all_with_lock(
+									outgo_buffer[i]);
+							income_buffer[i].release_lock();
+							outgo_buffer[i].clear();
+						}
+					}
+				}
+
+
 				continue; // ad hoc
 			}
 			n = static_cast<Node*>(open.pop());
@@ -574,13 +589,14 @@ public:
 				}
 
 				for (int i = 0; i < tnum; ++i) {
-					if (i != id && outgo_buffer[i].size() > 0) {
-						if (income_buffer[zbr].try_lock()) {
+					// TODO: least number of nodes to send
+					if (i != id && outgo_buffer[i].size() > 31) {
+						if (income_buffer[i].try_lock()) {
 							// acquired lock
-							income_buffer[zbr].push_all_with_lock(
-									outgo_buffer[zbr]);
-							income_buffer[zbr].release_lock();
-							outgo_buffer[zbr].clear();
+							income_buffer[i].push_all_with_lock(
+									outgo_buffer[i]);
+							income_buffer[i].release_lock();
+							outgo_buffer[i].clear();
 						}
 					}
 				}
@@ -665,7 +681,9 @@ public:
 		for (int i = 0; i < tnum; ++i) {
 			this->expd += expd_distribution[i];
 			this->gend += gend_distribution[i];
+			this->push += self_pushes[i];
 		}
+
 
 #ifdef ANALYZE_INCOME
 		printf("average of max_income_buffer_size = %d\n", max_income / tnum);

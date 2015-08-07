@@ -15,7 +15,6 @@
 #include <stdint.h>
 typedef unsigned int uint128_t __attribute__((mode(TI)));
 
-
 struct Tiles24 {
 	enum {
 		Width = 5, Height = 5, Ntiles = Width * Height,
@@ -71,7 +70,15 @@ struct Tiles24 {
 	}
 
 	bool isgoal(const State &s) const {
-		return s.h == 0;
+		if (s.h != 0) {
+			return false;
+		}
+		for (int i = 0; i < Ntiles; ++i) {
+			if (s.tiles[i] != i) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	int nops(const State &s) const {
@@ -86,7 +93,7 @@ struct Tiles24 {
 		int h, blank;
 	};
 
-	Edge<Tiles24> apply(State &s, int newb) const{
+	Edge<Tiles24> apply(State &s, int newb) const {
 		Edge<Tiles24> e(1, newb, s.blank);
 		e.undo.h = s.h;
 		e.undo.blank = s.blank;
@@ -113,8 +120,8 @@ struct Tiles24 {
 //		}
 //		printf("\n");
 
-		s.h = mdist(static_cast<int>(s.blank), s.tiles);
-
+//		s.h = mdist(static_cast<int>(s.blank), s.tiles);
+		s.h = heuristic(s.tiles);
 		return e;
 	}
 
@@ -165,11 +172,12 @@ struct Tiles24 {
 	unsigned int print_h(char tiles[]) const {
 		// tiles[a] = b means tile b is at position a.
 		// inv[a] = b means tile a is at position b.
-		char inv[25];
+		char inv[Ntiles];
 		for (int i = 0; i < Ntiles; ++i) {
 			inv[tiles[i]] = i;
 //			inv[i] = tiles[i];
 		}
+
 		unsigned int origin = hash0(inv) + hash1(inv) + hash2(inv) + hash3(inv);
 		unsigned int reflection = hashref0(inv) + hashref1(inv) + hashref2(inv)
 				+ hashref3(inv);
@@ -178,25 +186,31 @@ struct Tiles24 {
 //		printf("reflection = %u + %u + %u + %u = %u\n", hashref0(inv), hashref1(inv), hashref2(inv), hashref3(inv), reflection);
 //		printf("\n");
 //		printf("origin, reflection = %u, %u\n", origin, reflection);
-//		return max(origin, reflection);
-		return origin;
+		return max(origin, reflection);
+//		return origin;
+	}
+
+	void setHeuristic(unsigned int hfun) {
+		hfunction = hfun;
 	}
 
 private:
 
-	// mdist returns the Manhattan distance of the given tile array.
-	int mdist(int blank, char tiles[]) const{
-//		int sum = 0;
-//		for (int i = 0; i < Ntiles; i++) {
-//			if (i == blank)
-//				continue;
-//			int row = i / Width, col = i % Width;
-//			int grow = tiles[i] / Width, gcol = tiles[i] % Width;
-//			sum += abs(gcol - col) + abs(grow - row);
-//		}
-//		return sum;
-		return heuristic(tiles);
-	}
+	unsigned int hfunction = 0;
+
+//	// mdist returns the Manhattan distance of the given tile array.
+//	int mdist(int blank, char tiles[]) const{
+////		int sum = 0;
+////		for (int i = 0; i < Ntiles; i++) {
+////			if (i == blank)
+////				continue;
+////			int row = i / Width, col = i % Width;
+////			int grow = tiles[i] / Width, gcol = tiles[i] % Width;
+////			sum += abs(gcol - col) + abs(grow - row);
+////		}
+////		return sum;
+//		return heuristic(tiles);
+//	}
 
 	// initmd initializes the md and mdincr tables.
 //	void initmd();
@@ -210,46 +224,75 @@ private:
 	int init[Ntiles];
 
 	unsigned int heuristic(char tiles[]) const {
+		if (hfunction == 0) {
+			return pdb(tiles);
+		} else if (hfunction == 1) {
+			return manhattan(tiles);
+		} else {
+			return 0;
+		}
+	}
+
+	unsigned int pdb(char tiles[]) const {
+		//		return 0;
 		// tiles[a] = b means tile b is at position a.
 		// inv[a] = b means tile a is at position b.
-		char inv[25];
+		char inv[Ntiles];
 
 		// TODO: is this interpretation right?
 		for (int i = 0; i < Ntiles; ++i) {
 			inv[tiles[i]] = i;
-//			inv[i] = tiles[i];
+			//			inv[i] = tiles[i];
 		}
-//		unsigned int origin = hash0(inv) + hash1(inv) + hash2(inv) + hash3(inv);
+
 		unsigned int origin = hash0(inv) + hash1(inv) + hash2(inv) + hash3(inv);
 		unsigned int reflection = hashref0(inv) + hashref1(inv) + hashref2(inv)
 				+ hashref3(inv);
-//		printf("tile: ");
-//		for (int i = 0; i < Ntiles; ++i) {
-//			printf("%.2d ", tiles[i]);
-//		}
-//		printf("\n");
-//		printf("inv : ");
-//		for (int i = 0; i < Ntiles; ++i) {
-//			printf("%d ", inv[i]);
-//		}
-//		printf("\n");
-//		printf("origin = %u + %u + %u + %u = %u\n", hash0(inv), hash1(inv), hash2(inv), hash3(inv), origin);
-//		printf("reflection = %u + %u + %u + %u = %u\n", hashref0(inv), hashref1(inv), hashref2(inv), hashref3(inv), reflection);
-//		printf("\n");
-//		printf("origin, reflection = %u, %u\n", origin, reflection);
-//		return max(origin, reflection);
-		return origin;
+		//		unsigned int origin = hash0(inv); // + hash1(inv) + hash2(inv) + hash3(inv);
+		//		unsigned int reflection = hashref0(inv);// + hashref1(inv) + hashref2(inv)
+		//+ hashref3(inv);
+
+		//		printf("tile: ");
+		//		for (int i = 0; i < Ntiles; ++i) {
+		//			printf("%.2d ", tiles[i]);
+		//		}
+		//		printf("\n");
+		//		printf("inv : ");
+		//		for (int i = 0; i < Ntiles; ++i) {
+		//			printf("%d ", inv[i]);
+		//		}
+		//		printf("\n");
+		//		printf("origin = %u + %u + %u + %u = %u\n", hash0(inv), hash1(inv), hash2(inv), hash3(inv), origin);
+		//		printf("reflection = %u + %u + %u + %u = %u\n", hashref0(inv), hashref1(inv), hashref2(inv), hashref3(inv), reflection);
+		//		printf("\n");
+		//		printf("origin, reflection = %u, %u\n", origin, reflection);
+		//		printf("hash0 = %u\n", origin);
+		return max(origin, reflection);
+		//		return origin;
+	}
+
+	unsigned int manhattan(char tiles[]) const {
+		int sum = 0;
+		for (int i = 0; i < Ntiles; i++) {
+			if (tiles[i] == 0) {
+				continue;
+			}
+			int row = i / Width, col = i % Width;
+			int grow = tiles[i] / Width, gcol = tiles[i] % Width;
+			sum += abs(gcol - col) + abs(grow - row);
+		}
+		return sum;
 	}
 
 	/* HASH0 takes an inverse state, and maps the tiles in the 0 pattern to an
 	 integer that represents those tile positions uniquely.  It then returns the
 	 actual heuristic value from the pattern database. */
-	unsigned int hash0(char inv[]) const{
+	unsigned int hash0(char inv[]) const {
 		int hashval = ((((inv[1] * Ntiles + inv[2]) * Ntiles + inv[5]) * Ntiles
 				+ inv[6]) * Ntiles + inv[7]) * Ntiles + inv[12];
 		return (h0[hashval]);
 	} /* total moves for this pattern */
-	unsigned int hashref0(char inv[]) const{
+	unsigned int hashref0(char inv[]) const {
 		/* index into heuristic table */
 		int hashval = (((((ref[inv[5]] * Ntiles + ref[inv[10]]) * Ntiles
 				+ ref[inv[1]]) * Ntiles + ref[inv[6]]) * Ntiles + ref[inv[11]])
@@ -271,7 +314,7 @@ private:
 						+ ref[inv[17]]) * Ntiles + ref[inv[22]]);
 		return (h1[hashval]);
 	} /* total moves for this pattern */
-	unsigned int hash2(char inv[]) const{
+	unsigned int hash2(char inv[]) const {
 		/* index into heuristic table */
 		int hashval = ((((rot180[inv[21]] * Ntiles + rot180[inv[20]]) * Ntiles
 				+ rot180[inv[16]]) * Ntiles + rot180[inv[15]]) * Ntiles
@@ -285,14 +328,14 @@ private:
 				* Ntiles + rot180ref[inv[7]]) * Ntiles + rot180ref[inv[2]]);
 		return (h1[hashval]);
 	} /* total moves for this pattern */
-	unsigned int hash3(char inv[]) const{
+	unsigned int hash3(char inv[]) const {
 		/* index into heuristic table */
 		int hashval = ((((rot90[inv[19]] * Ntiles + rot90[inv[24]]) * Ntiles
 				+ rot90[inv[18]]) * Ntiles + rot90[inv[23]]) * Ntiles
 				+ rot90[inv[17]]) * Ntiles + rot90[inv[22]];
 		return (h1[hashval]);
 	} /* total moves for this pattern */
-	unsigned int hashref3(char inv[]) const{
+	unsigned int hashref3(char inv[]) const {
 		/* index into heuristic table */
 		int hashval = (((((rot90ref[inv[23]] * Ntiles + rot90ref[inv[24]])
 				* Ntiles + rot90ref[inv[18]]) * Ntiles + rot90ref[inv[19]])
@@ -335,7 +378,6 @@ private:
 	/* tiles in each reflected pattern, in the same order as above*/
 	/* {5,10,1,6,11,12} {15,20,16,21,17,22} {2,7,3,8,4,9} {13,18,23,14,19,24} */
 
-
 	// optab is indexed by the blank position.  Each
 	// entry is a description of the possible next
 	// blank positions.
@@ -343,10 +385,10 @@ private:
 		int n, ops[4];
 	} optab[Ntiles];
 
-	unsigned int max(unsigned int a, unsigned int b) const{
+	unsigned int max(unsigned int a, unsigned int b) const {
 		return a > b ? a : b;
 	}
-	unsigned int min(unsigned int a, unsigned int b) const{
+	unsigned int min(unsigned int a, unsigned int b) const {
 		return a < b ? a : b;
 	}
 };

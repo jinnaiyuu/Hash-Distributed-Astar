@@ -19,6 +19,7 @@
 #include "search.hpp"
 #include "utils.hpp"
 #include "hashtbl.hpp"
+#include "hashtblbig.hpp"
 #include "heap.hpp"
 #include "pool.hpp"
 #include "buffer.hpp"
@@ -32,6 +33,7 @@
 // DELAY 10,000,000 -> 3000 nodes per second
 //#define DELAY 0
 
+
 template<class D, class hash> class HDAstarComb: public SearchAlg<D> {
 
 	struct Node {
@@ -42,7 +44,7 @@ template<class D, class hash> class HDAstarComb: public SearchAlg<D> {
 //		char thrown; // How many times this node has been outsourced.
 		Node *parent;
 		typename D::PackedState packed;
-		HashEntry<Node> hentry;
+		HashEntryBig<Node> hentry;
 
 		bool pred(Node *o) {
 			if (f == o->f)
@@ -58,7 +60,7 @@ template<class D, class hash> class HDAstarComb: public SearchAlg<D> {
 			return packed;
 		}
 
-		HashEntry<Node> &hashentry() {
+		HashEntryBig<Node> &hashentry() {
 			return hentry;
 		}
 	};
@@ -233,7 +235,7 @@ public:
 		// 14414443
 		//129402307
 //		HashTable<typename D::PackedState, Node> closed(512927357 / tnum);
-		HashTable<typename D::PackedState, Node> closed(closedlistsize);
+		HashTableBig<typename D::PackedState, Node> closed(closedlistsize);
 
 //	printf("closedlistsize = %u\n", closedlistsize);
 

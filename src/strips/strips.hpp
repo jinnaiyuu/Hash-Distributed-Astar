@@ -190,8 +190,16 @@ struct Strips {
 		}
 	}
 
-	void set_pdb(bool pdb) {
+	// 0 | f | use pdb if available
+	// 1 | t | always build
+	// 2 | t | always build and don't search
+	// 3 | f | build if no pdb available
+	// 4 | f | use pdb if available, if no pdb then terminate.
+	void set_pdb(unsigned int pdb) {
 		built_pdb = pdb;
+//		if (pdb == 3) {
+//			built_pdb = false;
+//		}
 	}
 
 	void set_pdb_size(unsigned int pdb_size) {
@@ -301,6 +309,8 @@ struct Strips {
 		return e;
 	}
 
+	bool pdb_is_built = true;
+
 private:
 	// proposition library (prefixtree)
 	// action library (table of number to action)
@@ -318,7 +328,7 @@ private:
 
 	Trie rActionTrie; // trie for regression planning. keys are adds.
 	std::vector<unsigned int> ungroupeds;
-	bool built_pdb = false;
+	unsigned int built_pdb = 0;
 	unsigned int pdb_size = 1000000;
 
 	// TODO: add new utility method to speed-up this.
@@ -515,6 +525,7 @@ public:
 	};
 
 	const std::vector<std::vector<unsigned int>> get_structures();
+	const std::vector<std::vector<unsigned int>> get_xor_groups();
 
 	void print_plan(std::vector<State>& path) const;
 	void print_state(const std::vector<unsigned int>& propositions) const;

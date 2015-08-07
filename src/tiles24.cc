@@ -63,17 +63,24 @@ Tiles24::Tiles24(FILE *in, int line) {
 
 	// Here read pattern database from the file.
 
-	FILE* infile = fopen("pat24.1256712.tab", "rb");
+	FILE* infile;
+	infile = fopen("pat24.1256712.tab", "rb");
+//	infile = fopen("pat24.156101112.tab", "rb");
+//	infile = fopen("pat24.34891314.tab", "rb");
 	readfile(h0, infile);
 	fclose(infile);
 	printf("pattern 1 2 5 6 7 12 read in\n");
+//	printf("pattern 1 5 6 10 11 12 read in\n");
+
 	infile = fopen("pat24.34891314.tab", "rb");
+//	infile = fopen("pat24.234789.tab", "rb");
+//	infile = fopen("pat24.1256712.tab", "rb");
 	readfile(h1, infile);
 	fclose(infile);
 	printf("pattern 3 4 8 9 13 14 read in\n");
+//	printf("pattern 2 3 4 7 8 9 read in\n");
 
 }
-
 
 void Tiles24::initoptab() {
 	for (int i = 0; i < Ntiles; i++) {

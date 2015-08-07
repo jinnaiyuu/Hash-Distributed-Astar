@@ -28,7 +28,9 @@ public:
 		LINE_24 = 2401,
 		BLOCK_24 = 2402,
 		ODD_24 = 2403,
-		FOURABSTRACTION_24 = 1234
+		FOURABSTRACTION_24 = 1234,
+		FIVEABSTRACTION_24 = 12345
+
 	};
 
 // Should delete compatibility for performance.
@@ -118,6 +120,9 @@ private:
 			break;
 		case FOURABSTRACTION_24:
 			fourabstraction();
+			break;
+		case FIVEABSTRACTION_24:
+			fiveabstraction();
 			break;
 		default:
 			printf("ERRRRRRRORRRRR\n");
@@ -323,6 +328,20 @@ private:
 	void fourabstraction() {
 		for (int i = 1; i < size; ++i) {
 			if (1 <= i && i <= 4) {
+				for (int j = 0; j < size; ++j) {
+					zbr[i][j] = random();
+				}
+			} else {
+				for (int j = 0; j < size; ++j) {
+					zbr[i][j] = 0;
+				}
+			}
+		}
+	}
+
+	void fiveabstraction() {
+		for (int i = 1; i < size; ++i) {
+			if (1 <= i && i <= 5) {
 				for (int j = 0; j < size; ++j) {
 					zbr[i][j] = random();
 				}

@@ -5,7 +5,7 @@
  */
 public class Generate {
 	
-	static int randomSlides = 100;
+	static int randomSlides = 300;
 	static int COLUMN = 5;
 	static int ROW = 5;
 	

@@ -205,7 +205,6 @@ int main(int argc, const char *argv[]) {
 					dup += dups[i];
 				}
 
-
 				estm_send_ratio = 1.0 - (double) push / (double) gend;
 				estm_dup_ratio = (double) dup / (double) expd;
 				delete subsearch;
@@ -403,6 +402,15 @@ int main(int argc, const char *argv[]) {
 			double timer = 1.0;
 			double estm_send_ratio, estm_dup_ratio = 0.0;
 
+			unsigned int hfun = 0;
+			for (unsigned int i = 0; i < argc; ++i) {
+				if (sscanf(argv[i], "h-%u", &hfun) == 1) {
+					tiles.setHeuristic(hfun);
+					break;
+				}
+			}
+			printf("heuristic: %d\n", hfun);
+
 			if (strcmp(argv[1], "astar") == 0) {
 				search = new Astar<Tiles24>(tiles);
 			} else if (strcmp(argv[1], "hdastar-est") == 0) {
@@ -522,6 +530,15 @@ int main(int argc, const char *argv[]) {
 			dfpair(stdout, "total nodes expanded", "%lu", search->expd);
 			dfpair(stdout, "total nodes generated", "%lu", search->gend);
 			dfpair(stdout, "solution length", "%u", (unsigned int) path.size());
+
+//			assert(path.begin() != path.end());
+//			for (auto iter = path.end() - 1; iter != path.begin() - 1; --iter) {
+//				for (int i = 0; i < 16; ++i) {
+//					printf("%2d ", iter->tiles[i]);
+//				}
+//				printf("\n");
+//			}
+
 //#endif
 		} else if (strcmp(argv[1], "grid") == 0) {
 			printf("Grid\n");
@@ -580,14 +597,12 @@ int main(int argc, const char *argv[]) {
 				}
 				printf("abst = %u\n", abstraction);
 
-
 				////////////////////////////////
 				/// Auto-Selection
 				////////////////////////////////
-				HDAstarComb<Grid, GridHash<Grid>> *subsearch =
-						new HDAstarComb<Grid, GridHash<Grid>>(grid,
-								std::stoi(argv[3]), 1000000, 1000000,
-								abstraction, 0, 59969537, max_f);
+				HDAstarComb<Grid, GridHash<Grid>> *subsearch = new HDAstarComb<
+						Grid, GridHash<Grid>>(grid, std::stoi(argv[3]), 1000000,
+						1000000, abstraction, 0, 59969537, max_f);
 
 				Grid::State g = grid.initial();
 				subsearch->setTimer(timer);
@@ -610,11 +625,9 @@ int main(int argc, const char *argv[]) {
 					dup += dups[i];
 				}
 
-
 				estm_send_ratio = 1.0 - (double) push / (double) gend;
 				estm_dup_ratio = (double) dup / (double) expd;
 				delete subsearch;
-
 
 				search = new HDAstarComb<Grid, GridHash<Grid>>(grid,
 						std::stoi(argv[3]), 1000000, 1000000, abstraction, 0,
@@ -633,7 +646,6 @@ int main(int argc, const char *argv[]) {
 			std::vector<Grid::State> path = search->search(init);
 
 			double wtime = walltime() - wall0, ctime = cputime() - cpu0;
-
 
 			///////////////////////////
 			/// auto selection
@@ -716,10 +728,8 @@ int main(int argc, const char *argv[]) {
 
 			printf("max_h = %u\n", max_h);
 
-
 			double timer = 1.0;
 			double estm_send_ratio, estm_dup_ratio = 0.0;
-
 
 			if (strcmp(argv[1], "astar") == 0) {
 				search = new AstarHeap<MSA>(msa, max_h);
@@ -787,10 +797,10 @@ int main(int argc, const char *argv[]) {
 				////////////////////////////////
 				/// Auto-Selection
 				////////////////////////////////
-				HDAstarHeap<MSA, MSAZobrist<MSA> > *subsearch =
-						new HDAstarHeap<MSA, MSAZobrist<MSA> >(msa,
-								std::stoi(argv[2]), 1000000, 1000000,
-								std::stoi(argv[3]), 0, closedlistsize, max_h, 1000000);
+				HDAstarHeap<MSA, MSAZobrist<MSA> > *subsearch = new HDAstarHeap<
+						MSA, MSAZobrist<MSA> >(msa, std::stoi(argv[2]), 1000000,
+						1000000, std::stoi(argv[3]), 0, closedlistsize, max_h,
+						1000000);
 
 				MSA::State g = msa.initial();
 				subsearch->setTimer(timer);
@@ -813,11 +823,9 @@ int main(int argc, const char *argv[]) {
 					dup += dups[i];
 				}
 
-
 				estm_send_ratio = 1.0 - (double) push / (double) gend;
 				estm_dup_ratio = (double) dup / (double) expd;
 				delete subsearch;
-
 
 				search = new HDAstarHeap<MSA, MSAZobrist<MSA> >(msa,
 						std::stoi(argv[2]), 1000000, 1000000,
@@ -876,7 +884,6 @@ int main(int argc, const char *argv[]) {
 //			double wtime = walltime() - wall0, ctime = cputime() - cpu0;
 			double wtime = search->wtime - wall0, ctime = search->ctime - cpu0;
 
-
 			///////////////////////////
 			/// auto selection
 			///////////////////////////
@@ -894,6 +901,8 @@ int main(int argc, const char *argv[]) {
 			dfpair(stdout, "total nodes expanded", "%lu", search->expd);
 			dfpair(stdout, "total nodes generated", "%lu", search->gend);
 			dfpair(stdout, "solution length", "%u", (unsigned int) path.size());
+			printf("#pair send ratio %f\n", send_ratio);
+
 			msa.print_alignment(path);
 		}
 	} catch (const Fatal &f) {

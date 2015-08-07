@@ -102,8 +102,19 @@ int main(int argc, const char *argv[]) {
 
 		strips.set_heuristic(h);
 
-		if (pdb == 2) {
-			return 0;
+		if (h == 3) {
+			if (pdb == 2 || pdb == 3) {
+				std::cout << "terminated after building pdb." << std::endl;
+				return 0;
+			}
+			if (pdb == 4 && !strips.pdb_is_built) {
+				std::cout << "terminated because pdb is NOT built." << std::endl;
+				return 0;
+			}
+			if (pdb == 6 && strips.pdb_is_built) {
+				std::cout << "terminated because pdb is built." << std::endl;
+				return 0;
+			}
 		}
 
 		unsigned int n_threads = 1;
@@ -114,9 +125,8 @@ int main(int argc, const char *argv[]) {
 			unsigned int open = 100;
 			double weight = 1.0;
 			unsigned int incumbent = 100000;
-			unsigned int closed = 4477457;
-			search = new Astar<Strips>(strips, open, weight, incumbent,
-					closed);
+			unsigned int closed = 14477457;
+			search = new Astar<Strips>(strips, open, weight, incumbent, closed);
 
 		} else if (strcmp(argv[1], "astar-heap") == 0) {
 			unsigned int open = 100;
@@ -158,7 +168,7 @@ int main(int argc, const char *argv[]) {
 								10000000, // outgo threshould
 								abst, // abstraction
 								0, // overrun
-								4477457, // closed list size
+								14477457, // closed list size
 								100, // open list size
 								10000000 // max cost
 								);
@@ -189,8 +199,8 @@ int main(int argc, const char *argv[]) {
 			}
 
 			std::cout << "abst = " << abst << std::endl;
-			search = new HDAstar<Strips, StripsZobrist<Strips> >(strips, n_threads,
-					1000000, // income threshould
+			search = new HDAstar<Strips, StripsZobrist<Strips> >(strips,
+					n_threads, 1000000, // income threshould
 					10000000, // outgo threshould
 					abst, // abstraction
 					0, // overrun
@@ -216,11 +226,16 @@ int main(int argc, const char *argv[]) {
 
 		strips.print_plan(path);
 
+		double send_ratio = 1.0
+				- (double) search->push / (double) search->gend;
+
 		dfpair(stdout, "total wall time", "%g", wtime);
 		dfpair(stdout, "total cpu time", "%g", ctime);
 		dfpair(stdout, "total nodes expanded", "%lu", search->expd);
 		dfpair(stdout, "total nodes generated", "%lu", search->gend);
 		dfpair(stdout, "solution length", "%u", (unsigned int) path.size());
+//		dfpair(stdout, "send ratio", "%f", send_ratio);
+		printf("#pair send ratio %f\n", send_ratio);
 
 		dffooter(stdout);
 	} catch (const Fatal &f) {

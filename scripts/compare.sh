@@ -57,8 +57,10 @@ do
     do
 	for s in $structure
 	do
-#	    echo "a = $a"
-	    ./run_all.sh -a $a -s "$s" -h "$h" -p "$pdb" -i "$i" -t "$runtime" -d "$dom"
+	    for p in $pdb
+	    do
+	    ./run_all.sh -a $a -s "$s" -h "$h" -p "$p" -i "$i" -t "$runtime" -d "$dom"
+	    done
 	done
     done
 done

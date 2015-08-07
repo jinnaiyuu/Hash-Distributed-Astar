@@ -7,9 +7,8 @@
 # TODO: output as coverage and node evaluations in table.
 
 # syntax of the input
-# <domain> <instance> <walltime> <expanded nodes> <solved> <stage>
-# <domain> <instance> <walltime> <expanded nodes> <solved> <stage>
-# <domain> <instance> <walltime> <expanded nodes> <solved> <stage>
+# <domain> <dfile> <ifile> <walltime> <expanded nodes> <sendr> <solved> <stage>
+# <domain> <dfile> <ifile> <walltime> <expanded nodes> <sendr> <solved> <stage>
 # ....
 
 # put this into a latex style and print into a pdf.
@@ -72,8 +71,8 @@ tex+="$table_head"
 
 tex+="`awk '{domains[$1]=$1; \
          n_problem[$1]+=1; \
-         n_expd[$1]+=$4;   \
-         n_solved[$1]+=$5;  \
+         n_expd[$1]+=$5;   \
+         n_solved[$1]+=$7;  \
          }
          END{\
          i=0;

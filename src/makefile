@@ -3,12 +3,15 @@ CXXFLAGS=-g -Wall -Wno-unused-value -Wno-char-subscripts -static -pthread -std=c
 PROFFLAGS=-pg -static -pthread -std=c++11
 MASSFLAGS=-g -pthread -std=c++11
 
+
+
+
 # -g -Wall
 all: strips.out tiles
 prof: pstrips.out
 
 tiles: main_comb/*.cc *.cc *.hpp msa/*.cc msa/*.hpp
-	$(CXX) $(CXXFLAGS) main_comb/*.cc *.cc msa/*.cc -o tiles 
+	$(CXX) $(CXXFLAGS) main_comb/*.cc *.cc msa/*.cc -o tiles -I${JEMALLOC_PATH}/include -L${JEMALLOC_PATH}/lib -Wl,-rpath,${JEMALLOC_PATH}/lib -ljemalloc
 
 #prof: *.cc *.hpp msa/*.cc msa/*.hpp strips/*.cc strips/*.hpp
 #	$(CXX) $(PROFFLAGS) *.cc msa/*.cc strips/*.cc -o ptiles

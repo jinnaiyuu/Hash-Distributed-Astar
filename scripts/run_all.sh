@@ -50,28 +50,28 @@ dom=""
 while getopts "i:t:d:a:s:h:p:" opt; do
     case $opt in
 	a) # alg
-	        alg="$OPTARG"
-		    ;;
+	    alg="$OPTARG"
+	    ;;
 	s) # structured zobrist hash
-	        structure="$OPTARG"
-		    ;;
+	    structure="$OPTARG"
+	    ;;
 	h) # heuristic
-	        heuristic="$OPTARG"
-		    ;;
+	    heuristic="$OPTARG"
+	    ;;
 	p) # pdb
-	        pdb="$OPTARG"
-		    ;;
+	    pdb="$OPTARG"
+	    ;;
 	i) # number of instances to run
-	        i=$OPTARG
-		    ;;
+	    i=$OPTARG
+	    ;;
 	t) # time to run each instance
-	        runtime="$OPTARG"
-		    ;;
+	    runtime="$OPTARG"
+	    ;;
 	d) # domains to run
-	        dom="$OPTARG"
-		    ;;
+	    dom="$OPTARG"
+	    ;;
 	\?)
-	        ;;
+	    ;;
     esac
 done
 

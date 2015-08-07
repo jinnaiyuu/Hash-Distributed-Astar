@@ -78,12 +78,70 @@ void Strips::buildPDB() {
 	pd = new PDB();
 //	std::string name = domain_ + "_" + instance_ + ".pat";
 
-	std::string name = domain_ + "_" + instance_ + "_" + to_string(pdb_size) + ".pat";
+	std::string name = "../pdb/" + domain_ + "_" + instance_ + "_"
+			+ to_string(pdb_size) + ".pat";
+//	std::string fname = "../pdb/" + name;
 
-	if (!built_pdb && pd->read_database(name)) {
-//		pd->dump_all(name + "copy");
-		return;
+	// 0 | f | use pdb if available
+	// 1 | t | always build
+	// 2 | t | always build and don't search
+	// 3 | f | build if no pdb available
+	// 4 | f | use pdb if available, if no pdb then terminate.
+	// 5 | f | use pdb if available, if no pdb then default back to goal count. don't try to build.
+	// 6 | f | if no pdb then default back to goal count. don't try to build. if pdb available then terminate.
+	switch (built_pdb) {
+	case 0:
+		if (existFile(name)) {
+			pd->read_database(name);
+			return;
+		}
+		break;
+	case 1:
+		break;
+	case 2:
+		break;
+	case 3:
+		if (existFile(name)) {
+//			pd->read_database(name);
+			return;
+		}
+		break;
+	case 4:
+		if (existFile(name)) {
+			pd->read_database(name);
+			return;
+		} else {
+			pdb_is_built = false;
+			return;
+		}
+		break;
+	case 5:
+		if (existFile(name)) {
+			pd->read_database(name);
+			return;
+		} else {
+			pdb_is_built = false;
+			which_heuristic = 1;
+			return;
+		}
+		break;
+	case 6:
+		if (existFile(name)) {
+			pdb_is_built = true;
+			return;
+		} else {
+			pdb_is_built = false;
+			which_heuristic = 1;
+			return;
+		}
+		break;
+	default:
+		break;
 	}
+//	if (!built_pdb && pd->read_database(name)) {
+////		pd->dump_all(name + "copy");
+//		return;
+//	}
 
 	////////////////////////////////////////
 	/// Construction of PDB
@@ -707,13 +765,12 @@ Strips::Strips(std::istream & d, std::istream & i) {
 //		}
 //		std::cout << std::endl << std::endl;
 //	}
-	actionTrie.printTree();
+//	actionTrie.printTree();
 
 	init_state.erase(
 			remove_if(init_state.begin(), init_state.end(),
 					[&](const unsigned int& x) {return this->predicates[this->g_predicates->at(x).lifted_key].isStatic;}),
-					init_state.end());
-
+			init_state.end());
 
 //	for (int i = 0; i < init_state.size(); ++i) {
 //		if (predicates[g_predicates->at(init_state[i]).lifted_key].isStatic) {
@@ -2359,6 +2416,11 @@ void Strips::analyzeTransitions() {
 					most_connected_node = p;
 				}
 			}
+
+			// if the no nodes connected, then return
+			if (most_connected == 0) {
+				break;
+			}
 			structure.push_back(xor_groups[gs][most_connected_node]);
 			structure_index.push_back(most_connected_node);
 		}
@@ -2369,11 +2431,79 @@ void Strips::analyzeTransitions() {
 		// TODO: not sure this assumption is right or not.
 		//       maybe not right.
 		std::vector<unsigned int> structure2; // = xor_groups[gs] - structure;
-		std::set_difference(xor_groups[gs].begin(), xor_groups[gs].end(),
-				structure.begin(), structure.end(),
-				std::inserter(structure2, structure2.begin()));
-		std::sort(structure2.begin(), structure2.end());
-		structures.push_back(structure2);
+		std::vector<unsigned int> structure2_index;
+
+		unsigned int most_connected = 0;
+		unsigned int most_connected_node = 0; // in index
+
+		for (int p = 0; p < xor_groups[gs].size(); ++p) {
+			if (find(structure_index.begin(), structure_index.end(), p)
+					== structure_index.end()) {
+				most_connected_node = p;
+				break;
+			}
+		}
+
+		for (int p = 0; p < xor_groups[gs].size(); ++p) {
+			int c = std::count(transitions.begin(), transitions.end(),
+					xor_groups[gs][p]);
+			c += xor_groups_transitions[gs][p].size();
+//			std::cout << xor_groups[gs][p] << ": " << c << "edges" << std::endl;
+			if (c > most_connected
+					&& find(structure_index.begin(), structure_index.end(), p)
+							== structure_index.end()) {
+				most_connected = c;
+				most_connected_node = p;
+			}
+		}
+		structure2.push_back(xor_groups[gs][most_connected_node]);
+		structure2_index.push_back(most_connected_node);
+
+		while (structure.size() + structure2.size() < xor_groups[gs].size()) {
+			transitions.clear();
+			// 2. add a node which is mostly connected to strucuture
+			for (int p = 0; p < structure2_index.size(); ++p) {
+				transitions.insert(transitions.end(),
+						xor_groups_transitions[gs][p].begin(),
+						xor_groups_transitions[gs][p].end());
+			}
+			// count the most connected nodes
+			unsigned int most_connected = 0;
+			unsigned int most_connected_node = 0; // in index
+			for (int p = 0; p < xor_groups[gs].size(); ++p) {
+				// if p is already in the group, then skip that.
+				if (find(structure2_index.begin(), structure2_index.end(), p)
+						!= structure2_index.end()
+						|| find(structure_index.begin(), structure_index.end(),
+								p) != structure_index.end()) {
+					continue;
+				}
+				int c = std::count(transitions.begin(), transitions.end(),
+						xor_groups[gs][p]);
+				c += howManyContainedSortedVectors(
+						xor_groups_transitions[gs][p], structure2);
+				if (c > most_connected) {
+					most_connected = c;
+					most_connected_node = p;
+				}
+			}
+
+			// if the no nodes connected, then return
+			if (most_connected == 0) {
+				break;
+			}
+			structure2.push_back(xor_groups[gs][most_connected_node]);
+			structure2_index.push_back(most_connected_node);
+		}
+
+//		std::set_difference(xor_groups[gs].begin(), xor_groups[gs].end(),
+//				structure.begin(), structure.end(),
+//				std::inserter(structure2, structure2.begin()));
+
+		if (structure2.size() > 1) {
+			std::sort(structure2.begin(), structure2.end());
+			structures.push_back(structure2);
+		}
 	}
 
 	std::cout << "structures" << std::endl;
@@ -2527,6 +2657,10 @@ int Strips::pow(int base, int p) {
 
 const std::vector<std::vector<unsigned int>> Strips::get_structures() {
 	return structures;
+}
+
+const std::vector<std::vector<unsigned int>> Strips::get_xor_groups() {
+	return xor_groups;
 }
 
 //////////////////////////////////////////////////////

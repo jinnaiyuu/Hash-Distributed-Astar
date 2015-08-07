@@ -20,6 +20,8 @@ struct Tiles {
 		Ntiles = Width*Height,
 	};
 
+	// tiles represent the id of the tile positions
+	// 0: blank tile
 	struct State {
 		char tiles[Ntiles];
 		char blank;

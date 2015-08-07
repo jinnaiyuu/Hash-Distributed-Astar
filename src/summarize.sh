@@ -26,16 +26,18 @@ filename=`echo "$1$d$i$4$5$6"`
 #    3: when generating PDB, key=/generating PDB/
 #    4: when searching, key=/#pair  initial heuristic/
 
-cat $7/$filename | awk -v dom=$d -v ins=$i 'BEGIN{solved=0; stage=0} \
+cat $7/$filename | awk -v dom=$d -v dfile="$2" -v ifile="$3" \
+    'BEGIN{solved=0; stage=0} \
              /analyzing balances of predicates/{stage=1} \
              /generating PDB/{stage=2} \
              /#pair  initial heuristic/{stage=3} \
-
              /#pair  algorithm/{alg=$3} \
              /#pair  total wall time/{wtime=$5; stage=4} \
              /#pair  total nodes expanded/{expd=$5; if (expd>0){solved=1}} \
+             /send ratio/{if (expd>0){sendr=$4}} \
              /failed to find a plan/{solved=0} \
-             END{printf("%s %s %f %d %d %d\n", dom, ins, wtime, expd, solved, stage)}' >> $7/summary
+             END{printf("%s %s %s %f %d %f %d %d\n", \
+             dom, dfile, ifile, wtime, expd, sendr, solved, stage)}' >> $7/summary
 
 cat $7/$filename
 

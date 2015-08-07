@@ -4,6 +4,7 @@
 #include <string>
 #include <sstream>
 #include <vector>
+#include <fstream>
 #include <algorithm>
 #include <functional>
 #include <assert.h>
@@ -91,8 +92,7 @@ bool isContainedSortedVectors(const std::vector<T>& v1,
 
 template<typename T>
 static
-bool isContainedSortedVectors(T v1,
-		const std::vector<T>& v2) {
+bool isContainedSortedVectors(T v1, const std::vector<T>& v2) {
 	unsigned int v2it = 0;
 
 	while (v2it < v2.size()) {
@@ -108,9 +108,7 @@ bool isContainedSortedVectors(T v1,
 }
 
 template<typename T>
-static
-T whichIsContainedSortedVectorsIndex(
-		const std::vector<T>& v1,
+static T whichIsContainedSortedVectorsIndex(const std::vector<T>& v1,
 		const std::vector<T>& v2) {
 	unsigned int v1it = 0;
 	unsigned int v2it = 0;
@@ -195,8 +193,7 @@ unsigned int howManyContainedSortedVectors(const std::vector<T>& v1,
 }
 
 template<typename T>
-static std::vector<T> intersectingSortedVectors(
-		const std::vector<T>& v1,
+static std::vector<T> intersectingSortedVectors(const std::vector<T>& v1,
 		const std::vector<T>& v2) {
 	std::vector<T> intersecting;
 	unsigned int v1it = 0;
@@ -217,8 +214,8 @@ static std::vector<T> intersectingSortedVectors(
 }
 
 template<typename T>
-static std::vector<T> uniquelyMergeSortedVectors2(
-		const std::vector<T>& v1, const T& v2) {
+static std::vector<T> uniquelyMergeSortedVectors2(const std::vector<T>& v1,
+		const T& v2) {
 	std::vector<T> uniqueMerge;
 	unsigned int v1it = 0;
 	while (v1it < v1.size()) {
@@ -241,8 +238,7 @@ static std::vector<T> uniquelyMergeSortedVectors2(
 }
 
 template<typename T>
-static std::vector<T> uniquelyMergeSortedVectors(
-		const std::vector<T>& v1,
+static std::vector<T> uniquelyMergeSortedVectors(const std::vector<T>& v1,
 		const std::vector<T>& v2) {
 	std::vector<T> uniqueMerge;
 	unsigned int v1it = 0;
@@ -272,8 +268,7 @@ static std::vector<T> uniquelyMergeSortedVectors(
 
 // Take difference of sets, v1 - v2.
 template<typename T>
-static std::vector<T> differenceSortedVectors(
-		const std::vector<T>& v1,
+static std::vector<T> differenceSortedVectors(const std::vector<T>& v1,
 		const std::vector<T>& v2) {
 	std::vector<T> difference;
 	unsigned int v1it = 0;
@@ -317,8 +312,7 @@ static std::vector<T> differenceSortedVectors(
 //}
 
 template<typename T>
-static std::vector<T> getArguements(
-		const std::vector<T>& argument,
+static std::vector<T> getArguements(const std::vector<T>& argument,
 		const std::vector<T>& which) {
 	std::vector<T> args;
 	for (int i = 0; i < which.size(); ++i) {
@@ -330,7 +324,6 @@ static std::vector<T> getArguements(
 	}
 	return args;
 }
-
 
 inline unsigned int hash(const std::vector<unsigned int> v) {
 	std::hash<unsigned int> hasher;
@@ -767,4 +760,14 @@ static std::string readAll(std::istream& f) {
 	return allin;
 }
 
+static bool existFile(const std::string& fname) {
+	std::ifstream infile(fname);
+	if (!infile.good()) {
+//		std::cout << "no database available." << std::endl;
+		infile.close();
+		return false;
+	}
+	infile.close();
+	return true;
+}
 #endif
