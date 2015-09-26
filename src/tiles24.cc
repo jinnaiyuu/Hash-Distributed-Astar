@@ -80,6 +80,14 @@ Tiles24::Tiles24(FILE *in, int line) {
 	printf("pattern 3 4 8 9 13 14 read in\n");
 //	printf("pattern 2 3 4 7 8 9 read in\n");
 
+
+	zbr_table.resize(Ntiles);
+	for (int i = 0; i < Ntiles; ++i) {
+		zbr_table[i].resize(Ntiles);
+		for (int j = 0; j < Ntiles; ++j) {
+			zbr_table[i][j] = random();
+		}
+	}
 }
 
 void Tiles24::initoptab() {

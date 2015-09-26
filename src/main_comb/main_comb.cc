@@ -56,6 +56,7 @@
 #include "../pastar.hpp"
 #include "../multiastar.hpp"
 #include "../hdastar_comb.hpp"
+#include "../hdastar_comb_mpi.hpp"
 #include "../oshdastar.hpp"
 
 #include "../astar_heap.hpp"
@@ -63,6 +64,9 @@
 
 #include "../hdastar_shared_closed.hpp"
 #include "../ppastar.hpp"
+
+#include <mpi/mpi.h>
+
 
 //	 expd 32334 length 46   : 14 1 9 6 4 8 12 5 7 2 3 0 10 11 13 15
 //	 expd 909442 length 53  : 13 14 6 12 4 5 1 0 9 3 10 2 15 11 8 7
@@ -111,9 +115,16 @@ int main(int argc, const char *argv[]) {
 			 */
 			argv++;
 			argc--;
+
+			FILE* instance;
+			instance = fopen(argv[1], "r");
+
+			argv++;
+			argc--;
 			sscanf(argv[2], "%d", &pnum);
 
-			Tiles tiles(stdin, pnum);
+
+			Tiles tiles(instance, pnum);
 			printf("pnum = %d\n", pnum);
 
 //			tiles.set_weight(2);
@@ -158,7 +169,26 @@ int main(int argc, const char *argv[]) {
 				search = new HDAstarComb<Tiles, Zobrist<Tiles, 16> >(tiles,
 						std::stoi(argv[3]), 1000000, 1000000,
 						std::stoi(argv[4]), 0, closedlistsize);
-
+			} else if (strcmp(argv[1], "hdastar-mpi") == 0) {
+//				MPI_Init(NULL, NULL);
+				// Set the size of closed list.
+				unsigned int closedlistsize = 0;
+				for (unsigned int i = 0; i < argc; ++i) {
+					if (sscanf(argv[i], "closed-%u", &closedlistsize) == 1) {
+						break;
+					}
+				}
+				if (!closedlistsize) {
+					printf("set closedlistsize as closed-%%u\n");
+					exit(1);
+				}
+				// Arguments of HDAstar
+				// Domain, n_threads,
+				// incomebuffermax, outgobuffermax,
+				// abstraction, closed list size
+				search = new HDAstarCombMPI<Tiles, Zobrist<Tiles, 16> >(tiles,
+						std::stoi(argv[3]), 1000000, 1000000,
+						std::stoi(argv[4]), 0, closedlistsize);
 			} else if (strcmp(argv[1], "hdastar-est") == 0) {
 				// Set the size of closed list.
 				unsigned int closedlistsize = 0;
@@ -409,7 +439,11 @@ int main(int argc, const char *argv[]) {
 					break;
 				}
 			}
-			printf("heuristic: %d\n", hfun);
+			if (hfun==0) {
+				printf("heuristic: PDB\n");
+			} else if (hfun==1) {
+				printf("heuristic: MD\n");
+			}
 
 			if (strcmp(argv[1], "astar") == 0) {
 				search = new Astar<Tiles24>(tiles);

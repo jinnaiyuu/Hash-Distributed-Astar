@@ -3,21 +3,16 @@
 // license that can be found in the LICENSE file.
 #include "search.hpp"
 #include "fatal.hpp"
-#include "hashtbl.hpp"
+//#include "hashtbl.hpp"
 
 #include <cstdio>
 #include <cstdlib>
 #include <cassert>
 #include <stdint.h>
 
-
-
-
 struct Tiles {
 	enum {
-		Width = 4,
-		Height = 4,
-		Ntiles = Width*Height,
+		Width = 4, Height = 4, Ntiles = Width * Height,
 	};
 
 	// tiles represent the id of the tile positions
@@ -38,9 +33,25 @@ struct Tiles {
 		bool eq(const PackedState &h) const {
 			return word == h.word;
 		}
+
+		unsigned int byteSize() const {
+			return 8;
+		}
+
+		void stateToChars(unsigned char* d) const {
+			int n = sizeof word;
+			for (int y = 0; n-- > 0; y++)
+				d[y] = (word >> (n * 8)) & 0xff;
+		}
+
+		void charsToState(unsigned char* d) {
+			int n = sizeof word;
+			word = 0;
+			for (int i = 0; i < n; ++i) {
+				word += (uint64_t) d[i] << (8 * (n - i - 1));
+			}
+		}
 	};
-
-
 
 	// Tiles constructs a new instance by reading
 	// the initial state from the given file which is
@@ -85,7 +96,9 @@ struct Tiles {
 		return optab[(int) s.blank].ops[n];
 	}
 
-	struct Undo { int h, blank; };
+	struct Undo {
+		int h, blank;
+	};
 
 	Edge<Tiles> apply(State &s, int newb) const {
 		Edge<Tiles> e(1, newb, s.blank);
@@ -108,7 +121,7 @@ struct Tiles {
 
 	// pack packes state s into the packed state dst.
 	void pack(PackedState &dst, State &s) const {
-		dst.word = 0;	// to make g++ shut up about uninitialized usage.
+		dst.word = 0; // to make g++ shut up about uninitialized usage.
 		s.tiles[(int) s.blank] = 0;
 		for (int i = 0; i < Ntiles; i++)
 			dst.word = (dst.word << 4) | s.tiles[i]; // TODO: 15 puzzle specific
@@ -127,7 +140,7 @@ struct Tiles {
 			else
 				dst.h += md[t][i];
 		}
-		assert (dst.blank >= 0);
+		assert(dst.blank >= 0);
 	}
 
 	void set_weight(double weight_) {
@@ -135,7 +148,8 @@ struct Tiles {
 	}
 
 	// TODO: garbage method for debugging 24 tiles.
-	unsigned int print_h(char tiles[]) const {}
+	unsigned int print_h(char tiles[]) const {
+	}
 
 private:
 
@@ -158,8 +172,6 @@ private:
 	// initoptob initializes the operator table, optab.
 	void initoptab();
 
-
-
 	// init is the initial tile positions.
 	int init[Ntiles];
 
@@ -176,5 +188,7 @@ private:
 	// optab is indexed by the blank position.  Each
 	// entry is a description of the possible next
 	// blank positions.
-	struct { int n, ops[4]; } optab[Ntiles];
+	struct {
+		int n, ops[4];
+	} optab[Ntiles];
 };

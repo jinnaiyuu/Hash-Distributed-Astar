@@ -80,7 +80,12 @@ private:
 		for (unsigned int i = 0; i < d.num_of_sequences; ++i) {
 			total_length += d.sequences[i].size();
 		}
-		double p = 0.03 * total_length / log2(static_cast<double>(abst));
+
+		// Lambda is set to be 0.003 in Kobayashi et al.
+		// The parameter pretty much differs in each system configuration.
+		// Let's investigate through 0.0003 to 0.3
+		double lambda = 0.03;
+		double p = lambda * total_length / log2(static_cast<double>(abst));
 
 		if (p >= 1.0) {
 			is_d_int = true;

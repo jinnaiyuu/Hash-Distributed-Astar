@@ -28,10 +28,11 @@ struct Tiles24 {
 
 	struct PackedState {
 		uint128_t word;
+		uint64_t hash_key;
 		char h;
 
 		unsigned long hash() const {
-			return word;
+			return hash_key;
 		}
 
 		bool eq(const PackedState &h) const {
@@ -152,6 +153,12 @@ struct Tiles24 {
 		s.tiles[(int) s.blank] = 0;
 		for (int i = 0; i < Ntiles; i++)
 			dst.word = (dst.word << 5) | s.tiles[i];
+
+		dst.hash_key = 0;
+		for (int i = 0; i < Ntiles; i++) {
+			dst.hash_key = dst.hash_key ^ zbr_table[i][s.tiles[i]];
+		}
+
 		dst.h = s.h;
 	}
 
@@ -195,6 +202,8 @@ struct Tiles24 {
 	}
 
 private:
+
+	std::vector<std::vector<unsigned int> > zbr_table;
 
 	unsigned int hfunction = 0;
 

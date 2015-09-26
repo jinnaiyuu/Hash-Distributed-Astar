@@ -5,7 +5,7 @@
 #define _SEARCH_HPP_
 
 #include <vector>
-#include "hashtbl.hpp"
+//#include "hashtbl.hpp"
 
 // A Edge holds information about an edge in the
 // search graph, i.e., the cost, operator and successor.
