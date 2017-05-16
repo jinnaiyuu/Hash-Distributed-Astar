@@ -44,6 +44,7 @@ private:
 
 	int tnum;
 	unsigned int structure;
+	unsigned int[5000][5000] zbr;
 
 };
 #endif /* TRIVIAL_HASH_ */

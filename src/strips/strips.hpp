@@ -14,6 +14,9 @@
 // for pattern databases
 #include "pdb.hpp"
 
+#include "../dist_hash.hpp"
+#include "zobrist.hpp"
+
 #include <cstdio>
 #include <cstdlib>
 #include <cassert>
@@ -60,6 +63,47 @@ struct Strips {
 				}
 			}
 			return true;
+		}
+
+		unsigned int byteSize() const {
+			return 4 + 4 + propositions.size() * 4 + 4;
+		}
+
+		template<typename T>
+		void intToChars(T& p, unsigned char* d) const {
+			int n = sizeof p;
+			for (int y = 0; n-- > 0; y++)
+				d[y] = (p >> (n * 8)) & 0xff;
+		}
+
+		template<typename T>
+		void charsToData(T& p, unsigned char* d) {
+			int n = sizeof p;
+			p = 0;
+			for (int i = 0; i < n; ++i) {
+				p += (T) d[i] << (8 * (n - i - 1));
+			}
+		}
+
+		void stateToChars(unsigned char* d) const {
+			intToChars(word, &(d[0]));
+			int size = propositions.size();
+			intToChars(size, &(d[4]));
+			for (int i = 0; i < size; ++i) {
+				intToChars(propositions[i], &(d[i * 4 + 8]));
+			}
+			intToChars(h, &(d[size * 4 + 8]));
+		}
+
+		void charsToState(unsigned char* d) {
+			charsToData(word, &(d[0]));
+			int size = 0;
+			charsToData(size, &(d[4]));
+			propositions.resize(size);
+			for (int i = 0; i < size; ++i) {
+				charsToData(propositions[i], &(d[i * 4 + 8]));
+			}
+			charsToData(h, &(d[size * 4 + 8]));
 		}
 	};
 
@@ -206,6 +250,25 @@ struct Strips {
 		this->pdb_size = pdb_size;
 	}
 
+	void set_dist_hash(int h, unsigned int rand_seed = 0, double toStructure = 0.3) {
+		which_dist_hash = h;
+		dist_h = new StripsZobrist<Strips>(*this, which_dist_hash, rand_seed, toStructure);
+	}
+
+	unsigned int dist_hash(const State &s) const {
+		return dist_h->dist_h(s);
+	}
+
+
+
+
+
+
+
+
+
+
+
 	unsigned int getActionSize() {
 		return actionTable.getSize();
 	}
@@ -251,6 +314,11 @@ struct Strips {
 	// this copies only a pointer.
 	void setActionTable(ActionTable table) {
 		this->actionTable = table;
+	}
+
+	// this copies only a pointer.
+	ActionTable* getActionTable() {
+		return &(this->actionTable);
 	}
 
 	void setInitState(std::vector<unsigned int> init_state) {
@@ -534,6 +602,9 @@ public:
 private:
 
 	const unsigned int TRUE_PREDICATE = 10000000;
+
+	unsigned int which_dist_hash;
+	DistributionHash<Strips>* dist_h;
 
 	bool typing = false;
 	bool action_costs = false;

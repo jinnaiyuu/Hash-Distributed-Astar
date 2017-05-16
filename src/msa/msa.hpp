@@ -4,6 +4,8 @@
 #include "../search.hpp"
 #include "../fatal.hpp"
 #include "../hashtbl.hpp"
+#include "../dist_hash.hpp"
+#include "zobrist.hpp"
 
 #include <cstdio>
 #include <cstdlib>
@@ -279,11 +281,24 @@ struct MSA {
 		return cost;
 	}
 
+
+	void set_dist_hash(int h, int rand_seed = 0) {
+		which_dist_hash = h;
+		dist_h = new MSAZobrist<MSA>(*this, which_dist_hash);
+	}
+
+	unsigned int dist_hash(const State &s) const {
+		return dist_h->dist_h(s);
+	}
+
 	unsigned int num_of_sequences = 0;
 
 	std::vector<std::vector<unsigned int> > sequences;
 
 private:
+
+	int which_dist_hash;
+	DistributionHash<MSA>* dist_h;
 
 //	int edgecost() {
 //

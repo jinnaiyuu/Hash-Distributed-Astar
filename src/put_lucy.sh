@@ -1,11 +1,12 @@
 #!/bin/bash
 time=`date +%m%d%H%M%S`
 
-make strips.out
+make tiles_mpi
 #cp ./tiles ./tiles$time
 
-#scp  ./tiles supermicro@supermicro:/home/supermicro/workspace/15puzzle/
-#scp  ./tiles aflab@supermicro16:/home/aflab/workspace/15puzzle/
+scp  ./tiles_mpi jinnai@funlucy:/home/jinnai/workspace/mpi/src
+
+exit 
 
 scp  ../src/strips.out jinnai@funlucy:/home/jinnai/workspace/strips/src/
 scp  ../src/run.sh jinnai@funlucy:/home/jinnai/workspace/strips/src/

@@ -741,7 +741,7 @@ public:
 		for (int i = 0; i < tnum; ++i) {
 			this->expd += expd_distribution[i];
 			this->gend += gend_distribution[i];
-			this->push += self_pushes[i];
+			this->lpush += self_pushes[i];
 			this->dup += duplicates[i];
 		}
 

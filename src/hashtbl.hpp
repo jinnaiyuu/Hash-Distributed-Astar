@@ -61,7 +61,7 @@ public:
 		for (p = buckets[ind]; p; p = p->hashentry().next) {
 			// p is not NULL
 //			std::string s = "";
-			Node n = *p;
+//			Node n = *p;
 //			char c[7];
 //			sprintf(c, "%u, %u\n", n.f, n.g);
 //			std::string s(c);

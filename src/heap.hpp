@@ -14,18 +14,19 @@
 #include <vector>
 #include <limits>
 #include <cassert>
+#include <deque>
 
-
-
-template <class HeapElm> class Heap {
+template<class HeapElm> class Heap {
 
 	struct Maxq {
-		Maxq(void) : fill(0), max(0) { }
+		Maxq(bool isFIFO) :
+				fill(0), max(0), isFIFO(isFIFO) {
+		}
 
 		void push(HeapElm *n, int p) {
-			assert (p >= 0);
+			assert(p >= 0);
 			if (bins.size() <= (unsigned int) p)
-				bins.resize(p+1);
+				bins.resize(p + 1);
 
 			if (p > max)
 				max = p;
@@ -37,38 +38,52 @@ template <class HeapElm> class Heap {
 		}
 
 		HeapElm *pop(void) {
-			for ( ; bins[max].empty(); max--) {
+			for (; bins[max].empty(); max--) {
 				if (max == 0) {
 					printf("max==0\n");
 					break;
 				}
 			}
-			dbgprintf("g = %d\n", max);
-			HeapElm *n = bins[max].back();
-			bins[max].pop_back();
+			dbgprintf( "g = %d\n", max);
+
+			HeapElm *n ;
+			if (!isFIFO) {
+				n = bins[max].back();
+				bins[max].pop_back();
+			} else {
+				n = bins[max].front();
+				bins[max].pop_front();
+			}
 			n->openind = -1;
 			fill--;
 			return n;
 		}
 
 		void rm(HeapElm *n, unsigned long p) {
-			assert (p < bins.size());
-			std::vector<HeapElm*> &bin = bins[p];
+
+			assert(p < bins.size());
+			std::deque<HeapElm*> &bin = bins[p];
 
 			unsigned int i = n->openind;
-			assert (i < bin.size());
+			assert(i < bin.size());
 
 			if (bin.size() > 1) {
 				bin[i] = bin[bin.size() - 1];
 				bin[i]->openind = i;
 			}
 
-			bin.pop_back();
+			if (!isFIFO) {
+				bin.pop_back();
+			} else {
+				bin.pop_front();
+			}
 			n->openind = -1;
 			fill--;
 		}
 
-		bool empty(void) { return fill == 0; }
+		bool empty(void) {
+			return fill == 0;
+		}
 
 		int getsize() {
 			int sum = 0;
@@ -78,12 +93,13 @@ template <class HeapElm> class Heap {
 			return sum;
 		}
 
-		int getmax(){
+		int getmax() {
 			return max;
 		}
 
 		int fill, max;
-		std::vector< std::vector<HeapElm*> > bins;
+		bool isFIFO;
+		std::vector<std::deque<HeapElm*> > bins;
 	};
 
 	int fill, min;
@@ -92,17 +108,22 @@ template <class HeapElm> class Heap {
 	int overrun;
 
 public:
-	Heap(unsigned int sz, int overrun_ = 0) : fill(0), min(0), qs(sz), overrun(overrun_) { }
+	Heap(unsigned int sz, int overrun_ = 0, bool isFIFO_ = false) :
+			fill(0), min(0), qs(sz, Maxq(isFIFO_)), overrun(overrun_) {
+		printf("overrun=%d\n", overrun);
+	}
 
-	static const char *kind(void) { return "2d bucketed"; }
+	static const char *kind(void) {
+		return "2d bucketed";
+	}
 
 	void push(HeapElm *n) {
 		int p0 = n->f;
- 
+
 		// TODO: Need to halt if the number growing crazy.
 		// TODO: ad hoc solution.
 		if (p0 >= qs.size()) {
-			dbgprintf("f going crazy.\n");
+			dbgprintf( "f going crazy.\n");
 			return;
 		}
 
@@ -115,41 +136,49 @@ public:
 
 	HeapElm *pop(void) {
 //		int mmin = min;
-		for ( ; (unsigned int) min < qs.size() && qs[min].empty() ; min++) {
+		for (; (unsigned int) min < qs.size() && qs[min].empty(); min++) {
 			;
 		}
 //		if (mmin != min) {
 //			printf("min = %d\n", min);
 //		}
 		fill--;
-		dbgprintf("f = %d\n", min);
-		return qs[min].pop();		
+		dbgprintf( "f = %d\n", min);
+		return qs[min].pop();
 	}
 
 	void pre_update(HeapElm*n) {
 		if (n->openind < 0)
 			return;
-		assert ((unsigned int) n->f < qs.size());
+		assert((unsigned int) n->f < qs.size());
 		qs[n->f].rm(n, n->g);
 		fill--;
 	}
 
 	void post_update(HeapElm *n) {
-		assert (n->openind < 0);
+		assert(n->openind < 0);
 		push(n);
 	}
 
-	bool isempty(void) { return fill == 0; }
+	bool isempty(void) {
+		return fill == 0;
+	}
 
 	// If the min value is equal or bigger than the incumbent,
 	// return false. This will be used for termination detection.
 	// Why minus 1? Because the total length contains the initial state.
 	// Path contains n nodes and n+1 edge. - 1
-	bool isemptyunder(int incumbent) { return (((incumbent - 1 + overrun) <= min) || fill == 0);}
+	bool isemptyunder(int incumbent) {
+		return (((incumbent - 1 + overrun) <= min) || fill == 0);
+	}
 
-	bool mem(HeapElm *n) { return n->openind >= 0; }
+	bool mem(HeapElm *n) {
+		return n->openind >= 0;
+	}
 
-	int minf() {return min;}
+	int minf() {
+		return min;
+	}
 
 	int getpriority() {
 		return min * 100000 - qs[min].getmax();
@@ -169,6 +198,7 @@ public:
 		qs.clear();
 		min = 0;
 	}
+
 };
 
 #endif	// _HEAP_HPP_

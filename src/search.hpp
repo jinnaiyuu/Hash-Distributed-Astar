@@ -26,7 +26,7 @@ template<class D> struct SearchAlg {
 
 	// SearchAlg constructs a new search algorithm that
 	// searches in the given domain.
-	SearchAlg(D &d) : dom(d), expd(0), gend(0), push(0), dup(0), incm(0) { }
+	SearchAlg(D &d) : dom(d), expd(0), gend(0), lpush(0), dup(0), incm(0) { }
 
 	// search searches for a goal from the initial state
 	// The return value is the path to the goal which can
@@ -46,7 +46,8 @@ template<class D> struct SearchAlg {
 	// expanded and generated respectively.
 	unsigned long expd, gend;
 
-	unsigned long push; // This is for HDA*.
+	// local push
+	unsigned long lpush;
 	unsigned long dup; // This is for HDA*.
 
 	double timer = 0.0;

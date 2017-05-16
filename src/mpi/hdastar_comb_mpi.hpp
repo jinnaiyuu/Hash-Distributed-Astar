@@ -30,14 +30,15 @@
 //#include "trivial_hash.hpp"
 //#include "random_hash.hpp"
 
-#include <mpi/mpi.h>
+#include <mpi.h>
 // DELAY 10,000,000 -> 3000 nodes per second
 //#define DELAY 0
 
 #define MPI_MSG_NODE 0 // node
 #define MPI_MSG_INCM 1 // for updating incumbent. message is unsigned int.
 #define MPI_MSG_TERM 2 // for termination.message is empty.
-template<class D, class hash> class HDAstarCombMPI: public SearchAlg<D> {
+#define MPI_MSG_FTERM 3 // broadcast this message when process terminated.
+template<class D> class HDAstarCombMPI: public SearchAlg<D> {
 
 	struct Node {
 		unsigned int f, g;
@@ -54,7 +55,7 @@ template<class D, class hash> class HDAstarCombMPI: public SearchAlg<D> {
 			return f < o->f;
 		}
 		const unsigned int size() {
-			return 25 + packed.byteSize(); // TODO: packed states should have size function
+			return 25 + packed.byteSize();
 		}
 		HashEntry<Node> &hashentry() {
 			return hentry;
@@ -102,7 +103,7 @@ template<class D, class hash> class HDAstarCombMPI: public SearchAlg<D> {
 		unsigned int state_size = n->packed.byteSize();
 		uintToChars(state_size, &(d[21]));
 
-		n->packed.stateToChars(&(d[25])); // TODO: check if its correct
+		n->packed.stateToChars(&(d[25]));
 	}
 
 	void charsToNode(unsigned char* d, Node& n) {
@@ -113,6 +114,18 @@ template<class D, class hash> class HDAstarCombMPI: public SearchAlg<D> {
 		charsToData(n.hentry.hash, &(d[16]));
 		n.pop = d[20];
 		n.packed.charsToState(&(d[25]));
+	}
+
+	void charsToNodes(unsigned char* d, const unsigned int dsize,
+			std::vector<Node*>& nodes) {
+		unsigned int dp = 0;
+		unsigned int nsize = 0;
+		while (dp < dsize) {
+			Node* p = new Node();
+			charsToNode(&(d[dp]), *p);
+			nodes.push_back(p);
+			dp += p->size();
+		}
 	}
 
 	void print(Node* n) {
@@ -129,16 +142,14 @@ template<class D, class hash> class HDAstarCombMPI: public SearchAlg<D> {
 	typename D::State init;
 	int tnum;
 //	std::atomic<int> thread_id; // set thread id for zobrist hashing.
-	hash z; // Members for Zobrist hashing.
 
 //	std::atomic<int> incumbent; // The best solution so far.
 	int incumbent;
-	std::vector<bool> terminate;
+//	std::vector<bool> terminate;
 	bool tot_terminate;
 
 	int id; // MPI_RANK
 
-	int income_threshold;
 	int outgo_threshold;
 
 	int force_income = 0;
@@ -154,6 +165,11 @@ template<class D, class hash> class HDAstarCombMPI: public SearchAlg<D> {
 
 	std::vector<int> fvalues; // OUTSOURCING
 	std::vector<int> open_sizes;
+
+	////////////////////////
+	/// MPI
+	////////////////////////
+	unsigned char* mpi_buffer;
 
 #ifdef ANALYZE_INCOME
 	int max_income = 0;
@@ -185,23 +201,13 @@ template<class D, class hash> class HDAstarCombMPI: public SearchAlg<D> {
 
 public:
 
-	HDAstarCombMPI(D &d, int tnum_, int income_threshold_ = 1000000,
-			int outgo_threshold_ = 10000000, int abst_ = 0, int overrun_ = 0,
+	HDAstarCombMPI(D &d, int tnum_, int outgo_threshold_ = 0, int overrun_ = 0,
 			unsigned int closedlistsize = 1105036, unsigned int openlistsize =
 					100, unsigned int maxcost = 1000000) :
-			SearchAlg<D>(d), tnum(tnum_), z(d,
-					static_cast<typename hash::ABST>(abst_)), incumbent(
-					maxcost), income_threshold(income_threshold_), outgo_threshold(
+			SearchAlg<D>(d), tnum(tnum_), incumbent(maxcost), outgo_threshold(
 					outgo_threshold_), overrun(overrun_), closedlistsize(
 					closedlistsize), openlistsize(openlistsize), initmaxcost(
 					maxcost) {
-//		income_buffer.resize(tnum);
-		terminate.resize(tnum);
-//		tot_terminate.resize(tnum);
-		for (int i = 0; i < tnum; ++i) {
-			terminate[i] = 0;
-		}
-		tot_terminate = false;
 
 		expd_distribution.resize(tnum);
 		gend_distribution.resize(tnum);
@@ -237,7 +243,6 @@ public:
 //		int id = thread_id.fetch_add(1);
 		// closed list is waaaay too big for my computer.
 		// original 512927357
-		// TODO: Must optimize these numbers
 		//  9999943
 		// 14414443
 		//129402307
@@ -252,7 +257,6 @@ public:
 
 		// If the buffer is locked when the thread pushes a node,
 		// stores it locally and pushes it afterward.
-		// TODO: Array of dynamic sized objects.
 		// This array would be allocated in heap rather than stack.
 		// Therefore, not the best optimized way to do.
 		// Also we need to fix it to compile in clang++.
@@ -260,7 +264,6 @@ public:
 		outgo_buffer.resize(tnum);
 
 		std::vector<Node> tmp;
-//		tmp.reserve(10); // TODO: ad hoc random number
 
 		uint expd_here = 0;
 		uint gend_here = 0;
@@ -295,24 +298,29 @@ public:
 //			;
 //		}
 		int loop_count = 0;
-		while (!tot_terminate) {
+		bool has_sent_first_term = false; // this field is only for id == 0.
+
+		if (id == 0) {
+			// wrap a new node.
+			Node* n = new Node;
+			{
+				n->g = 0;
+				n->f = this->dom.h(init);
+				n->pop = -1;
+				//			n->parent = 0;
+				this->dom.pack(n->packed, init);
+			}
+			open.push(n);
+		}
+
+		while (true) {
 			++loop_count;
-			if (loop_count % 100000 == 0) {
+			if (loop_count % 10000000 == 0) {
 				printf("loop: %d, expd: %d, gend: %d\n", loop_count, expd_here,
 						gend_here);
 			}
 
-			//////////////////////////////////////////////////
-			// TERMINATION DETECTION
-			//////////////////////////////////////////////////
-			// TODO: need Mattern, Friedemann. "Algorithms for distributed termination detection." Distributed computing (1987)
 			int has_received = 0;
-			MPI_Iprobe(MPI_ANY_SOURCE, MPI_MSG_TERM, MPI_COMM_WORLD,
-					&has_received, MPI_STATUS_IGNORE); // TODO: Iprobe
-			if (has_received != 0) {
-				printf("Received termination message!\n");
-				return;
-			}
 
 			Node *n;
 
@@ -321,7 +329,7 @@ public:
 //				printf("t = %f\n", t);
 				if (t > this->timer) {
 //					closed.destruct_all(nodes);
-					terminate[id] = true;
+					printf("Terminated due to timer\n");
 					break;
 				}
 			}
@@ -331,87 +339,9 @@ public:
 #endif
 
 			//////////////////////////////////////////////////
-			// TODO: FROM HERE IS THE INCOME QUEUE OPERATION
+			// INCOME QUEUE OPERATION
 			//////////////////////////////////////////////////
-//			vector<Node>income_node;[
-			has_received = 0;
-			MPI_Iprobe(MPI_ANY_SOURCE, MPI_MSG_NODE, MPI_COMM_WORLD,
-					&has_received, &status); // TODO: Iprobe
-			while (has_received != 0) {
-				int income_size = 0;
-				MPI_Get_count(&status, MPI_BYTE, &income_size);
-
-//				printf("%d recieved %d bytes\n", id, income_size);
-				//			tmp.resize(income_size / sizeof(Node));
-
-				unsigned char *d = new unsigned char[income_size];
-				MPI_Recv(d, income_size, // TODO: this should be as big as possible
-						MPI_BYTE, MPI_ANY_SOURCE, MPI_MSG_NODE, // TODO: this should be NODE and TERMINATE
-						MPI_COMM_WORLD, &status);
-
-				//			for (int i = 0; i < income_size; ++i) {
-				//				printf("%d:  %d\n", i, (int) d[i]);
-				//			}
-
-				Node* tmpn = new Node();
-				charsToNode(d, *tmpn);
-				open.push(tmpn);
-//				printf("f,g = %d %d\n", tmpn->f, tmpn->g);
-				delete[] d;
-
-				has_received = 0;
-				MPI_Iprobe(MPI_ANY_SOURCE, MPI_MSG_NODE, MPI_COMM_WORLD,
-						&has_received, &status); // TODO: Iprobe
-			}
-
-//			int size = tmp.size();
-//			for (int i = 0; i < size; ++i) {
-//				open.push(&tmp[i]); // Not sure optimal or not.
-//			}
-//			tmp.clear();
-//			printf("%d has %d nodes in OPEN\n", id, open.getsize());
-
-//			if (!income_buffer[id].isempty()) {
-//				terminate[id] = false;
-//				if (income_buffer[id].size() >= income_threshold) {
-//					++force_income;
-//					income_buffer[id].lock();
-//					tmp = income_buffer[id].pull_all_with_lock();
-//					income_buffer[id].release_lock();
-//					uint size = tmp.size();
-//#ifdef ANALYZE_INCOME
-//					if (max_income_buffer_size < size) {
-//						max_income_buffer_size = size;
-//					}
-//					dbgprintf("size = %d\n", size);
-//#endif // ANALYZE_INCOME
-//					for (int i = 0; i < size; ++i) {
-//						dbgprintf ("pushing %d, ", i);
-//						open.push(tmp[i]); // Not sure optimal or not. Vector to Heap.
-//					}
-//					tmp.clear();
-//				} else if (income_buffer[id].try_lock()) {
-//					tmp = income_buffer[id].pull_all_with_lock();
-////					printf("%d", __LINE__);
-//					income_buffer[id].release_lock();
-//
-//					uint size = tmp.size();
-//#ifdef ANALYZE_INCOME
-//					if (max_income_buffer_size < size) {
-//						max_income_buffer_size = size;
-//					}
-//					dbgprintf("size = %d\n", size);
-//#endif // ANALYZE_INCOME
-//					for (int i = 0; i < size; ++i) {
-//						dbgprintf ("pushing %d, ", i);
-//						open.push(tmp[i]); // Not sure optimal or not.
-//					}
-//					tmp.clear();
-//				}
-//			}
-			//////////////////////////////////////////////////
-			// TODO: UNTIL HERE IS THE INCOME QUEUE OPERATION
-			//////////////////////////////////////////////////
+			receiveNodes(open);
 
 #ifdef ANALYZE_LAPSE
 			endlapse(lapse, "incomebuffer");
@@ -421,18 +351,32 @@ public:
 			open_sizes[id] = open.getsize();
 #endif
 
-			// TODO: not sure this gonna cause problem.
 //			if (open.isemptyunder(incumbent.load())) {
-			if (open.isemptyunder(100000000)) {
-				dbgprintf ("open is empty.\n");
-				terminate[id] = true;
-				if (hasterminated() && incumbent != initmaxcost) {
-					printf("terminated\n");
+			has_received = 0;
+			MPI_Iprobe(MPI_ANY_SOURCE, MPI_MSG_INCM, MPI_COMM_WORLD,
+					&has_received, &status);
+			if (has_received) {
+				int newincm;
+				MPI_Recv(&newincm, 1, MPI_INT, MPI_ANY_SOURCE, MPI_MSG_INCM,
+						MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+				if (incumbent > newincm) {
+					incumbent = newincm;
+				}
+				printf("incumbent = %d\n", incumbent);
+			}
+
+			if (open.isemptyunder(incumbent)) {
+				flushOutgoBuffers(outgo_buffer, 0);
+				if (terminationDetection(has_sent_first_term)) {
+					printf("%d terminated\n", id);
 					break;
 				}
-				++no_work_iteration;
-				continue; // ad hoc
+				continue;
 			}
+
+			// Reset as we got a new work node.
+			has_sent_first_term = false;
+
 			n = static_cast<Node*>(open.pop());
 //			printf("%d: f,g = %d, %d\n", id, n->f, n->g);
 //			printf("%d\n", n->key());
@@ -451,9 +395,6 @@ public:
 				fvalues[id] = newf;
 			}
 #endif // ANALYZE_FTRACE
-			// TODO: Might not be the best way.
-			// Would there be more novel way?
-
 #ifdef ANALYZE_GLOBALF
 			if (n->f != fvalues[id]) {
 				fvalues[id] = n->f;
@@ -490,6 +431,7 @@ public:
 				}
 				// Node access here is unnecessary duplicates.
 //					printf("Duplicated\n");
+				++duplicate_here;
 			}
 			//	}
 #ifdef ANALYZE_LAPSE
@@ -529,7 +471,6 @@ public:
 			}
 #endif // ANALYZE_ORDER
 			if (this->dom.isgoal(state)) {
-				// TODO: For some reason, sometimes pops broken node.
 //				if (state.tiles[1] == 0) {
 //					printf("isgoal ERROR\n");
 //					continue;
@@ -541,12 +482,11 @@ public:
 //					this->dom.unpack(s, p->packed);
 //					newpath.push_back(s); // This triggers the main loop to terminate.
 //				}
-				int length = newpath.size();
-				printf("Goal! length = %d\n", length);
+				int length = n->g;
+//				printf("Goal! length = %d\n", length);
 				printf("cost = %u\n", n->g);
 
 				if (incumbent > n->g) {
-					// TODO: this should be changed to match non-unit cost domains.
 					incumbent = n->g;
 //					LogIncumbent* li = new LogIncumbent(walltime() - wall0,
 //							incumbent);
@@ -554,13 +494,12 @@ public:
 					path = newpath;
 				}
 
-				// TODO: this termination cause suboptimal solution.
 				for (int i = 0; i < tnum; ++i) {
-					MPI_Send(NULL, 0, MPI_BYTE, i, MPI_MSG_TERM,
-							MPI_COMM_WORLD);
+					if (i != id) {
+						MPI_Isend(&incumbent, 1, MPI_INT, i, MPI_MSG_INCM,
+								MPI_COMM_WORLD, &request);
+					}
 				}
-				break; // TODO: this shouldn't be break.
-
 				continue;
 			}
 #ifdef OUTSOURCING
@@ -579,9 +518,9 @@ public:
 
 //			buffer<Node>* buffers;
 
-			if (loop_count % 100000 == 0) {
-				print_state(state);
-			}
+//			if (loop_count % 1 == 0) {
+//				print_state(state);
+//			}
 
 			// TODO: this is only applicable for STRIPS planning.
 //			std::vector<unsigned int> ops = this->dom.ops(state);
@@ -603,8 +542,8 @@ public:
 
 //				int moving_tile = 0;
 //				int blank = 0; // Make this available for Grid pathfinding.
-				int moving_tile = state.tiles[op];
-				int blank = state.blank; // Make this available for Grid pathfinding.
+//				int moving_tile = state.tiles[op];
+//				int blank = state.blank; // Make this available for Grid pathfinding.
 				Edge<D> e = this->dom.apply(state, op);
 				Node* next = wrap(state, n, e.cost, e.pop);
 
@@ -638,12 +577,9 @@ public:
 				//printf("mv blank op = %d %d %d \n", moving_tile, blank, op);
 //				print_state(state);
 
-				// TODO: Make dist hash available for Grid pathfinding.
-				// TODO: Make Zobrist hash appropriate for 24 threads.
-				next->zbr = z.inc_hash(n->zbr, moving_tile, blank, op,
-						state.tiles, state);
 //				next->zbr = z.inc_hash(n->zbr, moving_tile, blank, op,
-//						0, state);
+//						state.tiles, state);
+				next->zbr = this->dom.dist_hash(state);
 
 //				next->zbr = z.inc_hash(state);
 
@@ -672,8 +608,6 @@ public:
 #endif // ANALYZE_SEMISYNC
 					}
 #endif // SEMISYNC
-
-
 				} else {
 					outgo_buffer[zbr].push_back(*next);
 #ifdef ANALYZE_OUTGO
@@ -689,57 +623,25 @@ public:
 //					printf("%d ", outgo_buffer[i].size());
 //				}
 //				printf("\n");
-				//////////////////////////////////////////////////
-				// TODO: FROM HERE IS THE OUTGO QUEUE OPERATION
-				//////////////////////////////////////////////////
-				for (int i = 0; i < tnum; ++i) {
-//					if (i != id && outgo_buffer[i].size() > 0) {
-					while (outgo_buffer[i].size() > 0) {
-						Node send = outgo_buffer[i].back();
-//						printf("%d have %d bytes to send to %d...", id,
-//								send.size(), i);
-
-						unsigned char* d = new unsigned char[send.size()]; // TODO: not deallocated
-						nodeToChars(&send, d);
-						MPI_Isend(d, send.size(), MPI_BYTE, i, MPI_MSG_NODE,
-								MPI_COMM_WORLD, &request);
-//						outgo_buffer[i].clear();
-						outgo_buffer[i].pop_back();
-
-
-//						printf("done!\n");
-//						if (income_buffer[i].try_lock()) {
-//							// acquired lock
-//							// TODO: some error occuring here.
-//							income_buffer[i].push_all_with_lock(
-//									outgo_buffer[i]);
-//							income_buffer[i].release_lock();
-//							outgo_buffer[i].clear();
-//						}
-					}
-				}
-				//////////////////////////////////////////////////
-				// TODO: FROM HERE IS THE OUTGO QUEUE OPERATION
-				//////////////////////////////////////////////////
 
 				this->dom.undo(state, e);
 			}
+
+			flushOutgoBuffers(outgo_buffer, outgo_threshold);
+
 #ifdef ANALYZE_LAPSE
 			endlapse(lapse, "expand");
 #endif
 		}
 
-//		if (this->isTimed) {
+		printf("%d terminating...\n", id);
+		printf("expd: %d\n", expd_here);
+		printf("gend: %d\n", gend_here);
+		printf("sent: %d\n", gend_here - self_push);
 
-		for (int i = 0; i < tnum; ++i) {
-			terminate[i] = true;
+		if (gend_here > 0) {
+			printf("CO: %.3f\n", (gend_here - self_push) / gend_here);
 		}
-		tot_terminate = true;
-//		while (!tot_terminate) {
-//			;
-//		}
-		printf("terminated %d\n", id);
-//		}
 
 		// Solved (maybe)
 
@@ -765,9 +667,7 @@ public:
 #ifdef ANALYZE_INCOME
 		this->max_income += max_income_buffer_size;
 #endif
-#ifdef ANALYZE_DUPLICATE
 		this->duplicates[id] = duplicate_here;
-#endif
 
 		this->self_pushes[id] = self_push;
 
@@ -775,40 +675,159 @@ public:
 		return;
 	}
 
-	std::vector<typename D::State> search(typename D::State &init) {
-		MPI_Init(NULL, NULL);
+	void receiveNodes(Heap<Node>& open) {
+		MPI_Status status;
+		int has_received = 0;
+		MPI_Iprobe(MPI_ANY_SOURCE, MPI_MSG_NODE, MPI_COMM_WORLD, &has_received,
+				&status);
+		while (has_received != 0) {
+			int income_size = 0;
+			MPI_Get_count(&status, MPI_BYTE, &income_size);
 
-		printf("search\n");
-		MPI_Comm_rank(MPI_COMM_WORLD, &id);
+//				printf("%d recieved %d bytes\n", id, income_size);
+			//			tmp.resize(income_size / sizeof(Node));
 
-		this->init = init;
+			unsigned char *d = new unsigned char[income_size];
+			MPI_Recv(d, income_size, MPI_BYTE, MPI_ANY_SOURCE, MPI_MSG_NODE,
+					MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
-		if (id == 0) {
-			// wrap a new node.
-			Node* n = new Node;
-			{
-				n->g = 0;
-				n->f = this->dom.h(init);
-				n->pop = -1;
-				//			n->parent = 0;
-				this->dom.pack(n->packed, init);
+			// TODO: use Memory Pool for nodes in local
+//				Node* tmpn = new Node();
+//				charsToNode(d, *tmpn);
+//				open.push(tmpn);
+			std::vector<Node*> nodes;
+			charsToNodes(d, income_size, nodes);
+
+			for (int i = 0; i < nodes.size(); ++i) {
+				open.push(nodes[i]);
 			}
-			//		dbgprintf("zobrist of init = %d", z.hash_tnum(init.tiles));
 
-			unsigned int s = n->size();
-			unsigned char *d = new unsigned char[s];
-			nodeToChars(n, d);
-
-//			for (int i = 0; i < s; ++i) {
-//				printf("%d:  %d\n", i, (int) d[i]);
-//			}
-
-			MPI_Send(d, s, MPI_BYTE, 0, MPI_MSG_NODE, MPI_COMM_WORLD);
+//				printf("received f,g = %d %d\n", tmpn->f, tmpn->g);
 			delete[] d;
-			//		income_buffer[0].push(n);
-			//		income_buffer[z.hash_tnum(init.tiles)].push(n);
+			nodes.clear();
+
+			has_received = 0;
+			MPI_Iprobe(MPI_ANY_SOURCE, MPI_MSG_NODE, MPI_COMM_WORLD,
+					&has_received, &status);
+		}
+	}
+
+	// check if its optimal.
+	bool terminationDetection(bool& has_sent_first_term) {
+		MPI_Status status;
+		int has_received = 0;
+
+		MPI_Iprobe(MPI_ANY_SOURCE, MPI_MSG_FTERM, MPI_COMM_WORLD, &has_received,
+				MPI_STATUS_IGNORE);
+		if (has_received) {
+			printf("received fterm\n");
+			return true;
+		}
+
+		if (id == 0 && !has_sent_first_term) {
+			// TODO: how can we maintain the memory while MPI_Isend is executing?
+			unsigned char term = 0;
+			MPI_Bsend(&term, 1, MPI_BYTE, (id + 1) % tnum, MPI_MSG_TERM,
+					MPI_COMM_WORLD);
+			printf("sent first term\n");
+			has_sent_first_term = true;
+			sleep(1);
+		}
+
+		has_received = 0;
+		MPI_Iprobe((id - 1) % tnum, MPI_MSG_TERM, MPI_COMM_WORLD, &has_received,
+				&status);
+		if (has_received) {
+			int term = 0;
+			MPI_Recv(&term, 1, MPI_BYTE, (id - 1) % tnum, MPI_MSG_TERM,
+					MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+			if (id == 0) {
+				++term;
+			}
+
+			printf("%d received term %d\n", id, term);
+			MPI_Bsend(&term, 1, MPI_BYTE, (id + 1) % tnum, MPI_MSG_TERM,
+					MPI_COMM_WORLD);
+			if (term > 1) {
+				return true;
+			}
+
+			MPI_Iprobe((id - 1) % tnum, MPI_MSG_TERM, MPI_COMM_WORLD,
+					&has_received, &status);
+
+			// This while loop is here to flush all messages
+			while (has_received) {
+				MPI_Recv(&term, 1, MPI_BYTE, (id - 1) % tnum, MPI_MSG_TERM,
+						MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+				if (term == 1) {
+					printf("%d received term %d\n", id, term);
+					MPI_Bsend(&term, 1, MPI_BYTE, (id + 1) % tnum, MPI_MSG_TERM,
+							MPI_COMM_WORLD);
+					return true;
+				}
+				has_received = 0;
+				MPI_Iprobe((id - 1) % tnum, MPI_MSG_TERM, MPI_COMM_WORLD,
+						&has_received, &status);
+			}
 
 		}
+		return false;
+	}
+
+	void flushOutgoBuffers(std::vector<std::vector<Node>>& outgo_buffer,
+			int thresould) {
+		for (int i = 0; i < tnum; ++i) {
+			if (i != id && outgo_buffer[i].size() > thresould) {
+				unsigned int totsize = 0;
+				for (int j = 0; j < outgo_buffer[i].size(); ++j) {
+					totsize += outgo_buffer[i][j].size();
+				}
+				unsigned char* d = new unsigned char[totsize];
+				unsigned char* dp = d;
+				for (int j = 0; j < outgo_buffer[i].size(); ++j) {
+					Node send = outgo_buffer[i][j];
+					nodeToChars(&send, dp);
+//						MPI_Isend(d, send.size(), MPI_BYTE, i, MPI_MSG_NODE,
+//								MPI_COMM_WORLD, &request);
+					// TODO: asynchronzie it like try_lock.
+					MPI_Bsend(dp, send.size(), MPI_BYTE, i, MPI_MSG_NODE,
+							MPI_COMM_WORLD);
+//						printf("sent f,g = %d %d\n", send.f, send.g);
+					dp += send.size();
+				}
+				delete[] d;
+				outgo_buffer[i].clear();
+			}
+		}
+	}
+
+	std::vector<typename D::State> search(typename D::State &init) {
+
+		printf("search\n");
+		int world_size;
+		MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+		MPI_Comm_rank(MPI_COMM_WORLD, &id);
+		printf("id=%d\n", id);
+
+		unsigned int node_size = 32;
+		unsigned int threshold = 100;
+		// Buffer
+		unsigned int buffer_size = (node_size + MPI_BSEND_OVERHEAD) * world_size
+				* 100
+				+ (node_size * threshold + MPI_BSEND_OVERHEAD) * world_size
+						* 10000;
+		unsigned int buffer_max = 400000000; // 400 MB TODO: not sure this is enough or too much.
+		if (buffer_size > buffer_max) {
+			buffer_size = 400000000;
+		}
+
+		printf("buffersize=%u\n", buffer_size);
+		mpi_buffer = new unsigned char[buffer_size];
+		std::fill(mpi_buffer, mpi_buffer + buffer_size, 0);
+		MPI_Buffer_attach((void *) mpi_buffer, buffer_size);
+
+		this->init = init;
 
 		wall0 = walltime();
 #ifdef OUTSOURCING
@@ -817,11 +836,13 @@ public:
 		}
 #endif
 
+		printf("%d rdy..", id);
+
+		MPI_Barrier(MPI_COMM_WORLD);
 		printf("start\n");
 
 //		thread_search<Heap>();
 		thread_search();
-		MPI_Finalize();
 
 //		for (int i = 0; i < tnum; ++i) {
 ////			printf("%d\n", i);
@@ -832,10 +853,14 @@ public:
 //			pthread_join(t[i], NULL);
 //		}
 
+//		for (int i = 0; i < tnum; ++i) {
+//			MPI_Bsend(NULL, 0, MPI_BYTE, i, MPI_MSG_FTERM, MPI_COMM_WORLD);
+//		}
+
 		for (int i = 0; i < tnum; ++i) {
 			this->expd += expd_distribution[i];
 			this->gend += gend_distribution[i];
-			this->push += self_pushes[i];
+			this->lpush += self_pushes[i];
 			this->dup += duplicates[i];
 		}
 
@@ -909,27 +934,27 @@ public:
 		printf("outsource node pushed = %d\n", outsource_pushed);
 #endif
 
-		printf("openlist size =");
-		for (int id = 0; id < tnum; ++id) {
-			printf(" %d", this->open_sizes[id]);
-		}
-		printf("\n");
-
-		printf("expd + openlist size =");
-		for (int id = 0; id < tnum; ++id) {
-			int sum = expd_distribution[id] + this->open_sizes[id];
-			printf(" %d", sum);
-		}
-		printf("\n");
-
-		printf("self pushes =");
-		for (int id = 0; id < tnum; ++id) {
-			printf(" %d", self_pushes[id]);
-		}
-		printf("\n");
+//		printf("openlist size =");
+//		for (int id = 0; id < tnum; ++id) {
+//			printf(" %d", this->open_sizes[id]);
+//		}
+//		printf("\n");
+//
+//		printf("expd + openlist size =");
+//		for (int id = 0; id < tnum; ++id) {
+//			int sum = expd_distribution[id] + this->open_sizes[id];
+//			printf(" %d", sum);
+//		}
+//		printf("\n");
+//
+//		printf("self pushes =");
+//		for (int id = 0; id < tnum; ++id) {
+//			printf(" %d", self_pushes[id]);
+//		}
+//		printf("\n");
 
 //		printf("self_pushes: %u\n", self_pushes);
-
+		termination();
 		return path;
 	}
 //
@@ -951,14 +976,14 @@ public:
 		return n;
 	}
 
-	inline bool hasterminated() {
-		for (int i = 0; i < tnum; ++i) {
-			if (terminate[i] == false) {
-				return false;
-			}
-		}
-		return true;
-	}
+//	inline bool hasterminated() {
+////		for (int i = 0; i < tnum; ++i) {
+////			if (terminate[i] == false) {
+////				return false;
+////			}
+////		}
+//		return true;
+//	}
 
 //	template<class H>
 //	inline
@@ -976,6 +1001,97 @@ public:
 //		return z.inc_hash(previous, number, from, to,
 //				newBoard);
 //	}
+
+
+	int termination() {
+
+		printf("barrier %d\n", id);
+		MPI_Barrier(MPI_COMM_WORLD);
+
+
+		MPI_Status status;
+		printf("Flushing all incoming messages... ");
+
+//		int messages = {MPI_MSG_FTERM, MPI_MSG_INCM, MPI_MSG_NODE, MPI_MSG_TERM};
+		unsigned char* dummy = new unsigned char[10 * 10000];
+
+//		for (int i = 0; i < 4; ++i) {
+//
+//		}
+
+		int has_received = 1;
+		while (has_received) {
+			has_received = 0;
+			MPI_Iprobe(MPI_ANY_SOURCE, MPI_MSG_FTERM, MPI_COMM_WORLD, &has_received,
+					MPI_STATUS_IGNORE);
+			if (has_received) {
+				MPI_Recv(dummy, 0, MPI_BYTE, MPI_ANY_SOURCE, MPI_MSG_FTERM,
+						MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+			}
+		}
+
+		printf("FTERM... ");
+
+		has_received = 1;
+		while (has_received) {
+			has_received = 0;
+			MPI_Iprobe(MPI_ANY_SOURCE, MPI_MSG_INCM, MPI_COMM_WORLD, &has_received,
+					MPI_STATUS_IGNORE);
+			if (has_received) {
+				MPI_Recv(dummy, 1, MPI_INT, MPI_ANY_SOURCE, MPI_MSG_INCM,
+						MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+			}
+		}
+		printf("INCM... ");
+
+		has_received = 1;
+		while (has_received) {
+			has_received = 0;
+			MPI_Iprobe(MPI_ANY_SOURCE, MPI_MSG_NODE, MPI_COMM_WORLD, &has_received,
+					&status);
+			if (has_received) {
+				int source = status.MPI_SOURCE;
+				int d_size;
+				MPI_Get_count(&status, MPI_BYTE, &d_size); // TODO: = node_size?
+				MPI_Recv(dummy, d_size, MPI_BYTE, source, MPI_MSG_NODE,
+						MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+			}
+		}
+		printf("NODE... ");
+
+		has_received = 1;
+		while (has_received) {
+			has_received = 0;
+			MPI_Iprobe(MPI_ANY_SOURCE, MPI_MSG_TERM, MPI_COMM_WORLD, &has_received,
+					MPI_STATUS_IGNORE);
+			if (has_received) {
+				MPI_Recv(dummy, 1, MPI_INT, MPI_ANY_SOURCE, MPI_MSG_TERM,
+						MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+			}
+		}
+		printf("TERM... ");
+
+
+
+		printf("done!\n");
+		printf("Buffer_detach %d\n", id);
+
+		int buffer_size;
+		MPI_Buffer_detach(&mpi_buffer, &buffer_size);
+	//
+		delete[] mpi_buffer;
+
+		printf("finalize %d\n", id);
+
+	//	for (int i = 0; i < )
+
+		MPI_Finalize();
+		printf("finalize done%d\n", id);
+
+		return 0;
+	}
+
+
 
 	void print_state(typename D::State state) {
 		for (int i = 0; i < D::Ntiles; ++i) {
@@ -1043,7 +1159,6 @@ public:
 //		static const int zero = 0;
 //		int test = 0;
 		int uselessLocal = 0;
-		// TODO: delay = DELAY
 		for (int i = 0; i < 0; ++i) {
 //			++test;
 			int l = 0;
@@ -1074,6 +1189,7 @@ public:
 		return duplicates;
 	}
 
-};
+}
+;
 
 #endif /* HDASTAR_HPP_ */

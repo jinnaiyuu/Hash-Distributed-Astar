@@ -19,7 +19,7 @@
 #include "search.hpp"
 #include "utils.hpp"
 #include "hashtbl.hpp"
-#include "hashtblbig.hpp"
+//#include "hashtblbig.hpp"
 #include "heap.hpp"
 #include "pool.hpp"
 #include "buffer.hpp"
@@ -33,8 +33,9 @@
 // DELAY 10,000,000 -> 3000 nodes per second
 //#define DELAY 0
 
+#define ANALYZE_ORDER
 
-template<class D, class hash> class HDAstarComb: public SearchAlg<D> {
+template<class D> class HDAstarComb: public SearchAlg<D> {
 
 	struct Node {
 		unsigned int f, g;
@@ -44,7 +45,7 @@ template<class D, class hash> class HDAstarComb: public SearchAlg<D> {
 //		char thrown; // How many times this node has been outsourced.
 		Node *parent;
 		typename D::PackedState packed;
-		HashEntryBig<Node> hentry;
+		HashEntry<Node> hentry;
 
 		bool pred(Node *o) {
 			if (f == o->f)
@@ -60,7 +61,7 @@ template<class D, class hash> class HDAstarComb: public SearchAlg<D> {
 			return packed;
 		}
 
-		HashEntryBig<Node> &hashentry() {
+		HashEntry<Node> &hashentry() {
 			return hentry;
 		}
 	};
@@ -70,7 +71,6 @@ template<class D, class hash> class HDAstarComb: public SearchAlg<D> {
 	typename D::State init;
 	int tnum;
 	std::atomic<int> thread_id; // set thread id for zobrist hashing.
-	hash z; // Members for Zobrist hashing.
 
 	std::atomic<int> incumbent; // The best solution so far.
 	std::vector<bool> terminate;
@@ -172,6 +172,10 @@ template<class D, class hash> class HDAstarComb: public SearchAlg<D> {
 	unsigned int openlistsize;
 	unsigned int initmaxcost;
 
+	bool isFIFO; // tiebreaking strategy under f,h.
+
+	unsigned int delay;
+
 //	bool isTimed = false;
 //	double timer = 0.0;
 
@@ -180,13 +184,13 @@ public:
 	HDAstarComb(D &d, int tnum_, int income_threshold_ = 1000000,
 			int outgo_threshold_ = 10000000, int abst_ = 0, int overrun_ = 0,
 			unsigned int closedlistsize = 1105036, unsigned int openlistsize =
-					100, unsigned int maxcost = 1000000) :
-			SearchAlg<D>(d), tnum(tnum_), thread_id(0), z(d,
-					static_cast<typename hash::ABST>(abst_)), incumbent(
+					100, unsigned int maxcost = 1000000, unsigned int delay_ = 0,
+					bool isFIFO_ = false) :
+			SearchAlg<D>(d), tnum(tnum_), thread_id(0), incumbent(
 					maxcost), income_threshold(income_threshold_), outgo_threshold(
 					outgo_threshold_), globalOrder(0), overrun(overrun_), closedlistsize(
 					closedlistsize), openlistsize(openlistsize), initmaxcost(
-					maxcost) {
+					maxcost), delay(delay_), isFIFO(isFIFO_) {
 		income_buffer.resize(tnum);
 		terminate.resize(tnum);
 //		tot_terminate.resize(tnum);
@@ -234,13 +238,14 @@ public:
 		//  9999943
 		// 14414443
 		//129402307
-//		HashTable<typename D::PackedState, Node> closed(512927357 / tnum);
-		HashTableBig<typename D::PackedState, Node> closed(closedlistsize);
+		HashTable<typename D::PackedState, Node> closed(closedlistsize);
+//		HashTableBig<typename D::PackedState, Node> closed(closedlistsize);
 
 //	printf("closedlistsize = %u\n", closedlistsize);
 
 //		Heap<Node> open(100, overrun);
-		heap open(openlistsize, overrun);
+		printf("overrun=%d\n", overrun);
+		heap open(openlistsize, overrun, isFIFO);
 		Pool<Node> nodes(2048);
 
 		// If the buffer is locked when the thread pushes a node,
@@ -556,10 +561,7 @@ public:
 				//printf("mv blank op = %d %d %d \n", moving_tile, blank, op);
 //				print_state(state);
 
-				// TODO: Make dist hash available for Grid pathfinding.
-				// TODO: Make Zobrist hash appropriate for 24 threads.
-				next->zbr = z.inc_hash(n->zbr, moving_tile, blank, op,
-						state.tiles, state);
+				next->zbr = this->dom.dist_hash(state);
 //				next->zbr = z.inc_hash(n->zbr, moving_tile, blank, op,
 //						0, state);
 
@@ -677,6 +679,7 @@ public:
 		this->self_pushes[id] = self_push;
 
 		dbgprintf ("END\n");
+		sleep(5);
 		return 0;
 	}
 
@@ -719,7 +722,7 @@ public:
 		for (int i = 0; i < tnum; ++i) {
 			this->expd += expd_distribution[i];
 			this->gend += gend_distribution[i];
-			this->push += self_pushes[i];
+			this->lpush += self_pushes[i];
 			this->dup += duplicates[i];
 		}
 
@@ -929,7 +932,7 @@ public:
 //		int test = 0;
 		int uselessLocal = 0;
 		// TODO: delay = DELAY
-		for (int i = 0; i < 0; ++i) {
+		for (int i = 0; i < delay; ++i) {
 //			++test;
 			int l = 0;
 			l += useless;

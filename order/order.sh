@@ -217,9 +217,9 @@ gnuplot<<EOF
 #       "<echo '5200 6000 1600 0'" with vectors arrowstyle 1 notitle
 
 
-EOF
+#EOF
 
-exit 0
+#exit 0
   set output "8_threads_draft.pdf"
   set xtics 10000
   set ytics 10000
@@ -248,7 +248,7 @@ exit 0
 
 EOF
 
-evince 8_threads_draft.pdf
+#evince 8_threads_draft.pdf
 
 exit 0
 

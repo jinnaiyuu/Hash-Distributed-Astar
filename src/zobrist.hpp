@@ -12,9 +12,12 @@
 #include <climits>
 #include <cstdlib>
 #include <math.h>
+#include <random>
+
+#include "dist_hash.hpp"
 
 template<typename D, int size>
-class Zobrist {
+class Zobrist: public DistributionHash<D> {
 public:
 	enum ABST {
 		SINGLE = 0,
@@ -29,21 +32,23 @@ public:
 		BLOCK_24 = 2402,
 		ODD_24 = 2403,
 		FOURABSTRACTION_24 = 1234,
-		FIVEABSTRACTION_24 = 12345
-
+		FIVEABSTRACTION_24 = 12345,
+		SZ4_ABST12345_15 = 6,
+		SZ8_ABST12345_15 = 5,
+		SZ2_ABST123456_24 = 7,
+		SZ5_ABST123456_24 = 8,
+		SPARSEST_CUT = 9,
+		SPARSEST_CUT2 = 10,
 	};
 
 // Should delete compatibility for performance.
-	Zobrist(int tnum_ = 1, ABST abst = SINGLE) :
-			tnum(tnum_) {
-		initZobrist(abst);
+	Zobrist(unsigned int abst = 0, unsigned int rand_seed = 0) {
+		initZobrist((ABST) abst, rand_seed);
 //		dump_table();
 	}
 
-	Zobrist(D tnum_ , ABST abst = SINGLE)
-			{
-		initZobrist(abst);
-//		dump_table();
+	unsigned int dist_h(const typename D::State& s) const {
+		return hash(s.tiles);
 	}
 
 	/**
@@ -53,7 +58,8 @@ public:
 	 * @return the value to XOR to the Zobrist value of parent.
 	 */
 	unsigned int inc_hash(const unsigned int previous, const int number,
-			const int from, const int to, const char* const newBoard, const typename D::State s) const {
+			const int from, const int to, const char* const newBoard,
+			const typename D::State s) const {
 		return (previous ^ inc_zbr[number][from][to]);
 	}
 
@@ -61,15 +67,10 @@ public:
 		return 0;
 	}
 
-
-	unsigned int hash_tnum(const char* const board) const {
-		return hash(board) % tnum;
-	}
-
 //#define RANDOM_ZOBRIST_INITIALIZATION
 private:
-	void initZobrist(ABST abst) {
-		gen = std::mt19937(rd());
+	void initZobrist(ABST abst, unsigned int rand_seed = 0) {
+		gen = std::mt19937(rand_seed);
 //		unsigned int max = std::numeric_limits<hashlength>::max();
 //		unsigned int max = UINT_MAX;
 		dis = std::uniform_int_distribution<>(INT_MIN, INT_MAX);
@@ -124,6 +125,24 @@ private:
 		case FIVEABSTRACTION_24:
 			fiveabstraction();
 			break;
+		case SZ4_ABST12345_15:
+			block(5);
+			break;
+		case SZ8_ABST12345_15:
+			two(5);
+			break;
+		case SZ2_ABST123456_24:
+			two(6);
+			break;
+		case SZ5_ABST123456_24:
+			four24(6);
+			break;
+		case SPARSEST_CUT:
+			sparsest_cut1();
+			break;
+		case SPARSEST_CUT2:
+			sparsest_cut2();
+			break;
 		default:
 			printf("ERRRRRRRORRRRR\n");
 			break;
@@ -170,9 +189,9 @@ private:
 		}
 	}
 
-	void block() {
+	void block(int abst = size) {
 		int js[4] = { 0, 2, 8, 10 };
-		for (int i = 1; i < size; ++i) {
+		for (int i = 1; i < abst; ++i) {
 			for (int j = 0; j < 4; ++j) {
 				int r = random();
 				zbr[i][js[j]] = r; // zbr[number][place]
@@ -183,13 +202,13 @@ private:
 		}
 	}
 
-	void four24() {
+	void four24(int abst = size) {
 		int one[6] = { 0, 1, 2, 5, 6, 7 };
 		int two[6] = { 3, 4, 8, 9, 13, 14 };
 		int three[6] = { 10, 11, 15, 16, 20, 21 };
 		int four[6] = { 17, 18, 19, 22, 23, 24 };
 
-		for (int i = 1; i < size; ++i) {
+		for (int i = 1; i < abst; ++i) {
 			int r = random();
 			for (int j = 0; j < 6; ++j) {
 				zbr[i][one[j]] = r; // zbr[number][place]
@@ -296,8 +315,8 @@ private:
 		}
 	}
 
-	void two() {
-		for (int i = 1; i < size; ++i) {
+	void two(int abst = size) {
+		for (int i = 1; i < abst; ++i) {
 			for (int two = 0; two < 1; ++two) {
 				int r = random();
 				for (int j = 0; j < size / 2; ++j) {
@@ -323,6 +342,24 @@ private:
 		}
 	}
 
+	// This abstraction is divided by the position of tile 1, 2 and 3.
+	// Other tiles do not matter.
+	void abstractionToPerfectHashing() {
+		int s = 1;
+		for (int i = 1; i < size; ++i) {
+			if (1 <= i && i <= 3) {
+				for (int j = 0; j < size; ++j) {
+					zbr[i][j] = j * s;
+				}
+				s *= size;
+			} else {
+				for (int j = 0; j < size; ++j) {
+					zbr[i][j] = 0;
+				}
+			}
+		}
+	}
+
 	// This abstraction is divided by the position of tile 1, 2, 3 and 4.
 	// Other tiles do not matter.
 	void fourabstraction() {
@@ -331,6 +368,22 @@ private:
 				for (int j = 0; j < size; ++j) {
 					zbr[i][j] = random();
 				}
+			} else {
+				for (int j = 0; j < size; ++j) {
+					zbr[i][j] = 0;
+				}
+			}
+		}
+	}
+
+	void fourabstractionToPerfectHashing() {
+		int s = 1;
+		for (int i = 1; i < size; ++i) {
+			if (1 <= i && i <= 4) {
+				for (int j = 0; j < size; ++j) {
+					zbr[i][j] = j * s;
+				}
+				s *= 32;
 			} else {
 				for (int j = 0; j < size; ++j) {
 					zbr[i][j] = 0;
@@ -367,6 +420,34 @@ private:
 		}
 	}
 
+	void sparsest_cut1() {
+		unsigned int r;
+		for (int i = 1; i < size; ++i) {
+			r = random();
+			for (int j = 0; j < 10; ++j) {
+				zbr[i][j] = r;
+			}
+			r = random();
+			for (int j = 10; j < size; ++j) {
+				zbr[i][j] = r;
+			}
+		}
+	}
+
+	void sparsest_cut2() {
+		unsigned int r;
+		for (int i = 1; i < size; ++i) {
+			r = random();
+			for (int j = 0; j < 12; ++j) {
+				zbr[i][j] = r;
+			}
+			r = random();
+			for (int j = 10; j < size; ++j) {
+				zbr[i][j] = r;
+			}
+		}
+	}
+
 	int mdist(int number, int place) const {
 		int width = 4; // Hard coding
 		int row = number / width, col = number % width;
@@ -390,12 +471,11 @@ private:
 	void dump_table() {
 		for (int i = 0; i < size; ++i) {
 			for (int j = 0; j < size; ++j) {
-				printf("(%d, %d) = %d\n", i, j, zbr[i][j]);
+				printf("(%d, %d) = %u\n", i, j, zbr[i][j]);
 			}
 		}
 	}
 
-	int tnum;
 	unsigned int zbr[size][size];
 // inc_zbr is the incremental XOR value for zobrist hash function.
 // The value to XOR when the number moved from a to b is

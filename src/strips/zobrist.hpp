@@ -13,27 +13,36 @@
 #include <cstdlib>
 #include <math.h>
 
+#include "../dist_hash.hpp"
+#include "action.hpp"
+#include "action_table.hpp"
+#include "utils.hpp"
+
 template<typename D>
-class StripsZobrist {
+class StripsZobrist: public DistributionHash<D> {
 public:
 	// list abstraction strategies
 	enum ABST {
 	};
 
 	// TODO: Should delete compatibility for performance.
-	StripsZobrist(D &d, ABST abst = 0) :
+	StripsZobrist(D &d, unsigned int abst = 0, unsigned int rand_seed = 0,
+			double toStructure = 0.3) :
 			d(d) {
 		structures = this->d.get_structures();
 		xor_groups = this->d.get_xor_groups();
+		actionTable = this->d.getActionTable();
 
-		if (abst == 2 && structures.size() < 8) {
-			// use not structured predicates if structures are not enough.
-			initZobrist(1);
-		} else if (abst == 3 && structures.size() < 8) {
-			initZobrist(1);
-		} else {
-			initZobrist(abst);
+		initZobrist(abst, rand_seed, toStructure);
+	}
+
+	unsigned int dist_h(const typename D::State& s) const {
+		std::vector<unsigned int> p = s.propositions;
+		unsigned int c = 0;
+		for (unsigned int i = 0; i < p.size(); ++i) {
+			c = c ^ map[p[i]];
 		}
+		return c;
 	}
 
 	/**
@@ -60,10 +69,12 @@ public:
 
 //#define RANDOM_ZOBRIST_INITIALIZATION
 private:
-	void initZobrist(unsigned int abst) {
+	void initZobrist(unsigned int abst, unsigned int rand_seed,
+			double toStructure) {
+
 		map.resize(d.getGroundedPredicatesSize());
 		std::fill(map.begin(), map.end(), 0);
-		gen = std::mt19937(rd());
+		gen = std::mt19937(rand_seed);
 		dis = std::uniform_int_distribution<>(INT_MIN, INT_MAX);
 #ifdef RANDOM_ZOBRIST_INITIALIZATION
 		srand(time(NULL));
@@ -74,17 +85,36 @@ private:
 		// abst = 1: using structure.
 		// abst = 0: Zobrist Hash
 
-		if (abst == 3) {
-			abstraction();
-		} else if (abst == 2) {
-			strucutured_zobrist();
-		} else if (abst == 1) {
-			strucutured_zobrist();
+		// TODO: here, we have to come up with innovative method to build up structure.
+		switch (abst) {
+		case 0:
 			zobrist();
-		} else if (abst == 0) {
+			break;
+		case 1:
+			feature_based_structure();
 			zobrist();
-		}
+			break;
+		case 2:
+			if (structures.size() < 8) {
+				feature_based_structure();
+			} else {
+				feature_based_structure();
+				zobrist();
+			}
+			break;
+		case 3:
+			if (structures.size() < 8) {
+				abstraction();
+			} else {
+				zobrist();
+			}
+			break;
+		case 4:
+			zobrist();
+			action_based_structure(toStructure);
+			break;
 
+		}
 	}
 
 // Abstraction
@@ -105,7 +135,7 @@ private:
 
 // Structured Zobrist
 // 1 key for each structure.
-	void strucutured_zobrist() {
+	void feature_based_structure() {
 		for (unsigned int i = 0; i < structures.size(); ++i) {
 			unsigned int r = random();
 			for (unsigned int j = 0; j < structures[i].size(); ++j) {
@@ -121,8 +151,69 @@ private:
 				}
 			}
 		}
+	}
 
+	/**
+	 * Generate structure based on Action.
+	 * This structure focus on action to eliminate the communication overhead.
+	 *
+	 */
+	void action_based_structure(double toStructure) {
+		int couldNotFind = 0;
+		int couldFind = 0;
 
+		std::vector<bool> isStructured(map.size(), false); // True if the proposition is used for structure.
+
+		int actionTableSize = actionTable->getSize();
+
+		int todo = (int) ((double) actionTableSize * toStructure); // TODO: this number should be parameterized. Possibly the parameter used in AutoTuning.
+
+		printf("actionTableSize = %d\n", actionTableSize);
+		printf("toStructure = %f\n", toStructure);
+		printf("todo = %d\n", todo);
+		for (int i = 0; i < todo; ++i) {
+//			int r = i;
+			int r = random() % actionTableSize;
+			Action a = actionTable->getAction(r);
+			std::vector<unsigned int> add_del = uniquelyMergeSortedVectors(
+					a.adds, a.deletes);
+			bool couldFindh = false;
+
+			// not sure there is a action like this.
+			if (add_del.size() == 0) {
+				continue;
+			}
+
+			for (int j = 0; j < add_del.size(); ++j) {
+				if (!isStructured[add_del[j]]) {
+					unsigned int xoring = 0;
+					for (int k = 0; k < add_del.size(); ++k) {
+						if (j != k) {
+							xoring = xoring ^ map[add_del[k]];
+						}
+					}
+					map[add_del[j]] = xoring;
+					couldFindh = true;
+					break;
+				}
+			}
+
+			if (couldFindh) {
+				for (int j = 0; j < add_del.size(); ++j) {
+					isStructured[add_del[j]] = true;
+				}
+				++couldFind;
+				couldNotFind = 0;
+			} else {
+				++couldNotFind;
+			}
+			// Safety net if there are no action to structure.
+			if (couldNotFind > 50) {
+				break;
+			}
+		}
+		printf("Action-based Structure: %d, %f percent (<= %f)\n", couldFind,
+				(double) couldFind / (double) actionTableSize, toStructure);
 	}
 
 	void zobrist() {
@@ -155,6 +246,8 @@ private:
 	D& d;
 	std::vector<std::vector<unsigned int>> structures;
 	std::vector<std::vector<unsigned int>> xor_groups;
+	ActionTable* actionTable;
+
 //	unsigned int structure;
 
 // TODO: ebable some kind of abstraction.

@@ -76,7 +76,7 @@ void Tiles::initmd() {
 			int newmd = md[t][d];
 
 			for (int s = 0; s < Ntiles; s++)
-				mdincr[t][d][s] = -100;	// some invalid value.
+				mdincr[t][d][s] = -100; // some invalid value.
 
 			if (d >= Width)
 				mdincr[t][d][d - Width] = md[t][d - Width] - newmd;
@@ -91,6 +91,55 @@ void Tiles::initmd() {
 				mdincr[t][d][d + Width] = md[t][d + Width] - newmd;
 		}
 	}
+
+	// Initialization for Backward search.
+	// TODO: don't need it for forward search.
+
+	// init[i] = k: tile k is at position i
+	// inv[i] = k:  tile i is at position k
+	int inv[Ntiles];
+	for (int i = 0; i < Ntiles; i++) {
+		inv[init[i]] = i;
+	}
+
+	for (int t = 1; t < Ntiles; t++) {
+		int grow = inv[t] / Width, gcol = inv[t] % Width;
+		for (int l = 0; l < Ntiles; l++) {
+			int row = l / Width, col = l % Width;
+			bmd[t][l] = abs(col - gcol) + abs(row - grow);
+		}
+	}
+	for (int t = 1; t < Ntiles; t++) {
+		for (int d = 0; d < Ntiles; d++) {
+			int newmd = bmd[t][d];
+
+			for (int s = 0; s < Ntiles; s++)
+				bmdincr[t][d][s] = -100; // some invalid value.
+
+			if (d >= Width)
+				bmdincr[t][d][d - Width] = bmd[t][d - Width] - newmd;
+
+			if (d % Width > 0)
+				bmdincr[t][d][d - 1] = bmd[t][d - 1] - newmd;
+
+			if (d % Width < Width - 1)
+				bmdincr[t][d][d + 1] = bmd[t][d + 1] - newmd;
+
+			if (d < Ntiles - Width)
+				bmdincr[t][d][d + Width] = bmd[t][d + Width] - newmd;
+		}
+	}
+
+//	for (int t = 1; t < Ntiles; t++) {
+//		for (int d = 0; d < Ntiles; d++) {
+//			printf("%d %d %d %d\n", bmdincr[t][d][d - Width],
+//					bmdincr[t][d][d - 1], bmdincr[t][d][d + 1],
+//					bmdincr[t][d][d + Width]);
+//			printf("%d %d %d %d\n", mdincr[t][d][d - Width],
+//					mdincr[t][d][d - 1], mdincr[t][d][d + 1],
+//					mdincr[t][d][d + Width]);
+//		}
+//	}
 }
 
 void Tiles::initoptab() {

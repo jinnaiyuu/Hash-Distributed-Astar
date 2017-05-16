@@ -32,7 +32,7 @@
 // DELAY 10,000,000 -> 3000 nodes per second
 //#define DELAY 0
 
-template<class D, class hash> class HDAstar: public SearchAlg<D> {
+template<class D> class HDAstar: public SearchAlg<D> {
 
 	struct Node {
 		unsigned int f, g;
@@ -68,7 +68,6 @@ template<class D, class hash> class HDAstar: public SearchAlg<D> {
 	typename D::State init;
 	int tnum;
 	std::atomic<int> thread_id; // set thread id for zobrist hashing.
-	hash z; // Members for Zobrist hashing.
 
 	std::atomic<int> incumbent; // The best solution so far.
 	bool* terminate;
@@ -166,9 +165,12 @@ template<class D, class hash> class HDAstar: public SearchAlg<D> {
 //	unsigned int self_pushes = 0;
 
 	int overrun;
+	bool isFIFO;
 	unsigned int closedlistsize;
 	unsigned int openlistsize;
 	unsigned int initmaxcost;
+
+	pthread_barrier_t barrier; // used for estimation with timer limits
 
 public:
 
@@ -176,12 +178,12 @@ public:
 			int outgo_threshold_ = 10000000, int abst_ = 0, int overrun_ = 0,
 			unsigned int closedlistsize = 110503,
 			unsigned int openlistsize = 100,
-			unsigned int maxcost = 1000000) :
-			SearchAlg<D>(d), tnum(tnum_), thread_id(0), z(d,
-					static_cast<typename hash::ABST>(abst_)), incumbent(maxcost), income_threshold(
+			unsigned int maxcost = 1000000,
+			bool isFIFO = false) :
+			SearchAlg<D>(d), tnum(tnum_), thread_id(0), incumbent(maxcost), income_threshold(
 					income_threshold_), outgo_threshold(outgo_threshold_), globalOrder(
 					0), overrun(overrun_), closedlistsize(closedlistsize),
-					openlistsize(openlistsize), initmaxcost(maxcost) {
+					openlistsize(openlistsize), initmaxcost(maxcost), isFIFO(isFIFO) {
 		income_buffer = new buffer<Node> [tnum];
 		terminate = new bool[tnum];
 		for (int i = 0; i < tnum; ++i) {
@@ -229,7 +231,7 @@ public:
 //	printf("closedlistsize = %u\n", closedlistsize);
 
 //		Heap<Node> open(100, overrun);
-		heap open(openlistsize, overrun);
+		heap open(openlistsize, overrun, isFIFO);
 		Pool<Node> nodes(2048);
 
 		// If the buffer is locked when the thread pushes a node,
@@ -269,8 +271,20 @@ public:
 		unsigned int over_incumbent_count = 0;
 		unsigned int no_work_iteration = 0;
 
+		double init_time = walltime();
+
 		while (true) {
 			Node *n;
+
+			if (this->isTimed) {
+				double t = walltime() - init_time;
+//				printf("t = %f\n", t);
+				if (t > this->timer) {
+//					closed.destruct_all(nodes);
+					printf("Terminated due to timer\n");
+					break;
+				}
+			}
 
 #ifdef ANALYZE_LAP
 			startlapse(lapse); // income buffer
@@ -391,7 +405,10 @@ public:
 					continue;
 #ifdef ANALYZE_DUPLICATE
 				} else {
-					duplicate_here++;
+					// This case is the serious one, node is duplicated and need to reopen as
+					// the new node has lower f value.
+					++duplicate_here;
+
 #endif // ANALYZE_DUPLICATE
 				}
 				// Node access here is unnecessary duplicates.
@@ -525,7 +542,7 @@ public:
 //					++over_incumbent_count;
 //					continue;
 //				}
-				gend_here++;
+				++gend_here;
 				//printf("mv blank op = %d %d %d \n", moving_tile, blank, op);
 //				print_state(state);
 
@@ -533,9 +550,9 @@ public:
 				// TODO: Make Zobrist hash appropriate for 24 threads.
 //				next->zbr = z.inc_hash(n->zbr, moving_tile, blank, op,
 //						state.tiles, state);
-				next->zbr = z.inc_hash(n->zbr, moving_tile, blank, op,
-						0, state);
-
+//				next->zbr = z.inc_hash(n->zbr, moving_tile, blank, op,
+//						0, state);
+				next->zbr = this->dom.dist_hash(state);
 //				next->zbr = z.inc_hash(state);
 
 				unsigned int zbr = next->zbr % tnum;
@@ -634,12 +651,16 @@ public:
 		this->max_income += max_income_buffer_size;
 #endif
 #ifdef ANALYZE_DUPLICATE
-		this->duplicates[id] = duplicate_here;
 #endif
 
-		self_pushes[id] = self_push;
+		this->duplicates[id] = duplicate_here;
+		this->self_pushes[id] = self_push;
+		this-
 
 		dbgprintf("END\n");
+
+		pthread_barrier_wait(&barrier);
+
 		return 0;
 	}
 
@@ -669,19 +690,22 @@ public:
 		}
 #endif
 
+		pthread_barrier_init(&barrier, NULL, tnum);
+
 		printf("start\n");
 		for (int i = 0; i < tnum; ++i) {
-			pthread_create(&t[tnum], NULL,
+			pthread_create(&t[i], NULL,
 					(void*(*)(void*))&HDAstar::thread_helper, this);
 		}
 		for (int i = 0; i < tnum; ++i) {
-			pthread_join(t[tnum], NULL);
+			pthread_join(t[i], NULL);
 		}
 
 		for (int i = 0; i < tnum; ++i) {
 			this->expd += expd_distribution[i];
 			this->gend += gend_distribution[i];
-			this->push += self_pushes[i];
+			this->lpush += self_pushes[i];
+			this->dup += duplicates[i];
 		}
 
 

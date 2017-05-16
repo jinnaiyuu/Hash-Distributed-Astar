@@ -123,10 +123,16 @@ public:
 
 			this->expd++;
 
-			if (n->f != fval) {
-				fval = n->f;
-				printf("f = %u, expd = %u\n", fval, this->expd);
-			}
+//			if (n->f != fval) {
+//				fval = n->f;
+//				printf("f = %u, expd = %u\n", fval, this->expd);
+//			}
+
+
+//			if (true) {
+//				print_state(state);
+//			}
+
 
 			int nops = this->dom.nops(state);
 //			this->dom.print_state(state);
@@ -212,6 +218,13 @@ public:
 		n->parent = p;
 		this->dom.pack(n->packed, s);
 		return n;
+	}
+
+	void print_state(typename D::State state) {
+		for (int i = 0; i < D::Ntiles; ++i) {
+			printf("%d ", state.tiles[i]);
+		}
+		printf("\n");
 	}
 
 };

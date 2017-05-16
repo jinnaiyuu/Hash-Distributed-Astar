@@ -5,11 +5,11 @@
 #define _HASHTBLMPI_HPP_
 
 #include <vector>
-
-template<class Node> struct HashEntry {
-	unsigned long hash;
-	Node *next;
-};
+#include "../hashtbl.hpp"
+//template<class Node> struct HashEntry {
+//	unsigned long hash;
+//	Node *next;
+//};
 
 // HashTable implements a simple single-sized hash table.
 template<class Key, class Node> class HashTableMPI {
@@ -30,7 +30,7 @@ public:
 		unsigned int ind = h % buckets.size();
 
 		Node *p;
-		for (p = buckets[ind]; p && p->key().eq(key); p =
+		for (p = buckets[ind]; p && !(p->key().eq(key)); p =
 				p->hashentry().next) {
 			;
 		}

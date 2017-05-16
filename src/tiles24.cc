@@ -4,6 +4,8 @@
 #include "tiles24.hpp"
 #include <string>
 #include <cstdio>
+#include <sys/stat.h>
+#include <unistd.h>
 
 Tiles24::Tiles24(FILE *in) {
 	unsigned int w, h;
@@ -63,6 +65,14 @@ Tiles24::Tiles24(FILE *in, int line) {
 
 	// Here read pattern database from the file.
 
+	if (access("pat24.1256712.tab", F_OK) == -1) {
+		printf("no pat24.1256712.tab file\n");
+	}
+	if (access("pat24.34891314.tab", F_OK) == -1) {
+		printf("no pat24.34891314.tab file\n");
+	}
+
+
 	FILE* infile;
 	infile = fopen("pat24.1256712.tab", "rb");
 //	infile = fopen("pat24.156101112.tab", "rb");
@@ -81,11 +91,11 @@ Tiles24::Tiles24(FILE *in, int line) {
 //	printf("pattern 2 3 4 7 8 9 read in\n");
 
 
-	zbr_table.resize(Ntiles);
+	closed_hash_tbl.resize(Ntiles);
 	for (int i = 0; i < Ntiles; ++i) {
-		zbr_table[i].resize(Ntiles);
+		closed_hash_tbl[i].resize(Ntiles);
 		for (int j = 0; j < Ntiles; ++j) {
-			zbr_table[i][j] = random();
+			closed_hash_tbl[i][j] = random();
 		}
 	}
 }

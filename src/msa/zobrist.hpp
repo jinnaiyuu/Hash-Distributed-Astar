@@ -12,9 +12,11 @@
 #include <climits>
 #include <cstdlib>
 #include <math.h>
+#include <random>
+#include "../dist_hash.hpp"
 
 template<typename D>
-class MSAZobrist {
+class MSAZobrist : public DistributionHash<D> {
 public:
 	enum ABST {
 		SINGLE = 1, FIVE = 5
@@ -29,10 +31,19 @@ public:
 	};
 
 // Should delete compatibility for performance.
-	MSAZobrist(D &d, ABST abst = SINGLE) :
+	MSAZobrist(D &d, int abst = 1) :
 			d(d), structure(abst) {
 		initZobrist(structure);
 //		dump_table();
+	}
+
+	unsigned int dist_h(const typename D::State& s) const {
+		unsigned int c = 0;
+		for (unsigned int i = 0; i < map.size(); ++i) {
+			c = c ^ map[i][s.sequence[i]];
+		}
+//		printf("zbr = %u\n", c);
+		return c;
 	}
 
 	/**

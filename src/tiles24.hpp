@@ -4,6 +4,8 @@
 #include "search.hpp"
 #include "fatal.hpp"
 #include "hashtbl.hpp"
+#include "zobrist.hpp"
+#include "dist_hash.hpp"
 #include <cstdio>
 #include <cstdlib>
 #include <cassert>
@@ -37,6 +39,25 @@ struct Tiles24 {
 
 		bool eq(const PackedState &h) const {
 			return word == h.word;
+		}
+
+		unsigned int byteSize() const {
+			return 16;
+		}
+
+		void stateToChars(unsigned char* d) const {
+			int n = sizeof word;
+			for (int y = 0; n-- > 0; y++)
+				d[y] = (word >> (n * 8)) & 0xff;
+		}
+
+		void charsToState(unsigned char* d) {
+			int n = sizeof word;
+			word = 0;
+			for (int i = 0; i < n; ++i) {
+				word += (uint128_t) d[i] << (8 * (n - i - 1));
+			}
+			hash_key = (uint64_t) word;
 		}
 	};
 
@@ -156,7 +177,7 @@ struct Tiles24 {
 
 		dst.hash_key = 0;
 		for (int i = 0; i < Ntiles; i++) {
-			dst.hash_key = dst.hash_key ^ zbr_table[i][s.tiles[i]];
+			dst.hash_key = dst.hash_key ^ closed_hash_tbl[i][s.tiles[i]];
 		}
 
 		dst.h = s.h;
@@ -201,11 +222,25 @@ struct Tiles24 {
 		hfunction = hfun;
 	}
 
+	void set_dist_hash(int h, int rand_seed = 0) {
+		which_dist_hash = h;
+		dist_h = new Zobrist<Tiles24, 25>(which_dist_hash, rand_seed);
+	}
+
+	unsigned int dist_hash(const State &s) const {
+		return dist_h->dist_h(s);
+	}
+
+
 private:
 
-	std::vector<std::vector<unsigned int> > zbr_table;
+	std::vector<std::vector<unsigned int> > closed_hash_tbl;
 
 	unsigned int hfunction = 0;
+
+	int which_dist_hash;
+	DistributionHash<Tiles24>* dist_h;
+
 
 //	// mdist returns the Manhattan distance of the given tile array.
 //	int mdist(int blank, char tiles[]) const{
@@ -231,6 +266,8 @@ private:
 
 	// init is the initial tile positions.
 	int init[Ntiles];
+
+
 
 	unsigned int heuristic(char tiles[]) const {
 		if (hfunction == 0) {
